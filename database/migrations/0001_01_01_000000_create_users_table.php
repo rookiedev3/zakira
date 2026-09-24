@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('role', ['admin', 'customer'])->default('customer');
+            $table->enum('status', ['aktif', 'tidak_aktif', 'ditangguhkan'])->default('aktif');
+            $table->enum('customer_type', ['umum', 'member', 'distributor'])->nullable()->default('umum');
             $table->rememberToken();
             $table->timestamps();
         });
