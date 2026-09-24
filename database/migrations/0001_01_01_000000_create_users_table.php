@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', ['admin', 'customer'])->default('customer');
             $table->enum('status', ['aktif', 'tidak_aktif', 'ditangguhkan'])->default('aktif');
+            $table->timestamp('last_login_at')->nullable();
             $table->enum('customer_type', ['umum', 'member', 'distributor'])->nullable()->default('umum');
             $table->rememberToken();
             $table->timestamps();

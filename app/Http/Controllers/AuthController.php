@@ -23,7 +23,7 @@ class AuthController extends Controller
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             return back()->withErrors([
-                'email' => 'Email atau password tidak salah.',
+                'email' => 'Email atau password salah.',
             ])->onlyInput('email');
         }
 
@@ -50,6 +50,8 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        $user->forceFill(['last_login_at' => now()])->save();
+
         $redirect = $user->role === 'admin' ? route('admin.dashboard') : route('home');
 
         return redirect()->intended($redirect)
@@ -58,8 +60,7 @@ class AuthController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
-        
+         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
