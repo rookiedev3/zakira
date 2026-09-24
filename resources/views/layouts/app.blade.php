@@ -33,8 +33,8 @@
         <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
             <!-- Logo -->
             <a href="/" class="flex flex-col">
-                <span class="text-2xl font-bold tracking-wider font-serif">Zakira</span>
-                <span class="text-[10px] tracking-widest uppercase text-gray-500">moslem hijab identity</span>
+                        <img src="{{ asset('images/logo-zakira.png') }}" alt="Zakira Logo" class="h-16 mx-auto object-contain">
+
             </a>
 
             <!-- Navigasi -->
@@ -70,10 +70,10 @@
     <!-- Footer (Satu tempat untuk semua halaman) -->
     <footer class="bg-[#2D2522] text-gray-300 pt-16 pb-8 border-t border-gray-800 mt-auto">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div>
-                <span class="text-2xl font-bold tracking-wider font-serif text-white">Zakira</span>
-                <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
-            </div>
+           <div>
+    <img src="{{ asset('images/logo-zakira2.png') }}" alt="Zakira Logo" class="h-16 object-contain">
+    <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
+</div>
             <div>
                 <h4 class="text-white font-semibold text-sm mb-4">Alamat Toko</h4>
                 <p class="text-xs text-gray-400">Lokasi Zakira tersedia melalui Google Maps.</p>
