@@ -4,6 +4,7 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminHandleController;
 use App\Http\Controllers\AdvantageController;
 use App\Http\Controllers\SocialMediaController;
 use App\Http\Controllers\CustomerServiceController;
@@ -68,6 +69,11 @@ Route::post('/advantages', [AdvantageController::class, 'store'])->name('advanta
 Route::put('/advantages/{advantage}', [AdvantageController::class, 'update'])->name('advantages.update');
 Route::patch('/advantages/{advantage}/status', [AdvantageController::class, 'updateStatus'])->name('advantages.status');
 Route::delete('/advantages/{advantage}', [AdvantageController::class, 'destroy'])->name('advantages.destroy');
+
+Route::get('/admin-handles', [AdminHandleController::class, 'index'])->name('admin-handles.index');
+Route::post('/admin-handles', [AdminHandleController::class, 'store'])->name('admin-handles.store');
+Route::put('/admin-handles/{adminHandle}', [AdminHandleController::class, 'update'])->name('admin-handles.update');
+Route::delete('/admin-handles/{adminHandle}', [AdminHandleController::class, 'destroy'])->name('admin-handles.destroy');
 
     //routes chyntia
     // Route untuk halaman Katalog / Ready Stock
