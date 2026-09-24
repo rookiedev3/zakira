@@ -3,6 +3,7 @@
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\SocialMediaController;
 use App\Http\Controllers\CustomerServiceController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,13 @@ Route::post('/customer-services', [CustomerServiceController::class, 'store'])->
 Route::put('/customer-services/{customerService}', [CustomerServiceController::class, 'update'])->name('customer-services.update');
 Route::patch('/customer-services/{customerService}/status', [CustomerServiceController::class, 'updateStatus'])->name('customer-services.status');
 Route::delete('/customer-services/{customerService}', [CustomerServiceController::class, 'destroy'])->name('customer-services.destroy');
+
+
+Route::get('/social-media', [SocialMediaController::class, 'index'])->name('social-media.index');
+Route::post('/social-media', [SocialMediaController::class, 'store'])->name('social-media.store');
+Route::put('/social-media/{socialMedium}', [SocialMediaController::class, 'update'])->name('social-media.update');
+Route::patch('/social-media/{socialMedium}/status', [SocialMediaController::class, 'updateStatus'])->name('social-media.status');
+Route::delete('/social-media/{socialMedium}', [SocialMediaController::class, 'destroy'])->name('social-media.destroy');
 
     //routes chyntia
     // Route untuk halaman Katalog / Ready Stock
