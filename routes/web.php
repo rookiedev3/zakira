@@ -4,6 +4,7 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdvantageController;
 use App\Http\Controllers\SocialMediaController;
 use App\Http\Controllers\CustomerServiceController;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,12 @@ Route::post('/banners', [BannerController::class, 'store'])->name('banners.store
 Route::put('/banners/{banner}', [BannerController::class, 'update'])->name('banners.update');
 Route::patch('/banners/{banner}/status', [BannerController::class, 'updateStatus'])->name('banners.status');
 Route::delete('/banners/{banner}', [BannerController::class, 'destroy'])->name('banners.destroy');
+
+Route::get('/advantages', [AdvantageController::class, 'index'])->name('advantages.index');
+Route::post('/advantages', [AdvantageController::class, 'store'])->name('advantages.store');
+Route::put('/advantages/{advantage}', [AdvantageController::class, 'update'])->name('advantages.update');
+Route::patch('/advantages/{advantage}/status', [AdvantageController::class, 'updateStatus'])->name('advantages.status');
+Route::delete('/advantages/{advantage}', [AdvantageController::class, 'destroy'])->name('advantages.destroy');
 
     //routes chyntia
     // Route untuk halaman Katalog / Ready Stock
