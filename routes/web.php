@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminHandleController;
 use App\Http\Controllers\AdvantageController;
 use App\Http\Controllers\SocialMediaController;
 use App\Http\Controllers\CustomerServiceController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -74,6 +75,13 @@ Route::get('/admin-handles', [AdminHandleController::class, 'index'])->name('adm
 Route::post('/admin-handles', [AdminHandleController::class, 'store'])->name('admin-handles.store');
 Route::put('/admin-handles/{adminHandle}', [AdminHandleController::class, 'update'])->name('admin-handles.update');
 Route::delete('/admin-handles/{adminHandle}', [AdminHandleController::class, 'destroy'])->name('admin-handles.destroy');
+
+    Route::get('/settings/profile', [SettingsController::class, 'profile'])->name('settings.profile');
+    Route::patch('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
+    Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount'])->name('settings.profile.destroy');
+
+    Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
+    Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
 
     //routes chyntia
     // Route untuk halaman Katalog / Ready Stock
