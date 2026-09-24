@@ -45,5 +45,16 @@ class UserSeeder extends Seeder
                 'email_verified_at' => null,
             ]
         );
+        User::firstOrCreate(
+            ['email' => 'zahwaayurmdhni@gmail.com'],
+            [
+                'name' => 'Admin Zahwa',
+                'password' => Hash::make('zahwa123'),
+                'role' => 'admin',
+                'status' => 'aktif',
+                'customer_type' => 'umum',
+                'email_verified_at' => null,
+            ]
+        );
     }
 }

@@ -63,7 +63,7 @@
                     <div class="flex justify-between items-center mb-1.5">
                         <label for="password" class="block text-sm font-medium text-gray-900">Password</label>
                         <!-- Opsional jika ada route password.request, jika tidak biarkan teks biasa -->
-                        <a href="#" class="text-xs text-amber-800 hover:underline">Lupa password?</a>
+                        <a href="{{ route('password.request') }}" class="text-xs text-amber-800 hover:underline">Lupa password?</a>
                     </div>
                     <div class="relative">
                         <input id="password" type="password" name="password" required placeholder="Password"
