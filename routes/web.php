@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -29,3 +30,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    Route::get('/banks', [BankAccountController::class, 'index'])->name('banks.index');
+    Route::post('/banks', [BankAccountController::class, 'store'])->name('banks.store');
+    Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
+    Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
+    Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
