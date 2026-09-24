@@ -36,6 +36,14 @@
     </a>
     <h2 class="text-gray-600 text-base mt-6 font-normal">Login khusus Member Zakira</h2>
 </div>
+
+            <!-- Success Message -->
+            @if (session('success'))
+                <div class="bg-green-50 text-green-700 text-sm rounded-lg px-4 py-3 mb-4">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <!-- Error Messages -->
             @if (session('error'))
                 <div class="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">

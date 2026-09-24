@@ -18,16 +18,17 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/login', [AuthController::class, 'auth']);
+
+        Route::get('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+
+    Route::get('/reset-password/{token}', [AuthController::class, 'resetPassword'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
 });
 
 Route::middleware('auth')->group(function () {
     Route::get('/logout', [AuthController::class, 'destroy'])->name('logout');
 
-    Route::get('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
-
-    Route::get('/reset-password/{token}', [AuthController::class, 'resetPassword'])->name('password.reset');
-    Route::post('/reset-password', [AuthController::class, 'updatePassword'])->name('password.update');
 
     Route::middleware('role:admin')->group(function () {
         // Route::get('/dashboard', function () {
