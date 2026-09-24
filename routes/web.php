@@ -3,6 +3,7 @@
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomerServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -25,6 +26,8 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+
+/////// ROUTES ZAHWAAA
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
@@ -36,6 +39,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
     Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
     Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
+
+
+Route::get('/customer-services', [CustomerServiceController::class, 'index'])->name('customer-services.index');
+Route::post('/customer-services', [CustomerServiceController::class, 'store'])->name('customer-services.store');
+Route::put('/customer-services/{customerService}', [CustomerServiceController::class, 'update'])->name('customer-services.update');
+Route::patch('/customer-services/{customerService}/status', [CustomerServiceController::class, 'updateStatus'])->name('customer-services.status');
+Route::delete('/customer-services/{customerService}', [CustomerServiceController::class, 'destroy'])->name('customer-services.destroy');
 
     //routes chyntia
     // Route untuk halaman Katalog / Ready Stock
