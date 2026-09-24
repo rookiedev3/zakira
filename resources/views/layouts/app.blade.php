@@ -24,7 +24,11 @@
             <a href="#" class="hover:underline">Facebook</a>
         </div>
         <div>
-            <a href="/login" class="hover:underline font-medium">Login Member</a>
+            @auth
+                <span class="font-medium">Halo, {{ Auth::user()->name }}</span>
+            @else
+                <a href="/login" class="hover:underline font-medium">Login Member</a>
+            @endauth
         </div>
     </div>
 
@@ -33,8 +37,7 @@
         <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
             <!-- Logo -->
             <a href="/" class="flex flex-col">
-                        <img src="{{ asset('images/logo-zakira.png') }}" alt="Zakira Logo" class="h-16 mx-auto object-contain">
-
+                <img src="{{ asset('images/logo-zakira.png') }}" alt="Zakira Logo" class="h-16 mx-auto object-contain">
             </a>
 
             <!-- Navigasi -->
@@ -42,6 +45,14 @@
                 <a href="/" class="hover:text-amber-800 transition">Beranda</a>
                 <a href="/#brand" class="hover:text-amber-800 transition">Brand</a>
                 <a href="/katalog" class="hover:text-amber-800 transition">Ready Stock</a>
+
+                <!-- MENU PRE ORDER (PO) - Hanya muncul untuk Admin atau Customer berstatus 'member' -->
+                @auth
+                    @if(Auth::user()->role !== 'customer' || (Auth::user()->role === 'customer' && Auth::user()->customer_type === 'member'))
+                        <a href="/member/pre-order" class="text-amber-800 font-semibold transition">Pre Order (PO)</a>
+                    @endif
+                @endauth
+
                 <a href="/#tentang-kami" class="hover:text-amber-800 transition">Tentang Kami</a>
                 <a href="/#kontak" class="hover:text-amber-800 transition">Kontak</a>
             </nav>
@@ -70,10 +81,10 @@
     <!-- Footer (Satu tempat untuk semua halaman) -->
     <footer class="bg-[#2D2522] text-gray-300 pt-16 pb-8 border-t border-gray-800 mt-auto">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-           <div>
-    <img src="{{ asset('images/logo-zakira2.png') }}" alt="Zakira Logo" class="h-16 object-contain">
-    <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
-</div>
+            <div>
+                <img src="{{ asset('images/logo-zakira2.png') }}" alt="Zakira Logo" class="h-16 object-contain">
+                <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
+            </div>
             <div>
                 <h4 class="text-white font-semibold text-sm mb-4">Alamat Toko</h4>
                 <p class="text-xs text-gray-400">Lokasi Zakira tersedia melalui Google Maps.</p>
@@ -86,6 +97,11 @@
                 <h4 class="text-white font-semibold text-sm mb-4">Informasi</h4>
                 <ul class="text-xs space-y-2 text-gray-400">
                     <li><a href="/katalog" class="hover:text-white">Ready Stock</a></li>
+                    @auth
+                        @if(Auth::user()->role !== 'customer' || (Auth::user()->role === 'customer' && Auth::user()->customer_type === 'member'))
+                            <li><a href="/member/pre-order" class="hover:text-white">Pre Order (PO)</a></li>
+                        @endif
+                    @endauth
                     <li><a href="/login" class="hover:text-white">Login Member</a></li>
                     <li><a href="/cart" class="hover:text-white">Keranjang</a></li>
                 </ul>

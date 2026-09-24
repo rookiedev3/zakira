@@ -20,7 +20,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
+    Route::get('/logout', [AuthController::class, 'destroy'])->name('logout');
 
     Route::middleware('role:admin')->group(function () {
         // Route::get('/dashboard', function () {
@@ -79,4 +79,10 @@ Route::delete('/admin-handles/{adminHandle}', [AdminHandleController::class, 'de
     // Route untuk halaman Katalog / Ready Stock
 Route::get('/katalog', function () {
     return view('katalog');
+});
+// Route untuk Halaman Pre Order Member
+Route::middleware(['auth'])->group(function () {
+    Route::get('/member/pre-order', function () {
+        return view('member.pre-order');
+    })->name('member.pre-order');
 });
