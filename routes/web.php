@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SocialMediaController;
 use App\Http\Controllers\CustomerServiceController;
@@ -54,6 +55,12 @@ Route::post('/social-media', [SocialMediaController::class, 'store'])->name('soc
 Route::put('/social-media/{socialMedium}', [SocialMediaController::class, 'update'])->name('social-media.update');
 Route::patch('/social-media/{socialMedium}/status', [SocialMediaController::class, 'updateStatus'])->name('social-media.status');
 Route::delete('/social-media/{socialMedium}', [SocialMediaController::class, 'destroy'])->name('social-media.destroy');
+
+Route::get('/banners', [BannerController::class, 'index'])->name('banners.index');
+Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
+Route::put('/banners/{banner}', [BannerController::class, 'update'])->name('banners.update');
+Route::patch('/banners/{banner}/status', [BannerController::class, 'updateStatus'])->name('banners.status');
+Route::delete('/banners/{banner}', [BannerController::class, 'destroy'])->name('banners.destroy');
 
     //routes chyntia
     // Route untuk halaman Katalog / Ready Stock
