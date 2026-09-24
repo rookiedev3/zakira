@@ -57,8 +57,7 @@
                 <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition">
                     <div class="h-64 bg-gray-100 flex items-center justify-center text-gray-400 text-xs relative">
                         <span class="absolute top-3 left-3 text-[10px] bg-green-700 text-white px-2 py-1 rounded font-semibold">READY STOCK</span>
-                        <span>Foto Produk</span>
-                    </div>
+<img src="{{ asset('images/hijab.jpeg') }}" alt="Nama Produk Hijab" class="w-full h-full object-cover">                    </div>
                     <div class="p-4">
                         <span class="text-[10px] uppercase text-gray-400 tracking-wider">ZAKIRA</span>
                         <h4 class="font-medium text-sm mt-1 text-gray-800">Baju Koko / Hijab</h4>
