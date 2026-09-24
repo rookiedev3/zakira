@@ -36,3 +36,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
     Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
     Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
+
+    //routes chyntia
+    // Route untuk halaman Katalog / Ready Stock
+Route::get('/katalog', function () {
+    return view('katalog');
+});
