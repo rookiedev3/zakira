@@ -107,6 +107,13 @@ Route::middleware(['auth'])->group(function () {
     })->name('member.profile');
 });
 
+Route::middleware(['auth'])->group(function () {
+    // Route Dashboard Admin
+    Route::get('/admin/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('admin.dashboard');
+});
+
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 use App\Http\Controllers\CategoryController;
 

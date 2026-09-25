@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('advantages', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->text('description')->nullable();
-            $table->string('image_path');
+            $table->text('description');
+            $table->string('image_path')->nullable();
             $table->unsignedInteger('order')->default(0);
             $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
             $table->timestamps();

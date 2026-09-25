@@ -72,24 +72,75 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <div class="p-2">
-            <h3 class="font-bold text-sm mb-1">Bahan Premium</h3>
-            <p class="text-xs text-gray-500">Kualitas bahan pilihan</p>
+    @if ($advantages->isNotEmpty())
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            @foreach ($advantages as $advantage)
+                <div class="p-2 flex items-center gap-3 text-left">
+                    @if ($advantage->image_url)
+                        <img src="{{ $advantage->image_url }}" alt="{{ $advantage->title }}"
+                            class="w-10 h-10 object-cover rounded-full flex-shrink-0">
+                    @else
+                        <div class="w-10 h-10 rounded-full bg-[#3D2C24] flex-shrink-0 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white">
+                                <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                        </div>
+                    @endif
+                    <div>
+                        <h3 class="font-bold text-sm mb-1">{{ $advantage->title }}</h3>
+                        <p class="text-xs text-gray-500">{{ $advantage->description }}</p>
+                    </div>
+                </div>
+            @endforeach
         </div>
-        <div class="p-2">
-            <h3 class="font-bold text-sm mb-1">Syar'i & Nyaman</h3>
-            <p class="text-xs text-gray-500">Menutup aurat dengan anggun</p>
+    @else
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <div class="p-2 flex items-center gap-3 text-left">
+                <div class="w-10 h-10 rounded-full bg-[#3D2C24] flex-shrink-0 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white">
+                        <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm mb-1">Bahan Premium</h3>
+                    <p class="text-xs text-gray-500">Kualitas bahan pilihan</p>
+                </div>
+            </div>
+            <div class="p-2 flex items-center gap-3 text-left">
+                <div class="w-10 h-10 rounded-full bg-[#3D2C24] flex-shrink-0 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white">
+                        <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm mb-1">Syar'i & Nyaman</h3>
+                    <p class="text-xs text-gray-500">Menutup aurat dengan anggun</p>
+                </div>
+            </div>
+            <div class="p-2 flex items-center gap-3 text-left">
+                <div class="w-10 h-10 rounded-full bg-[#3D2C24] flex-shrink-0 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white">
+                        <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm mb-1">Desain Exclusive</h3>
+                    <p class="text-xs text-gray-500">Model terbaru dan elegan</p>
+                </div>
+            </div>
+            <div class="p-2 flex items-center gap-3 text-left">
+                <div class="w-10 h-10 rounded-full bg-[#3D2C24] flex-shrink-0 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white">
+                        <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm mb-1">Amanah & Terpercaya</h3>
+                    <p class="text-xs text-gray-500">Pelayanan terbaik</p>
+                </div>
+            </div>
         </div>
-        <div class="p-2">
-            <h3 class="font-bold text-sm mb-1">Desain Exclusive</h3>
-            <p class="text-xs text-gray-500">Model terbaru dan elegan</p>
-        </div>
-        <div class="p-2">
-            <h3 class="font-bold text-sm mb-1">Amanah & Terpercaya</h3>
-            <p class="text-xs text-gray-500">Pelayanan terbaik</p>
-        </div>
-    </div>
+    @endif
 </section>
 
     <!-- Section Brand -->

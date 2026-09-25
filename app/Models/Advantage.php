@@ -18,8 +18,10 @@ class Advantage extends Model
         'status',
     ];
 
-    public function getImageUrlAttribute(): string
+    public function getImageUrlAttribute(): ?string
     {
-        return Storage::url($this->image_path);
+        return $this->image_path
+            ? Storage::url($this->image_path)
+            : null;
     }
 }

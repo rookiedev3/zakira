@@ -55,15 +55,15 @@
                     <div class="md:col-span-2">
                         <label class="text-sm font-medium">Deskripsi</label>
                         <textarea name="description" rows="3" placeholder="Masukkan deskripsi keunggulan"
-                                  class="w-full border rounded-lg px-4 py-2 mt-1">{{ old('description') }}</textarea>
+                                  class="w-full border rounded-lg px-4 py-2 mt-1 required">{{ old('description') }}</textarea>
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="text-sm font-medium">Gambar Keunggulan</label>
-                        <input type="file" name="image" id="imageInput" accept="image/*" required
+                        <input type="file" name="image" id="imageInput" accept="image/*" 
                                onchange="previewImage(this, 'previewCreate')"
                                class="w-full border rounded-lg px-4 py-2 mt-1 text-sm">
-                        <p class="text-xs text-gray-400 mt-1">Maksimal ukuran file 12MB.</p>
+                        <p class="text-xs text-gray-400 mt-1">Maksimal ukuran file 12MB. Boleh dikosongkan.</p>
 
                         <div id="previewCreate" class="mt-3 hidden">
                             <p class="text-xs text-gray-500 mb-1">Pratinjau</p>
@@ -133,8 +133,14 @@
 
                         <div class="mt-3">
                             <p class="text-xs text-gray-500 mb-1">Gambar saat ini:</p>
-                            <img src="{{ $editingAdvantage->image_url }}" alt="{{ $editingAdvantage->title }}"
-                                 class="w-40 h-40 object-cover rounded-lg border">
+                            @if ($editingAdvantage->image_url)
+                                <img src="{{ $editingAdvantage->image_url }}" alt="{{ $editingAdvantage->title }}"
+                                     class="w-40 h-40 object-cover rounded-lg border">
+                            @else
+                                <div class="w-40 h-40 flex items-center justify-center rounded-lg border bg-gray-50 text-xs text-gray-400 text-center px-2">
+                                    Tanpa gambar
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -178,8 +184,14 @@
                     @forelse ($advantages as $advantage)
                         <tr>
                             <td class="px-4 py-3">
-                                <img src="{{ $advantage->image_url }}" alt="{{ $advantage->title }}"
-                                     class="w-16 h-16 object-cover rounded-lg border">
+                                @if ($advantage->image_url)
+                                    <img src="{{ $advantage->image_url }}" alt="{{ $advantage->title }}"
+                                         class="w-16 h-16 object-cover rounded-lg border">
+                                @else
+                                    <div class="w-16 h-16 flex items-center justify-center rounded-lg border bg-gray-50 text-[10px] text-gray-400 text-center px-1 leading-tight">
+                                        Tanpa gambar
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <p class="font-medium">{{ $advantage->title }}</p>
