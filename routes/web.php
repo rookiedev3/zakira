@@ -10,6 +10,7 @@ use App\Http\Controllers\SocialMediaController;
 use App\Http\Controllers\CustomerServiceController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -105,3 +106,55 @@ Route::middleware(['auth'])->group(function () {
         return view('member.profile');
     })->name('member.profile');
 });
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+use App\Http\Controllers\CategoryController;
+
+// Route untuk Manajemen Kategori
+Route::prefix('c/categories')->name('categories.')->group(function () {
+    Route::get('/', [CategoryController::class, 'index'])->name('index');
+    Route::get('/create', [CategoryController::class, 'create'])->name('create');
+    Route::post('/', [CategoryController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
+    Route::patch('/{id}/toggle', [CategoryController::class, 'toggleStatus'])->name('toggle');
+    Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
+});
+
+
+// DUMMY ROUTE
+// ==== Manajemen Produk ====
+Route::get('/products', fn () => 'Halaman Produk (dummy)')->name('products.index');
+Route::get('/products/create', fn () => 'Halaman Tambah Produk (dummy)')->name('products.create');
+Route::get('/brands', fn () => 'Halaman Brand (dummy)')->name('brands.index');
+ 
+// ==== Manajemen Konten ====
+Route::get('/banners', fn () => 'Halaman Banner (dummy)')->name('banners.index');
+Route::get('/advantages', fn () => 'Halaman Keunggulan (dummy)')->name('advantages.index');
+Route::get('/social-media', fn () => 'Halaman Media Sosial (dummy)')->name('social-media.index');
+Route::get('/customer-service', fn () => 'Halaman Customer Service (dummy)')->name('customer-service.index');
+Route::get('/admin-handles', fn () => 'Halaman Admin Handle (dummy)')->name('admin-handles.index');
+Route::get('/banks', fn () => 'Halaman Informasi Bank (dummy)')->name('banks.index');
+ 
+// ==== Pesanan ====
+Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
+ 
+// ==== Laporan ====
+Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
+ 
+// ==== Pengguna ====
+Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
+Route::get('/sellers', fn () => 'Halaman Kelola Seller (dummy)')->name('sellers.index');
+ 
+// ==== Pemasaran ====
+Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
+Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
+ 
+// ==== Akun ====
+Route::get('/settings/profile', fn () => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
+ 
+// logout harus POST karena dipanggil lewat <form method="POST"> di sidebar
+Route::post('/logout', function () {
+    // nanti ganti dengan Auth::logout() beneran
+    return redirect()->route('dashboard');
+})->name('logout');
