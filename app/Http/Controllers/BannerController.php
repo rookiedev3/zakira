@@ -12,7 +12,7 @@ class BannerController extends Controller
 {
     public function index(Request $request): View
     {
-        $banners = Banner::orderBy('order')->paginate(10)->withQueryString();
+        $banners = Banner::orderBy('order')->orderByDesc('created_at')->paginate(10)->withQueryString();
 
         $editingBanner = $request->filled('edit')
             ? Banner::find($request->integer('edit'))

@@ -8,12 +8,11 @@ use App\Http\Controllers\AdminHandleController;
 use App\Http\Controllers\AdvantageController;
 use App\Http\Controllers\SocialMediaController;
 use App\Http\Controllers\CustomerServiceController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [LandingController::class, 'index'])->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'login'])->name('login');

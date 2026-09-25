@@ -31,30 +31,66 @@
     </section>
 
     <!-- Section Wadah 1 Foto di atas Tulisan Keunggulan -->
-    <section class="max-w-7xl mx-auto px-6 py-6">
-        <div class="w-full h-[350px] md:h-[450px] rounded-2xl overflow-hidden shadow-md bg-gray-200 mb-8">
-             <img src="{{ asset('images/hijab.jpeg') }}" alt="Banner Keunggulan" class="w-full h-full object-cover">
-        </div>
+<!-- Section Wadah 1 Foto di atas Tulisan Keunggulan -->
+<section class="max-w-7xl mx-auto px-6 py-6">
+    @if ($sliders->isNotEmpty())
+        <div x-data="{
+                current: 0,
+                total: {{ $sliders->count() }},
+                next() { this.current = (this.current + 1) % this.total },
+                prev() { this.current = (this.current - 1 + this.total) % this.total }
+             }"
+             class="relative w-full h-[350px] md:h-[450px] rounded-2xl overflow-hidden shadow-md bg-gray-200 mb-8">
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <div class="p-2">
-                <h3 class="font-bold text-sm mb-1">Bahan Premium</h3>
-                <p class="text-xs text-gray-500">Kualitas bahan pilihan</p>
-            </div>
-            <div class="p-2">
-                <h3 class="font-bold text-sm mb-1">Syar'i & Nyaman</h3>
-                <p class="text-xs text-gray-500">Menutup aurat dengan anggun</p>
-            </div>
-            <div class="p-2">
-                <h3 class="font-bold text-sm mb-1">Desain Exclusive</h3>
-                <p class="text-xs text-gray-500">Model terbaru dan elegan</p>
-            </div>
-            <div class="p-2">
-                <h3 class="font-bold text-sm mb-1">Amanah & Terpercaya</h3>
-                <p class="text-xs text-gray-500">Pelayanan terbaik</p>
-            </div>
+            @foreach ($sliders as $index => $slider)
+                <a href="{{ $slider->url ?? '#' }}"
+                   x-show="current === {{ $index }}"
+                   x-transition:enter="transition ease-out duration-500"
+                   x-transition:enter-start="opacity-0"
+                   x-transition:enter-end="opacity-100"
+                   class="absolute inset-0 block">
+                    <img src="{{ $slider->image_url }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
+                </a>
+            @endforeach
+
+            @if ($sliders->count() > 1)
+                <button @click="prev()" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition shadow">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button @click="next()" class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition shadow">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    @foreach ($sliders as $index => $slider)
+                        <button @click="current = {{ $index }}"
+                                :class="current === {{ $index }} ? 'bg-white' : 'bg-white/50'"
+                                class="w-2 h-2 rounded-full transition"></button>
+                    @endforeach
+                </div>
+            @endif
         </div>
-    </section>
+    @endif
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div class="p-2">
+            <h3 class="font-bold text-sm mb-1">Bahan Premium</h3>
+            <p class="text-xs text-gray-500">Kualitas bahan pilihan</p>
+        </div>
+        <div class="p-2">
+            <h3 class="font-bold text-sm mb-1">Syar'i & Nyaman</h3>
+            <p class="text-xs text-gray-500">Menutup aurat dengan anggun</p>
+        </div>
+        <div class="p-2">
+            <h3 class="font-bold text-sm mb-1">Desain Exclusive</h3>
+            <p class="text-xs text-gray-500">Model terbaru dan elegan</p>
+        </div>
+        <div class="p-2">
+            <h3 class="font-bold text-sm mb-1">Amanah & Terpercaya</h3>
+            <p class="text-xs text-gray-500">Pelayanan terbaik</p>
+        </div>
+    </div>
+</section>
 
     <!-- Section Brand -->
     <section id="brand" class="max-w-7xl mx-auto px-6 py-20">
@@ -73,11 +109,26 @@
     </section>
 
     <!-- Section Foto Lebar di atas Tulisan "Koleksi Pilihan" -->
-    <section class="max-w-7xl mx-auto px-6 py-6">
-        <div class="w-full h-[300px] md:h-[400px] rounded-2xl overflow-hidden shadow-md bg-gray-200">
-             <img src="{{ asset('images/hijab.jpeg') }}" alt="Banner Koleksi Pilihan" class="w-full h-full object-cover">
+<section class="max-w-7xl mx-auto px-6 py-6">
+    @if ($promos->isNotEmpty())
+        @php
+            $columnCount = min($promos->count(), 4);
+            $gridClass = match ($columnCount) {
+                1 => 'grid-cols-1',
+                2 => 'grid-cols-2',
+                3 => 'grid-cols-3',
+                default => 'grid-cols-2 md:grid-cols-4',
+            };
+        @endphp
+        <div class="grid {{ $gridClass }} gap-4">
+            @foreach ($promos as $promo)
+                <a href="{{ $promo->url ?? '#' }}" class="block rounded-2xl overflow-hidden shadow-md bg-gray-200 aspect-square">
+                    <img src="{{ $promo->image_url }}" alt="{{ $promo->title }}" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+                </a>
+            @endforeach
         </div>
-    </section>
+    @endif
+</section>
 
     <!-- Section Ready Stock / Katalog Pilihan -->
     <section class="bg-[#FAF8F5] py-20 border-t border-gray-200">
