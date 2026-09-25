@@ -3,7 +3,8 @@
 @section('title', 'Akun Saya — Zakira Moslem Hijab Identity')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-6 py-10 w-full flex-grow">
+<!-- Bungkus halaman dengan x-data untuk mengontrol semua modal (editProfil, ubahPassword, detailModal) sekaligus -->
+<div class="max-w-7xl mx-auto px-6 py-10 w-full flex-grow" x-data="{ openEdit: false, openPass: false, openDetail: false }">
     
     <!-- Judul Halaman -->
     <div class="mb-8">
@@ -18,13 +19,19 @@
         <div class="lg:col-span-1 space-y-6">
             
             <!-- Card Informasi Profil -->
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative z-20">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-base text-gray-800">Profil Saya</h3>
-                    <div class="space-x-2 text-xs">
-                        <span class="text-amber-800 font-semibold cursor-pointer">Profil</span>
+                    
+                    <!-- Tombol Profil & Password menggunakan Alpine.js @click yang aman dari bentrok -->
+                    <div class="space-x-2 text-xs flex items-center relative z-30">
+                        <button type="button" @click="openEdit = true" class="text-amber-800 font-semibold cursor-pointer hover:underline bg-transparent border-none p-0 focus:outline-none">
+                            Profil
+                        </button>
                         <span class="text-gray-300">|</span>
-                        <span class="text-gray-400 cursor-pointer hover:text-gray-600">Password</span>
+                        <button type="button" @click="openPass = true" class="text-gray-400 font-semibold cursor-pointer hover:text-amber-800 bg-transparent border-none p-0 focus:outline-none">
+                            Password
+                        </button>
                     </div>
                 </div>
 
@@ -181,8 +188,8 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <!-- TOMBOL LIHAT DETAIL MENGGUNAKAN JS MURNI -->
-                            <button type="button" onclick="bukaModal()" class="bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <!-- Tombol Lihat Detail menggunakan Alpine.js @click -->
+                            <button type="button" @click="openDetail = true" class="bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                                 🔍 Lihat Detail
                             </button>
                             <button type="button" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
@@ -197,105 +204,204 @@
         </div>
 
     </div>
-</div>
 
-<!-- ================= MODAL POPUP DETAIL PESANAN (MENGGUNAKAN ID & CLASS HIDDEN) ================= -->
-<div id="detailModal" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
-        
-        <!-- Modal Header -->
-        <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
-            <h3 class="font-bold text-lg text-gray-900">Detail Pesanan #ORD260922170018I42</h3>
-            <button type="button" onclick="tutupModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-        <!-- Modal Body Content -->
-        <div class="p-6 space-y-6 text-xs">
+    <!-- ================= MODAL POPUP EDIT PROFIL ================= -->
+    <div x-show="openEdit" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4" style="display: none;" x-transition.opacity>
+        <div @click.outside="openEdit = false" class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
             
-            <!-- Grid Informasi Pesanan & Pengiriman -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                <!-- Informasi Pesanan -->
-                <div class="space-y-2">
-                    <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pesanan</h4>
-                    <div class="flex justify-between"><span class="text-gray-500">Order ID:</span> <span class="font-medium text-gray-800">ORD260922170018I42</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span> <span class="font-medium text-gray-800">22 Sep 2026 17:00</span></div>
-                    <div class="flex justify-between items-center"><span class="text-gray-500">Status:</span> <span class="bg-amber-100 text-amber-800 font-semibold px-2.5 py-0.5 rounded-full text-[10px]">Menunggu</span></div>
-                    <div class="flex justify-between items-center"><span class="text-gray-500">Pembayaran:</span> <span class="bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded text-[10px]">Lunas</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">Total:</span> <span class="font-bold text-emerald-700 text-sm">Rp 500.000</span></div>
-                </div>
-
-                <!-- Informasi Pengiriman -->
-                <div class="space-y-2">
-                    <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pengiriman</h4>
-                    <div class="flex justify-between"><span class="text-gray-500">Nama:</span> <span class="font-medium text-gray-800">User Customer</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-medium text-gray-800">customer@gmail.com</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">WhatsApp:</span> <span class="font-medium text-gray-800">085842199807</span></div>
-                    <div>
-                        <span class="text-gray-500 block mb-1">Alamat:</span>
-                        <p class="font-medium text-gray-800 leading-relaxed">sleman<br>Sleman, DI Yogyakarta 55556<br>Indonesia</p>
-                    </div>
-                </div>
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+                <h3 class="font-bold text-lg text-gray-900">Edit Profil</h3>
+                <button type="button" @click="openEdit = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
-            <!-- Item Pesanan -->
-            <div class="space-y-3">
-                <h4 class="font-bold text-gray-800 text-sm">Item Pesanan</h4>
-                
-                <!-- Produk 1 -->
-                <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 shrink-0">
-                            📷
+            <div class="p-6 space-y-4 text-xs">
+                <form action="#" method="POST">
+                    @csrf
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-1">Nama</label>
+                            <input type="text" value="{{ Auth::user()->name ?? 'User Customer' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
                         </div>
                         <div>
-                            <h5 class="font-semibold text-gray-800">Baju Koko</h5>
-                            <p class="text-[11px] text-gray-500">Model: Pro | Warna: Hitam | Ukuran: df</p>
-                            <p class="text-[11px] text-gray-500">Rp 100.000 × 1</p>
-                        </div>
-                    </div>
-                    <span class="font-bold text-gray-800 text-sm">Rp 100.000</span>
-                </div>
-
-                <!-- Produk 2 -->
-                <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 shrink-0">
-                            📷
+                            <label class="block font-semibold text-gray-700 mb-1">Email</label>
+                            <input type="email" value="{{ Auth::user()->email ?? 'customer@gmail.com' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
                         </div>
                         <div>
-                            <h5 class="font-semibold text-gray-800">Baju Koko</h5>
-                            <p class="text-[11px] text-gray-500">Model: Pro | Warna: Putih | Ukuran: dx</p>
-                            <p class="text-[11px] text-gray-500">Rp 200.000 × 2</p>
+                            <label class="block font-semibold text-gray-700 mb-1">Telepon</label>
+                            <input type="text" value="085842199807" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-1">Alamat</label>
+                            <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">sleman</textarea>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-semibold text-gray-700 mb-1">Kota / Kabupaten</label>
+                                <input type="text" value="Sleman" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-gray-700 mb-1">Provinsi</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                    <option selected>DI Yogyakarta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-semibold text-gray-700 mb-1">Kode Pos</label>
+                                <input type="text" value="55556" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-gray-700 mb-1">ID Seller</label>
+                                <input type="text" value="asdk123" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-1">Ekspedisi Favorit</label>
+                            <select class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                <option selected>JNE</option>
+                                <option>J&T</option>
+                                <option>SiCepat</option>
+                            </select>
+                        </div>
+
+                        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-lg text-xs leading-relaxed">
+                            Data ini otomatis masuk ke Checkout. Kota, provinsi dan kode pos juga dipakai untuk menghitung ongkir.
                         </div>
                     </div>
-                    <span class="font-bold text-gray-800 text-sm">Rp 400.000</span>
-                </div>
 
+                    <div class="pt-6 mt-6 border-t border-gray-100 flex justify-end gap-3">
+                        <button type="button" @click="openEdit = false" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition cursor-pointer">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-5 py-2 bg-[#8C6239] hover:bg-[#724e2c] text-white rounded-lg font-medium transition cursor-pointer">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
             </div>
 
         </div>
-
-        <!-- Modal Footer -->
-        <div class="p-4 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
-            <button type="button" onclick="tutupModal()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold px-5 py-2 rounded-lg transition cursor-pointer">
-                Tutup
-            </button>
-        </div>
-
     </div>
-</div>
 
-<!-- JAVASCRIPT UNTUK MENGONTROL MODAL -->
-<script>
-    function bukaModal() {
-        document.getElementById('detailModal').classList.remove('hidden');
-    }
-    function tutupModal() {
-        document.getElementById('detailModal').classList.add('hidden');
-    }
-</script>
+    <!-- ================= MODAL POPUP UBAH PASSWORD ================= -->
+    <div x-show="openPass" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4" style="display: none;" x-transition.opacity>
+        <div @click.outside="openPass = false" class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+            
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+                <h3 class="font-bold text-lg text-gray-900">Ubah Password</h3>
+                <button type="button" @click="openPass = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4 text-xs">
+                <form action="#" method="POST">
+                    @csrf
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-1">Password Saat Ini</label>
+                            <div class="relative">
+                                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm pr-10">
+                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 cursor-pointer">👁️</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-1">Password Baru</label>
+                            <div class="relative">
+                                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm pr-10">
+                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 cursor-pointer">👁️</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-1">Konfirmasi Password Baru</label>
+                            <div class="relative">
+                                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm pr-10">
+                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 cursor-pointer">👁️</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 mt-6 border-t border-gray-100 flex justify-end items-center gap-3">
+                        <button type="button" @click="openPass = false" class="text-sm font-medium text-gray-700 hover:underline cursor-pointer">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-5 py-2.5 bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs rounded-lg font-medium transition cursor-pointer">
+                            Ubah Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================= MODAL POPUP DETAIL PESANAN ================= -->
+    <div x-show="openDetail" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4" style="display: none;" x-transition.opacity>
+        <div @click.outside="openDetail = false" class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+            
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+                <h3 class="font-bold text-lg text-gray-900">Detail Pesanan #ORD260922170018I42</h3>
+                <button type="button" @click="openDetail = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6 text-xs">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pesanan</h4>
+                        <div class="flex justify-between"><span class="text-gray-500">Order ID:</span> <span class="font-medium text-gray-800">ORD260922170018I42</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span> <span class="font-medium text-gray-800">22 Sep 2026 17:00</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-500">Status:</span> <span class="bg-amber-100 text-amber-800 font-semibold px-2.5 py-0.5 rounded-full text-[10px]">Menunggu</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-500">Pembayaran:</span> <span class="bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded text-[10px]">Lunas</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Total:</span> <span class="font-bold text-emerald-700 text-sm">Rp 500.000</span></div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pengiriman</h4>
+                        <div class="flex justify-between"><span class="text-gray-500">Nama:</span> <span class="font-medium text-gray-800">User Customer</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-medium text-gray-800">customer@gmail.com</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">WhatsApp:</span> <span class="font-medium text-gray-800">085842199807</span></div>
+                        <div>
+                            <span class="text-gray-500 block mb-1">Alamat:</span>
+                            <p class="font-medium text-gray-800 leading-relaxed">sleman<br>Sleman, DI Yogyakarta 55556<br>Indonesia</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="font-bold text-gray-800 text-sm">Item Pesanan</h4>
+                    <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 shrink-0">📷</div>
+                            <div>
+                                <h5 class="font-semibold text-gray-800">Baju Koko</h5>
+                                <p class="text-[11px] text-gray-500">Model: Pro | Warna: Hitam | Ukuran: df</p>
+                                <p class="text-[11px] text-gray-500">Rp 100.000 × 1</p>
+                            </div>
+                        </div>
+                        <span class="font-bold text-gray-800 text-sm">Rp 100.000</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
+                <button type="button" @click="openDetail = false" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold px-5 py-2 rounded-lg transition cursor-pointer">
+                    Tutup
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
 @endsection
