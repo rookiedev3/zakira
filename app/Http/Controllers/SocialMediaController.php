@@ -11,7 +11,10 @@ class SocialMediaController extends Controller
 {
     public function index(Request $request): View
     {
-        $socialMedia = SocialMedia::orderBy('order')->paginate(10)->withQueryString();
+        $socialMedia = SocialMedia::orderBy('order')
+            ->orderByDesc('created_at')
+            ->paginate(10)
+            ->withQueryString();
 
         $editingSocialMedia = $request->filled('edit')
             ? SocialMedia::find($request->integer('edit'))

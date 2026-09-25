@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Zakira — Moslem Hijab Identity')</title>
     <!-- Tailwind CSS CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -20,8 +21,15 @@
     <div class="bg-[#2D2522] text-white text-xs py-2 px-6 flex justify-between items-center">
         <div class="flex items-center space-x-4">
             <span>Moslem Hijab Identity</span>
-            <a href="#" class="hover:underline">TikTok</a>
-            <a href="#" class="hover:underline">Facebook</a>
+            @foreach ($socialMedia as $sm)
+                <a href="{{ $sm->url }}" target="_blank" rel="noopener" class="flex items-center gap-2 hover:underline">
+                    <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px]"
+                        style="background-color: {{ $sm->color ?? '#333' }}">
+                        <i class="{{ $sm->icon_class }}"></i>
+                    </span>
+                    {{ $sm->platform }}
+                </a>
+            @endforeach
         </div>
         <div>
             @auth
@@ -92,10 +100,20 @@
     <!-- Footer (Satu tempat untuk semua halaman) -->
     <footer class="bg-[#2D2522] text-gray-300 pt-16 pb-8 border-t border-gray-800 mt-auto">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div>
-                <img src="{{ asset('images/logo-zakira2.png') }}" alt="Zakira Logo" class="h-16 object-contain">
-                <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
+        <div>
+            <img src="{{ asset('images/logo-zakira2.png') }}" alt="Zakira Logo" class="h-16 object-contain">
+            <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
+
+            <div class="flex gap-3 mt-4">
+                @foreach ($socialMedia as $sm)
+                    <a href="{{ $sm->url }}" target="_blank" rel="noopener"
+                    class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm hover:opacity-80 transition"
+                    style="background-color: {{ $sm->color ?? '#333' }}">
+                        <i class="{{ $sm->icon_class }}"></i>
+                    </a>
+                @endforeach
             </div>
+        </div>
             <div>
                 <h4 class="text-white font-semibold text-sm mb-4">Alamat Toko</h4>
                 <p class="text-xs text-gray-400">Lokasi Zakira tersedia melalui Google Maps.</p>
@@ -122,6 +140,5 @@
             &copy; 2026 Zakira — Moslem Hijab Identity. Powered by IT Solution Yogyakarta.
         </div>
     </footer>
-
 </body>
 </html>
