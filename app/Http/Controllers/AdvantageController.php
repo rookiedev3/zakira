@@ -12,7 +12,7 @@ class AdvantageController extends Controller
 {
     public function index(Request $request): View
     {
-        $advantages = Advantage::orderBy('order')->paginate(10)->withQueryString();
+        $advantages = Advantage::orderBy('order')->orderByDesc('created_at')->paginate(10)->withQueryString();
 
         $editingAdvantage = $request->filled('edit')
             ? Advantage::find($request->integer('edit'))
@@ -27,12 +27,15 @@ class AdvantageController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288',
+            'description' => 'required|string',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:12288',
             'order' => 'required|integer|min:0',
         ]);
 
-        $data['image_path'] = $request->file('image')->store('advantages', 'public');
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('advantages', 'public');
+        }
+
         $data['status'] = $request->boolean('status') ? 'aktif' : 'nonaktif';
         unset($data['image']);
 
@@ -53,7 +56,9 @@ class AdvantageController extends Controller
         $data['status'] = $request->boolean('status') ? 'aktif' : 'nonaktif';
 
         if ($request->hasFile('image')) {
-            Storage::disk('public')->delete($advantage->image_path);
+            if ($advantage->image_path) {
+                Storage::disk('public')->delete($advantage->image_path);
+            }
             $data['image_path'] = $request->file('image')->store('advantages', 'public');
         }
 
@@ -77,7 +82,10 @@ class AdvantageController extends Controller
 
     public function destroy(Advantage $advantage): RedirectResponse
     {
-        Storage::disk('public')->delete($advantage->image_path);
+        if ($advantage->image_path) {
+            Storage::disk('public')->delete($advantage->image_path);
+        }
+
         $advantage->delete();
 
         return redirect()->route('advantages.index')->with('success', 'Keunggulan berhasil dihapus.');
