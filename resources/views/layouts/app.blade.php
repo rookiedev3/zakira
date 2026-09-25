@@ -121,7 +121,19 @@
             </div>
             <div>
                 <h4 class="text-white font-semibold text-sm mb-4">Hubungi Kami</h4>
-                <p class="text-xs text-gray-400">WhatsApp Ahmad Dahlan: 087830614484</p>
+                <div class="space-y-2">
+                    @forelse ($footerContacts as $cs)
+                        <a href="{{ $cs->whatsapp_url }}" target="_blank" rel="noopener"
+                        class="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition">
+                            <span class="w-5 h-5 rounded-full bg-[#3D2C24] flex items-center justify-center text-white text-[10px]">
+                                <i class="fab fa-whatsapp"></i>
+                            </span>
+                            {{ $cs->name }}: {{ $cs->phone_number }}
+                        </a>
+                    @empty
+                        <p class="text-xs text-gray-400">Belum ada kontak.</p>
+                    @endforelse
+                </div>
             </div>
             <div>
                 <h4 class="text-white font-semibold text-sm mb-4">Informasi</h4>
@@ -141,5 +153,12 @@
             &copy; 2026 Zakira — Moslem Hijab Identity. Powered by IT Solution Yogyakarta.
         </div>
     </footer>
+    @if ($floatingWhatsapp)
+    <a href="{{ $floatingWhatsapp->whatsapp_url }}" target="_blank" rel="noopener"
+       class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition"
+       title="Chat {{ $floatingWhatsapp->name }}">
+        <i class="fab fa-whatsapp text-white text-2xl"></i>
+    </a>
+@endif
 </body>
 </html>

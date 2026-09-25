@@ -29,57 +29,14 @@ class SocialMediaController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'platform' => 'required|string|max:255',
-            'url' => 'required|url|max:255',
-            'order' => 'required|integer|min:0',
-        ]);
-
-        $data['status'] = $request->boolean('status') ? 'aktif' : 'nonaktif';
-
-        // Kalau platform "Lainnya (Kustom)", ambil icon & warna dari input manual
-        if ($data['platform'] === 'Lainnya (Kustom)') {
-            $custom = $request->validate([
-                'custom_icon_class' => 'required|string|max:255',
-                'custom_color' => 'nullable|string|max:20',
-            ]);
-            $data['icon_class'] = $custom['custom_icon_class'];
-            $data['color'] = $custom['custom_color'] ?? null;
-        } else {
-            $mapping = config("social_platforms.{$data['platform']}");
-            $data['icon_class'] = $mapping['icon'] ?? 'fas fa-link';
-            $data['color'] = $mapping['color'] ?? null;
-        }
-
-        SocialMedia::create($data);
+        SocialMedia::create($this->resolvePlatformData($request));
 
         return redirect()->route('social-media.index')->with('success', 'Media Sosial berhasil ditambahkan.');
     }
 
     public function update(Request $request, SocialMedia $socialMedium): RedirectResponse
     {
-        $data = $request->validate([
-            'platform' => 'required|string|max:255',
-            'url' => 'required|url|max:255',
-            'order' => 'required|integer|min:0',
-        ]);
-
-        $data['status'] = $request->boolean('status') ? 'aktif' : 'nonaktif';
-
-        if ($data['platform'] === 'Lainnya (Kustom)') {
-            $custom = $request->validate([
-                'custom_icon_class' => 'required|string|max:255',
-                'custom_color' => 'nullable|string|max:20',
-            ]);
-            $data['icon_class'] = $custom['custom_icon_class'];
-            $data['color'] = $custom['custom_color'] ?? null;
-        } else {
-            $mapping = config("social_platforms.{$data['platform']}");
-            $data['icon_class'] = $mapping['icon'] ?? 'fas fa-link';
-            $data['color'] = $mapping['color'] ?? null;
-        }
-
-        $socialMedium->update($data);
+        $socialMedium->update($this->resolvePlatformData($request));
 
         return redirect()->route('social-media.index')->with('success', 'Media Sosial berhasil diperbarui.');
     }
@@ -100,5 +57,49 @@ class SocialMediaController extends Controller
         $socialMedium->delete();
 
         return redirect()->route('social-media.index')->with('success', 'Media Sosial berhasil dihapus.');
+    }
+
+    /**
+     * Susun data platform: kalau pilih platform standar, icon & warna
+     * otomatis dari config. Kalau pilih "Lainnya (Kustom)", semua
+     * (nama, icon, warna) diisi manual lewat 3 field tambahan.
+     */
+    private function resolvePlatformData(Request $request): array
+    {
+        $base = $request->validate([
+            'platform_choice' => 'required|string|max:255',
+            'url' => 'required|url|max:255',
+            'order' => 'required|integer|min:0',
+        ]);
+
+        $status = $request->boolean('status') ? 'aktif' : 'nonaktif';
+
+        if ($base['platform_choice'] === 'Lainnya (Kustom)') {
+            $custom = $request->validate([
+                'custom_platform_name' => 'required|string|max:255',
+                'custom_icon_class' => 'required|string|max:255',
+                'custom_color' => 'nullable|string|max:20',
+            ]);
+
+            return [
+                'platform' => $custom['custom_platform_name'],
+                'icon_class' => $custom['custom_icon_class'],
+                'color' => $custom['custom_color'] ?? null,
+                'url' => $base['url'],
+                'order' => $base['order'],
+                'status' => $status,
+            ];
+        }
+
+        $mapping = config("social_platforms.{$base['platform_choice']}");
+
+        return [
+            'platform' => $base['platform_choice'],
+            'icon_class' => $mapping['icon'] ?? 'fas fa-link',
+            'color' => $mapping['color'] ?? null,
+            'url' => $base['url'],
+            'order' => $base['order'],
+            'status' => $status,
+        ];
     }
 }
