@@ -305,29 +305,32 @@
                 <form action="#" method="POST">
                     @csrf
                     <div class="space-y-4">
-                        <div>
-                            <label class="block font-semibold text-gray-700 mb-1">Password Saat Ini</label>
-                            <div class="relative">
-                                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm pr-10">
-                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 cursor-pointer">👁️</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block font-semibold text-gray-700 mb-1">Password Baru</label>
-                            <div class="relative">
-                                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm pr-10">
-                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 cursor-pointer">👁️</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block font-semibold text-gray-700 mb-1">Konfirmasi Password Baru</label>
-                            <div class="relative">
-                                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm pr-10">
-                                <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 cursor-pointer">👁️</span>
-                            </div>
-                        </div>
-                    </div>
+                        <div class="space-y-4">
+   <div class="space-y-4">
+    <!-- Password Saat Ini -->
+    <div>
+        <label class="block font-semibold text-gray-700 mb-1">Password Saat Ini</label>
+        <div>
+            <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+        </div>
+    </div>
 
+    <!-- Password Baru -->
+    <div>
+        <label class="block font-semibold text-gray-700 mb-1">Password Baru</label>
+        <div>
+            <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+        </div>
+    </div>
+
+    <!-- Konfirmasi Password Baru -->
+    <div>
+        <label class="block font-semibold text-gray-700 mb-1">Konfirmasi Password Baru</label>
+        <div>
+            <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+        </div>
+    </div>
+</div>
                     <div class="pt-6 mt-6 border-t border-gray-100 flex justify-end items-center gap-3">
                         <button type="button" @click="openPass = false" class="text-sm font-medium text-gray-700 hover:underline cursor-pointer">
                             Batal
