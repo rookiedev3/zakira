@@ -85,7 +85,7 @@
                 <div class="pt-4 border-t border-gray-100 mt-2">
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
-                        <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                        <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-2.5 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
@@ -181,10 +181,11 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <button class="bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                            <!-- TOMBOL LIHAT DETAIL MENGGUNAKAN JS MURNI -->
+                            <button type="button" onclick="bukaModal()" class="bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm cursor-pointer">
                                 🔍 Lihat Detail
                             </button>
-                            <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5">
+                            <button type="button" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
                                 📥 Download PDF
                             </button>
                         </div>
@@ -197,4 +198,104 @@
 
     </div>
 </div>
+
+<!-- ================= MODAL POPUP DETAIL PESANAN (MENGGUNAKAN ID & CLASS HIDDEN) ================= -->
+<div id="detailModal" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+        
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+            <h3 class="font-bold text-lg text-gray-900">Detail Pesanan #ORD260922170018I42</h3>
+            <button type="button" onclick="tutupModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body Content -->
+        <div class="p-6 space-y-6 text-xs">
+            
+            <!-- Grid Informasi Pesanan & Pengiriman -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                <!-- Informasi Pesanan -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pesanan</h4>
+                    <div class="flex justify-between"><span class="text-gray-500">Order ID:</span> <span class="font-medium text-gray-800">ORD260922170018I42</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span> <span class="font-medium text-gray-800">22 Sep 2026 17:00</span></div>
+                    <div class="flex justify-between items-center"><span class="text-gray-500">Status:</span> <span class="bg-amber-100 text-amber-800 font-semibold px-2.5 py-0.5 rounded-full text-[10px]">Menunggu</span></div>
+                    <div class="flex justify-between items-center"><span class="text-gray-500">Pembayaran:</span> <span class="bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded text-[10px]">Lunas</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Total:</span> <span class="font-bold text-emerald-700 text-sm">Rp 500.000</span></div>
+                </div>
+
+                <!-- Informasi Pengiriman -->
+                <div class="space-y-2">
+                    <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pengiriman</h4>
+                    <div class="flex justify-between"><span class="text-gray-500">Nama:</span> <span class="font-medium text-gray-800">User Customer</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-medium text-gray-800">customer@gmail.com</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">WhatsApp:</span> <span class="font-medium text-gray-800">085842199807</span></div>
+                    <div>
+                        <span class="text-gray-500 block mb-1">Alamat:</span>
+                        <p class="font-medium text-gray-800 leading-relaxed">sleman<br>Sleman, DI Yogyakarta 55556<br>Indonesia</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item Pesanan -->
+            <div class="space-y-3">
+                <h4 class="font-bold text-gray-800 text-sm">Item Pesanan</h4>
+                
+                <!-- Produk 1 -->
+                <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 shrink-0">
+                            📷
+                        </div>
+                        <div>
+                            <h5 class="font-semibold text-gray-800">Baju Koko</h5>
+                            <p class="text-[11px] text-gray-500">Model: Pro | Warna: Hitam | Ukuran: df</p>
+                            <p class="text-[11px] text-gray-500">Rp 100.000 × 1</p>
+                        </div>
+                    </div>
+                    <span class="font-bold text-gray-800 text-sm">Rp 100.000</span>
+                </div>
+
+                <!-- Produk 2 -->
+                <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 shrink-0">
+                            📷
+                        </div>
+                        <div>
+                            <h5 class="font-semibold text-gray-800">Baju Koko</h5>
+                            <p class="text-[11px] text-gray-500">Model: Pro | Warna: Putih | Ukuran: dx</p>
+                            <p class="text-[11px] text-gray-500">Rp 200.000 × 2</p>
+                        </div>
+                    </div>
+                    <span class="font-bold text-gray-800 text-sm">Rp 400.000</span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
+            <button type="button" onclick="tutupModal()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold px-5 py-2 rounded-lg transition cursor-pointer">
+                Tutup
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- JAVASCRIPT UNTUK MENGONTROL MODAL -->
+<script>
+    function bukaModal() {
+        document.getElementById('detailModal').classList.remove('hidden');
+    }
+    function tutupModal() {
+        document.getElementById('detailModal').classList.add('hidden');
+    }
+</script>
 @endsection
