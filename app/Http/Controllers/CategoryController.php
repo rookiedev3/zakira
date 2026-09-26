@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -10,51 +11,18 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        // Data tiruan (hardcode) menyesuaikan tampilan sebelumnya
-        $categories = [
-            [
-                'id' => 5,
-                'name' => 'Almet1',
-                'type' => 'Wanita',
-                'description' => 'almet pnc1',
-                'products_count' => 1,
-                'is_active' => false,
-            ],
-            [
-                'id' => 3,
-                'name' => 'LUMINA',
-                'type' => 'Wanita',
-                'description' => null,
-                'products_count' => 1,
-                'is_active' => true,
-            ],
-            [
-                'id' => 2,
-                'name' => 'SAFIA',
-                'type' => 'Wanita',
-                'description' => null,
-                'products_count' => 0,
-                'is_active' => true,
-            ],
-            [
-                'id' => 1,
-                'name' => 'YURA KIMONO',
-                'type' => 'Wanita',
-                'description' => 'ABAYA ONLY',
-                'products_count' => 1,
-                'is_active' => true,
-            ],
-        ];
-
+        $categories = Category::all();
         return view('categories.index', compact('categories'));
     }
 
     /**
-     * Menampilkan form tambah kategori.
+     * Menampilkan form tambah kategori **beserta** daftar kategori yang sudah ada.
      */
     public function create()
     {
-        return view('categories.create'); // Buat view create jika diperlukan
+        // Ambil semua kategori supaya dapat ditampilkan di halaman create
+        $categories = Category::all();
+        return view('categories.create', compact('categories'));
     }
 
     /**
@@ -64,13 +32,20 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'nullable|string',
+            'type' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'is_active' => 'sometimes|boolean',
         ]);
 
-        // Logic simpan data ke database (contoh: Category::create($request->all());)
+        Category::create([
+            'name' => $request->name,
+            'type' => $request->type,
+            'description' => $request->description,
+            'is_active' => $request->has('is_active') ? $request->is_active : true,
+        ]);
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil ditambahkan.');
+        return redirect()->route('categories.index')
+            ->with('success', 'Kategori Successfully ditambahkan.');
     }
 
     /**
@@ -78,8 +53,15 @@ class CategoryController extends Controller
      */
     public function edit($id)
     {
-        // Logic ambil data berdasarkan $id
-        return view('categories.edit', compact('id'));
+        $category = Category::find($id);
+        if (!$category) {
+            return redirect()->route('categories.index')
+                ->with('error', 'Kategori tidak ditemukan.');
+        }
+
+        // Tambahkan semua kategori untuk ditampilkan di partial _list
+        $categories = Category::all();
+        return view('categories.edit', compact('category', 'categories'));
     }
 
     /**
@@ -87,25 +69,52 @@ class CategoryController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $category = Category::find($id);
+        if (!$category) {
+            return redirect()->route('categories.index')
+                ->with('error', 'Kategori tidak ditemukan.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'nullable|string',
+            'type' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'is_active' => 'sometimes|boolean',
         ]);
 
-        // Logic update data
+        $category->update([
+            'name' => $request->name,
+            'type' => $request->type,
+            'description' => $request->description,
+            'is_active' => $request->has('is_active') ? $request->is_active : true,
+        ]);
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui.');
+        return redirect()->route('categories.index')
+            ->with('success', 'Kategori Successfully diperbarui.');
     }
 
     /**
-     * Mengubah status aktif / non-aktif kategori.
+     * Mengubah status aktif / non‑aktif kategori.
      */
     public function toggleStatus($id)
     {
-        // Logic ubah status aktif/non-aktif di database
+        $category = Category::find($id);
+        if (!$category) {
+            return redirect()->route('categories.index')
+                ->with('error', 'Kategori tidak ditemukan.');
+        }
 
-        return redirect()->route('categories.index')->with('success', 'Status kategori berhasil diubah.');
+        $category->update([
+            'is_active' => !$category->is_active,
+        ]);
+
+        // Jika status menjadi **aktif**, tampilkan pesan sukses.
+        if ($category->is_active) {
+            return redirect()->route('categories.index')
+                ->with('success', 'Category status updated successfully.');
+        }
+
+        return redirect()->route('categories.index');
     }
 
     /**
@@ -113,8 +122,27 @@ class CategoryController extends Controller
      */
     public function destroy($id)
     {
-        // Logic hapus data
+        $category = Category::find($id);
+        if (!$category) {
+            return redirect()->route('categories.index')
+                ->with('error', 'Kategori tidak ditemukan.');
+        }
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus.');
+        $category->delete();
+        return redirect()->route('categories.index')
+            ->with('success', 'Kategori Berhasil dihapus.');
+    }
+
+    /**
+     * -----------------------------------------------------------------
+     *  NEW: Mengembalikan semua kategori dalam format JSON.
+     *  Berguna untuk API / populasi dropdown dinamis.
+     * -----------------------------------------------------------------
+     */
+    public function list()
+    {
+        $categories = Category::select('id', 'name')->orderBy('name')->get();
+
+        return response()->json($categories);
     }
 }
