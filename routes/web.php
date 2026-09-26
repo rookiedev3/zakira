@@ -147,8 +147,11 @@ Route::get('/banks', fn () => 'Halaman Informasi Bank (dummy)')->name('banks.ind
 Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
  
 // ==== Laporan ====
-Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
- 
+// Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
+// Route Laporan Penjualan Mitra (File: admin/reports/mitra.blade.php)
+    Route::get('/admin/laporan', function () {
+        return view('admin.laporan');
+    })->name('admin.laporan'); 
 // ==== Pengguna ====
 Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
 Route::get('/sellers', fn () => 'Halaman Kelola Seller (dummy)')->name('sellers.index');
