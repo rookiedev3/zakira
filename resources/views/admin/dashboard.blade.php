@@ -66,7 +66,7 @@
         <!-- Pesanan Pending -->
         <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
             <div>
-                <p class="text-gray-500 text-xs font-medium">Pesanan Pending</p>
+                <p class="text-gray-500 text-xs font-medium">Pesanannnn Pending</p>
                 <h4 class="text-2xl font-bold text-amber-600 mt-1">5</h4>
             </div>
             <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center">
