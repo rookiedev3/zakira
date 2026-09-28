@@ -197,7 +197,7 @@ Cara pakai di halaman lain:
                 </a>
 
                 <div class="px-1 py-2 text-xs text-zinc-400">Pemasaran</div>
-                <a href="{{ route('coupons.index') }}"
+                <a href="{{ route('kupon.index') }}"
                     class="flex items-center gap-3 h-9 px-3 rounded-lg text-sm font-medium text-zinc-500 hover:bg-zinc-800/5 hover:text-zinc-800">
                     <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor">

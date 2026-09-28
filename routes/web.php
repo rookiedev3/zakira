@@ -152,14 +152,29 @@ Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.i
     Route::get('/admin/laporan', function () {
         return view('admin.laporan');
     })->name('admin.laporan'); 
+    
 // ==== Pengguna ====
 Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
 Route::get('/sellers', fn () => 'Halaman Kelola Seller (dummy)')->name('sellers.index');
  
 // ==== Pemasaran ====
-Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
-Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
- 
+// Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
+// Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
+ Route::middleware(['auth'])->group(function () {
+    // Route Manajemen Kupon
+    Route::get('kupon/index', function () {
+        return view('kupon.index');
+    })->name('kupon.index');
+
+    Route::get('kupon/create', function () {
+        return view('kupon.create');
+    })->name('kupon.create');
+
+    Route::get('kupon/edit', function () {
+        return view('kupon.edit');
+    })->name('kupon.edit');
+});
+
 // ==== Akun ====
 Route::get('/settings/profile', fn () => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
  
