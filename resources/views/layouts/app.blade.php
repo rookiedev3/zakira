@@ -70,8 +70,10 @@
             <div class="flex items-center space-x-4">
                 <!-- Tombol Profil (Dinamis: Jika login ke profil, jika belum ke login) -->
                 @auth
-                    <a href="{{ route('member.profile') }}" class="p-2 border border-gray-300 rounded-full hover:bg-gray-100 transition" title="Akun Saya">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {{-- Gabungan: pakai member.profile jika ada, kalau tidak fallback ke member.index --}}
+                    <a href="{{ route('member.profile') }}"
+                            class="p-2 border border-gray-300 rounded-full hover:bg-gray-100 transition" title="Akun Saya">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                     </a>
@@ -101,20 +103,20 @@
     <!-- Footer (Satu tempat untuk semua halaman) -->
     <footer class="bg-[#2D2522] text-gray-300 pt-16 pb-8 border-t border-gray-800 mt-auto">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-        <div>
-            <img src="{{ asset('images/logo-zakira2.png') }}" alt="Zakira Logo" class="h-16 object-contain">
-            <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
+            <div>
+                <img src="{{ asset('images/logo-zakira2.png') }}" alt="Zakira Logo" class="h-16 object-contain">
+                <p class="text-xs text-gray-400 mt-2">Busana muslimah syar'i dengan pilihan bahan premium, nyaman, anggun, dan elegan untuk keseharian.</p>
 
-            <div class="flex gap-3 mt-4">
-                @foreach ($socialMedia as $sm)
-                    <a href="{{ $sm->url }}" target="_blank" rel="noopener"
-                    class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm hover:opacity-80 transition"
-                    style="background-color: {{ $sm->color ?? '#333' }}">
-                        <i class="{{ $sm->icon_class }}"></i>
-                    </a>
-                @endforeach
+                <div class="flex gap-3 mt-4">
+                    @foreach ($socialMedia as $sm)
+                        <a href="{{ $sm->url }}" target="_blank" rel="noopener"
+                           class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm hover:opacity-80 transition"
+                           style="background-color: {{ $sm->color ?? '#333' }}">
+                            <i class="{{ $sm->icon_class }}"></i>
+                        </a>
+                    @endforeach
+                </div>
             </div>
-        </div>
             <div>
                 <h4 class="text-white font-semibold text-sm mb-4">Alamat Toko</h4>
                 <p class="text-xs text-gray-400">Lokasi Zakira tersedia melalui Google Maps.</p>
@@ -124,7 +126,7 @@
                 <div class="space-y-2">
                     @forelse ($footerContacts as $cs)
                         <a href="{{ $cs->whatsapp_url }}" target="_blank" rel="noopener"
-                        class="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition">
+                           class="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition">
                             <span class="w-5 h-5 rounded-full bg-[#3D2C24] flex items-center justify-center text-white text-[10px]">
                                 <i class="fab fa-whatsapp"></i>
                             </span>
@@ -153,12 +155,13 @@
             &copy; 2026 Zakira — Moslem Hijab Identity. Powered by IT Solution Yogyakarta.
         </div>
     </footer>
+
     @if ($floatingWhatsapp)
-    <a href="{{ $floatingWhatsapp->whatsapp_url }}" target="_blank" rel="noopener"
-       class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition"
-       title="Chat {{ $floatingWhatsapp->name }}">
-        <i class="fab fa-whatsapp text-white text-2xl"></i>
-    </a>
-@endif
+        <a href="{{ $floatingWhatsapp->whatsapp_url }}" target="_blank" rel="noopener"
+           class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition"
+           title="Chat {{ $floatingWhatsapp->name }}">
+            <i class="fab fa-whatsapp text-white text-2xl"></i>
+        </a>
+    @endif
 </body>
 </html>

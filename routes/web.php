@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -43,6 +44,15 @@ Route::middleware('auth')->group(function () {
 
 
 /////// ROUTES ZAHWAAA
+
+/// INi nanti masukin di auth member
+Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+});
+    
+
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
@@ -104,11 +114,11 @@ Route::middleware(['auth'])->group(function () {
         return view('member.pre-order');
     })->name('member.pre-order');
 });
-Route::middleware(['auth'])->group(function () {
-    Route::get('/member/profile', function () {
-        return view('member.profile');
-    })->name('member.profile');
-});
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/member/profile', function () {
+//         return view('member.profile');
+//     })->name('member.profile');
+// });
 
 Route::middleware(['auth'])->group(function () {
     // Route Dashboard Admin
