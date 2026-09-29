@@ -14,6 +14,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SellerController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\CartController;
@@ -46,6 +48,15 @@ Route::middleware('auth')->group(function () {
 
 
 /////// ROUTES ZAHWAAA
+
+/// INi nanti masukin di auth member
+Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+});
+    
+
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
@@ -96,6 +107,11 @@ Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount']
 Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
 Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
 
+Route::get('/sellers', [SellerController::class, 'index'])->name('seller.index');
+Route::post('/sellers', [SellerController::class, 'store'])->name('seller.store');
+Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('seller.update');
+Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('seller.destroy');
+
 //routes chyntia
 // Route untuk halaman Katalog / Ready Stock
 Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.index');
@@ -113,11 +129,11 @@ Route::middleware(['auth'])->group(function () {
         return view('member.pre-order');
     })->name('member.pre-order');
 });
-Route::middleware(['auth'])->group(function () {
-    Route::get('/member/profile', function () {
-        return view('member.profile');
-    })->name('member.profile');
-});
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/member/profile', function () {
+//         return view('member.profile');
+//     })->name('member.profile');
+// });
 
 Route::middleware(['auth'])->group(function () {
     // Route Dashboard Admin
@@ -183,12 +199,12 @@ Route::patch('/products/{id}/toggle-status', [ProductController::class, 'toggleS
 
 // DUMMY ROUTE
 // ==== Manajemen Konten ====
-Route::get('/banners', fn() => 'Halaman Banner (dummy)')->name('banners.index');
-Route::get('/advantages', fn() => 'Halaman Keunggulan (dummy)')->name('advantages.index');
-Route::get('/social-media', fn() => 'Halaman Media Sosial (dummy)')->name('social-media.index');
-Route::get('/customer-service', fn() => 'Halaman Customer Service (dummy)')->name('customer-service.index');
-Route::get('/admin-handles', fn() => 'Halaman Admin Handle (dummy)')->name('admin-handles.index');
-Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.index');
+// Route::get('/banners', fn() => 'Halaman Banner (dummy)')->name('banners.index');
+// Route::get('/advantages', fn() => 'Halaman Keunggulan (dummy)')->name('advantages.index');
+// Route::get('/social-media', fn() => 'Halaman Media Sosial (dummy)')->name('social-media.index');
+// Route::get('/customer-service', fn() => 'Halaman Customer Service (dummy)')->name('customer-service.index');
+// Route::get('/admin-handles', fn() => 'Halaman Admin Handle (dummy)')->name('admin-handles.index');
+// Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.index');
 
 // ==== Pesanan ====
 // Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
@@ -204,11 +220,19 @@ Route::get('/admin/laporan', function () {
 })->name('admin.laporan');
 
 // ==== Pengguna ====
-Route::get('/users', fn() => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
-Route::get('seller/index', function () {
-    return view('seller.index');
-})->name('seller.index');
+// // Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
+//  Route::get('seller/index', function () {
+//         return view('seller.index');
+//     })->name('seller.index');
+//  Route::get('seller/create', function () {
+//         return view('seller.create');
+//     })->name('seller.create');
 
+//     Route::get('seller/edit', function () {
+//         return view('seller.edit');
+//     })->name('seller.edit');
+   
+     
 // ==== Pemasaran ====
 // Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
 // Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');

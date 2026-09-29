@@ -72,6 +72,7 @@
             <div class="flex items-center space-x-4">
                 <!-- Tombol Profil (Dinamis: Jika login ke profil, jika belum ke login) -->
                 @auth
+                {{-- Gabungan: pakai member.profile jika ada, kalau tidak fallback ke member.index --}}
                 <a href="{{ route('member.profile') }}" class="p-2 border border-gray-300 rounded-full hover:bg-gray-100 transition" title="Akun Saya">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -160,6 +161,7 @@
             &copy; 2026 Zakira — Moslem Hijab Identity. Powered by IT Solution Yogyakarta.
         </div>
     </footer>
+
     @if ($floatingWhatsapp)
     <a href="{{ $floatingWhatsapp->whatsapp_url }}" target="_blank" rel="noopener"
         class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition"
@@ -167,6 +169,7 @@
         <i class="fab fa-whatsapp text-white text-2xl"></i>
     </a>
     @endif
+
     @include('partials.cart-sidebar')
 </body>
 

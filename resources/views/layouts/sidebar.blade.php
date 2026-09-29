@@ -24,6 +24,7 @@ Cara pakai di halaman lain:
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Script CDN Tailwind untuk Development/Darurat -->
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -128,7 +129,7 @@ Cara pakai di halaman lain:
                     </svg>
                     Media Sosial
                 </a>
-                <a href="{{ route('customer-service.index') }}"
+                <a href="{{ route('customer-services.index') }}"
                     class="flex items-center gap-3 h-9 px-3 rounded-lg text-sm font-medium text-zinc-500 hover:bg-zinc-800/5 hover:text-zinc-800">
                     <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor">

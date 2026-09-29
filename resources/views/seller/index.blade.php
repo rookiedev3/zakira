@@ -1,86 +1,228 @@
 @extends('layouts.sidebar')
 
-@section('title', 'Manajemen Seller — Zakira Admin')
+@section('title', 'Seller — Zakira Admin')
 
 @section('content')
+
 <div class="space-y-6">
-    
-    <!-- Header Halaman -->
-    <div class="font-medium text-zinc-800 dark:text-white text-2xl mb-2">
-        Kelola Seller
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold text-gray-900">Seller</h1>
+        <div class="flex items-center space-x-4">
+            <div class="text-sm text-gray-500">Total: {{ $sellers->count() }} seller</div>
+            @if (! $showCreateForm && ! $editingSeller)
+                <a href="{{ route('seller.index', ['form' => 'create']) }}"
+                   class="relative items-center font-medium justify-center gap-2 whitespace-nowrap h-10 text-sm rounded-lg px-4 inline-flex bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 dark:border-0 shadow-xs transition">
+                    <span>Tambah Seller</span>
+                </a>
+            @endif
+        </div>
     </div>
 
-    <!-- Bar Filter, Pencarian & Tombol Aksi -->
-    <div class="mt-6 space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            
-            <!-- Input Cari -->
-            <div class="flex-1 max-w-md">
-                <div class="w-full relative block group/input">
-                    <div class="pointer-events-none absolute top-0 bottom-0 border-s border-transparent flex items-center justify-center text-xs text-zinc-400/75 dark:text-white/60 ps-3 start-0">
-                        <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari ID Seller, nama..." class="w-full border rounded-lg appearance-none text-base sm:text-sm py-2 h-10 leading-[1.375rem] ps-10 pe-3 bg-white dark:bg-white/10 text-zinc-700 placeholder-zinc-400 dark:text-zinc-300 dark:placeholder-zinc-400 shadow-xs border-zinc-200 border-b-zinc-300/80 dark:border-white/10 focus:outline-none">
+    @if (session('success'))
+        <div class="bg-green-50 text-green-700 text-sm rounded-lg px-4 py-3">{{ session('success') }}</div>
+    @endif
+
+    {{-- ==== FORM TAMBAH ==== --}}
+    @if ($showCreateForm)
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Buat Seller</h2>
+
+            @if ($errors->any())
+                <div class="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">{{ $errors->first() }}</div>
+            @endif
+
+            <form method="POST" action="{{ route('seller.store') }}" class="grid md:grid-cols-2 gap-4">
+                @csrf
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ID Seller</label>
+                    <input type="text" name="seller_id" value="{{ old('seller_id') }}" placeholder="contoh: zahwa123" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama</label>
+                    <input type="text" name="name" value="{{ old('name') }}" placeholder="Masukkan nama seller" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                    <select name="brand_id" required
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
+                        <option value="">-- Pilih Brand --</option>
+                        @foreach ($brands as $b)
+                            <option value="{{ $b->id }}" @selected((int) old('brand_id') === $b->id)>
+                                {{ $b->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="md:col-span-2 flex gap-3 mt-2">
+                    <button type="submit"
+                            class="h-10 px-4 rounded-lg text-sm font-medium bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] transition">
+                        Buat Seller
+                    </button>
+                    <a href="{{ route('seller.index') }}"
+                       class="h-10 px-4 inline-flex items-center rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                        Batal
+                    </a>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    {{-- ==== FORM EDIT ==== --}}
+    @if ($editingSeller)
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Edit Seller</h2>
+
+            @if ($errors->any())
+                <div class="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4">{{ $errors->first() }}</div>
+            @endif
+
+            <form method="POST" action="{{ route('seller.update', $editingSeller) }}" class="grid md:grid-cols-2 gap-4">
+                @csrf
+                @method('PUT')
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ID Seller</label>
+                    <input type="text" name="seller_id" value="{{ old('seller_id', $editingSeller->seller_id) }}" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama</label>
+                    <input type="text" name="name" value="{{ old('name', $editingSeller->name) }}" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                    <select name="brand_id" required
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
+                        <option value="">-- Pilih Brand --</option>
+                        @foreach ($brands as $b)
+                            <option value="{{ $b->id }}" @selected((int) old('brand_id', $editingSeller->brand_id) === $b->id)>
+                                {{ $b->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="md:col-span-2 flex gap-3 mt-2">
+                    <button type="submit"
+                            class="h-10 px-4 rounded-lg text-sm font-medium bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] transition">
+                        Perbarui Seller
+                    </button>
+                    <a href="{{ route('seller.index') }}"
+                       class="h-10 px-4 inline-flex items-center rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                        Batal
+                    </a>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="seller-search" class="block text-sm font-medium text-gray-700 mb-2">Cari Seller</label>
+                <input type="text" id="seller-search" placeholder="ID Seller, nama, brand..."
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
             </div>
 
-            <!-- Kumpulan Filter & Tombol Buat Seller -->
-            <div class="flex items-center gap-3 flex-wrap">
-                <!-- Filter Brand -->
-                <select wire:model.live="brandFilter" class="appearance-none ps-3 pe-10 block h-10 py-2 text-base sm:text-sm leading-[1.375rem] rounded-lg shadow-xs border bg-white dark:bg-white/10 text-zinc-700 dark:text-zinc-300 border-zinc-200 border-b-zinc-300/80 dark:border-white/10 focus:outline-none">
+            <div>
+                <label for="seller-brand-filter" class="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                <select id="seller-brand-filter"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:border-zinc-400">
                     <option value="">Semua Brand</option>
-                    <option value="1">ZAKIRA</option>
+                    @foreach ($brands as $b)
+                        <option value="{{ $b->id }}">{{ $b->name }}</option>
+                    @endforeach
                 </select>
+            </div>
 
-                <button type="button" class="relative items-center font-medium justify-center gap-2 whitespace-nowrap h-10 text-sm rounded-lg ps-3 pe-4 inline-flex bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 dark:border-0 shadow-xs transition">
-                    <svg class="shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z"/>
-                    </svg>
-                    <span>Tambah Seller</span>
+            <div class="flex items-end">
+                <button type="button" id="seller-reset"
+                        class="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors">
+                    Reset Filter
                 </button>
             </div>
         </div>
-
-        <!-- Tabel Data Seller -->
-        <div class="bg-white shadow overflow-hidden sm:rounded-md border border-zinc-200">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 text-left text-xs">
-                    <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider font-bold text-[10px]">
-                        <tr>
-                            <th class="px-6 py-3">ID Seller</th>
-                            <th class="px-6 py-3">Nama</th>
-                            <th class="px-6 py-3">Brand</th>
-                            <th class="px-6 py-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200 text-zinc-700">
-                        
-                        <!-- Contoh Baris Data Seller -->
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap font-mono text-sm bg-gray-50/50 font-semibold text-zinc-800">
-                                asdk123
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                                AKN
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">ZAKIRA</span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex items-center justify-end space-x-2 text-xs">
-                                    <button type="button" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-zinc-800 transition">Edit</button>
-                                    <button type="button" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-red-600 hover:text-red-800 transition">Hapus</button>
-                                </div>
-                            </td>
-                        </tr>
-
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
     </div>
+
+    <!-- Tabel Seller -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Seller</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @forelse ($sellers as $seller)
+                    <tr data-seller-row
+                        data-brand="{{ $seller->brand_id }}"
+                        data-search="{{ strtolower($seller->seller_id . ' ' . $seller->name . ' ' . ($seller->brand->name ?? '')) }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $seller->seller_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $seller->name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $seller->brand->name ?? '-' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{{ route('seller.index', ['edit' => $seller->id]) }}"
+                                   class="h-8 px-3 inline-flex items-center rounded-md text-sm hover:bg-zinc-800/5 text-zinc-800 transition">Edit</a>
+
+                                <form method="POST" action="{{ route('seller.destroy', $seller) }}"
+                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus seller ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="h-8 px-3 inline-flex items-center rounded-md text-sm hover:bg-zinc-800/5 text-red-600 hover:text-red-800 transition">Hapus</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-400">Tidak ada seller ditemukan.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
 </div>
+
+<script>
+    (function () {
+        if (window.__sellerPageInit) return;
+        window.__sellerPageInit = true;
+
+        function applyFilter() {
+            var q = (document.getElementById('seller-search')?.value || '').toLowerCase();
+            var brand = document.getElementById('seller-brand-filter')?.value || '';
+            document.querySelectorAll('[data-seller-row]').forEach(function (row) {
+                var okBrand = brand === '' || row.dataset.brand === brand;
+                var okText = q === '' || row.dataset.search.includes(q);
+                row.style.display = okBrand && okText ? '' : 'none';
+            });
+        }
+
+        document.addEventListener('input', function (e) {
+            if (e.target.id === 'seller-search') applyFilter();
+        });
+        document.addEventListener('change', function (e) {
+            if (e.target.id === 'seller-brand-filter') applyFilter();
+        });
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('#seller-reset')) {
+                document.getElementById('seller-search').value = '';
+                document.getElementById('seller-brand-filter').value = '';
+                applyFilter();
+            }
+        });
+    })();
+</script>
 @endsection
