@@ -144,7 +144,10 @@ Route::get('/admin-handles', fn () => 'Halaman Admin Handle (dummy)')->name('adm
 Route::get('/banks', fn () => 'Halaman Informasi Bank (dummy)')->name('banks.index');
  
 // ==== Pesanan ====
-Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
+// Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
+ Route::get('orders/index', function () {
+        return view('orders.index');
+    })->name('orders.index');
  
 // ==== Laporan ====
 // Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
@@ -155,8 +158,10 @@ Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.i
     
 // ==== Pengguna ====
 Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
-Route::get('/sellers', fn () => 'Halaman Kelola Seller (dummy)')->name('sellers.index');
- 
+ Route::get('seller/index', function () {
+        return view('seller.index');
+    })->name('seller.index');
+     
 // ==== Pemasaran ====
 // Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
 // Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
@@ -173,6 +178,8 @@ Route::get('/sellers', fn () => 'Halaman Kelola Seller (dummy)')->name('sellers.
     Route::get('kupon/edit', function () {
         return view('kupon.edit');
     })->name('kupon.edit');
+
+   
 });
 
 // ==== Akun ====
