@@ -191,7 +191,7 @@ Route::prefix('c/products')->name('products.')->group(function () {
 // Route::get('/banners', fn() => 'Halaman Banner (dummy)')->name('banners.index');
 // Route::get('/advantages', fn() => 'Halaman Keunggulan (dummy)')->name('advantages.index');
 // Route::get('/social-media', fn() => 'Halaman Media Sosial (dummy)')->name('social-media.index');
-Route::get('/customer-service', fn() => 'Halaman Customer Service (dummy)')->name('customer-service.index');
+// Route::get('/customer-service', fn() => 'Halaman Customer Service (dummy)')->name('customer-service.index');
 Route::get('/admin-handles', fn() => 'Halaman Admin Handle (dummy)')->name('admin-handles.index');
 Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.index');
 
