@@ -48,9 +48,14 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function categories()
+    public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'product_categories');
+    }
+
+    public function coupons(): BelongsToMany
+    {
+        return $this->belongsToMany(Coupon::class, 'coupon_product');
     }
 
     public function colors(): HasMany
@@ -117,5 +122,4 @@ class Product extends Model
             $this->show_distributor ? 'Distributor' : null,
         ]));
     }
-
 }

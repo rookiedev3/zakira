@@ -13,6 +13,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SellerController;
@@ -55,7 +56,7 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
 });
-    
+
 
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -112,6 +113,16 @@ Route::post('/sellers', [SellerController::class, 'store'])->name('seller.store'
 Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('seller.update');
 Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('seller.destroy');
 
+// ==== Kupon ====
+Route::get('/kupon', [CouponController::class, 'index'])->name('kupon.index');
+Route::get('/kupon/create', [CouponController::class, 'create'])->name('kupon.create');
+Route::post('/kupon', [CouponController::class, 'store'])->name('kupon.store');
+Route::get('/kupon/{kupon}/edit', [CouponController::class, 'edit'])->name('kupon.edit');
+Route::put('/kupon/{kupon}', [CouponController::class, 'update'])->name('kupon.update');
+Route::delete('/kupon/{kupon}', [CouponController::class, 'destroy'])->name('kupon.destroy');
+Route::post('/kupon/{kupon}/duplicate', [CouponController::class, 'duplicate'])->name('kupon.duplicate');
+Route::patch('/kupon/{kupon}/toggle', [CouponController::class, 'toggleActive'])->name('kupon.toggle');
+
 //routes chyntia
 // Route untuk halaman Katalog / Ready Stock
 Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.index');
@@ -159,11 +170,11 @@ Route::prefix('c/brands')->name('brands.')->group(function () {
 
     // ---------- CRUD ----------
     Route::get('/',          [BrandController::class, 'index'])->name('index');
-    Route::get('/create',   [BrandController::class, 'create'])->name('create');
-    Route::post('/',        [BrandController::class, 'store'])->name('store');
+    Route::get('/create',    [BrandController::class, 'create'])->name('create');
+    Route::post('/',         [BrandController::class, 'store'])->name('store');
     Route::get('/{id}/edit', [BrandController::class, 'edit'])->name('edit');
-    Route::put('/{id}',     [BrandController::class, 'update'])->name('update');
-    Route::delete('/{id}',  [BrandController::class, 'destroy'])->name('destroy');
+    Route::put('/{id}',      [BrandController::class, 'update'])->name('update');
+    Route::delete('/{id}',   [BrandController::class, 'destroy'])->name('destroy');
 
     // ---------- FITUR TAMBAHAN ----------
     // 1. Toggle “Tampil di Homepage”
@@ -184,11 +195,11 @@ Route::prefix('c/brands')->name('brands.')->group(function () {
 Route::prefix('c/products')->name('products.')->group(function () {
 
     // ---------- Sudah aktif ----------
-    Route::get('/',                    [ProductController::class, 'index'])->name('index');
+    Route::get('/',                     [ProductController::class, 'index'])->name('index');
     Route::post('/',                    [ProductController::class, 'store'])->name('store');
     Route::put('/{id}',                 [ProductController::class, 'update'])->name('update');
     Route::patch('/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggleStatus');
-    Route::delete('/{id}',             [ProductController::class, 'destroy'])->name('destroy');
+    Route::delete('/{id}',              [ProductController::class, 'destroy'])->name('destroy');
 
     // ---------- Sementara dummy, ganti ke controller saat halamannya dibuat ----------
     Route::get('/create',    [ProductController::class, 'create'])->name('create');
@@ -220,39 +231,23 @@ Route::get('/admin/laporan', function () {
 })->name('admin.laporan');
 
 // ==== Pengguna ====
-// // Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
-//  Route::get('seller/index', function () {
-//         return view('seller.index');
-//     })->name('seller.index');
-//  Route::get('seller/create', function () {
-//         return view('seller.create');
-//     })->name('seller.create');
+// Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
+// Route::get('seller/index', function () {
+//     return view('seller.index');
+// })->name('seller.index');
+// Route::get('seller/create', function () {
+//     return view('seller.create');
+// })->name('seller.create');
+// Route::get('seller/edit', function () {
+//     return view('seller.edit');
+// })->name('seller.edit');
 
-//     Route::get('seller/edit', function () {
-//         return view('seller.edit');
-//     })->name('seller.edit');
-   
-     
 // ==== Pemasaran ====
-// Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
-// Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
-Route::middleware(['auth'])->group(function () {
-    // Route Manajemen Kupon
-    Route::get('kupon/index', function () {
-        return view('kupon.index');
-    })->name('kupon.index');
-
-    Route::get('kupon/create', function () {
-        return view('kupon.create');
-    })->name('kupon.create');
-
-    Route::get('kupon/edit', function () {
-        return view('kupon.edit');
-    })->name('kupon.edit');
-});
+// (Route kupon dummy dihapus, sudah diganti CouponController di atas)
 
 // ==== Akun ====
-Route::get('/settings/profile', fn() => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
+// Dummy ini dimatikan karena menimpa route SettingsController di atas
+// Route::get('/settings/profile', fn() => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
 
 // logout harus POST karena dipanggil lewat <form method="POST"> di sidebar
 Route::post('/logout', function () {
