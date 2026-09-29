@@ -203,10 +203,18 @@ Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.inde
     })->name('admin.laporan'); 
     
 // ==== Pengguna ====
-Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
+// Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
  Route::get('seller/index', function () {
         return view('seller.index');
     })->name('seller.index');
+ Route::get('seller/create', function () {
+        return view('seller.create');
+    })->name('seller.create');
+
+    Route::get('seller/edit', function () {
+        return view('seller.edit');
+    })->name('seller.edit');
+   
      
 // ==== Pemasaran ====
 // Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
