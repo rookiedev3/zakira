@@ -126,7 +126,7 @@
                                     <!-- Hapus -->
                                     <form action="{{ route('categories.destroy', $category->id) }}" method="POST"
                                           class="inline"
-                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus kategori ini?');">
+                                          onsubmit="return confirm(@js("Hapus kategori {$category->name}?"));">
                                         @csrf @method('DELETE')
                                         <button type="submit"
                                                 class="h-8 inline-flex items-center px-3 text-sm text-red-600 hover:text-red-700 hover:bg-gray-100 rounded-md transition-colors">

@@ -11,6 +11,9 @@ use App\Http\Controllers\CustomerServiceController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -19,7 +22,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/login', [AuthController::class, 'auth']);
 
-        Route::get('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.request');
+    Route::get('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
 
     Route::get('/reset-password/{token}', [AuthController::class, 'resetPassword'])->name('password.reset');
@@ -40,17 +43,17 @@ Route::middleware('auth')->group(function () {
 
 
 /////// ROUTES ZAHWAAA
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
-        Route::post('/users', [UserController::class, 'store'])->name('users.store');
-        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-        Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
-        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::get('/users', [UserController::class, 'index'])->name('users.index');
+Route::post('/users', [UserController::class, 'store'])->name('users.store');
+Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
+Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
-    Route::get('/banks', [BankAccountController::class, 'index'])->name('banks.index');
-    Route::post('/banks', [BankAccountController::class, 'store'])->name('banks.store');
-    Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
-    Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
-    Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
+Route::get('/banks', [BankAccountController::class, 'index'])->name('banks.index');
+Route::post('/banks', [BankAccountController::class, 'store'])->name('banks.store');
+Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
+Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
+Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
 
 
 Route::get('/customer-services', [CustomerServiceController::class, 'index'])->name('customer-services.index');
@@ -83,15 +86,15 @@ Route::post('/admin-handles', [AdminHandleController::class, 'store'])->name('ad
 Route::put('/admin-handles/{adminHandle}', [AdminHandleController::class, 'update'])->name('admin-handles.update');
 Route::delete('/admin-handles/{adminHandle}', [AdminHandleController::class, 'destroy'])->name('admin-handles.destroy');
 
-    Route::get('/settings/profile', [SettingsController::class, 'profile'])->name('settings.profile');
-    Route::patch('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
-    Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount'])->name('settings.profile.destroy');
+Route::get('/settings/profile', [SettingsController::class, 'profile'])->name('settings.profile');
+Route::patch('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
+Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount'])->name('settings.profile.destroy');
 
-    Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
-    Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
+Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
+Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
 
-    //routes chyntia
-    // Route untuk halaman Katalog / Ready Stock
+//routes chyntia
+// Route untuk halaman Katalog / Ready Stock
 Route::get('/katalog', function () {
     return view('katalog');
 });
@@ -115,7 +118,6 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-use App\Http\Controllers\CategoryController;
 
 // Route untuk Manajemen Kategori
 Route::prefix('c/categories')->name('categories.')->group(function () {
@@ -128,38 +130,72 @@ Route::prefix('c/categories')->name('categories.')->group(function () {
     Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
 });
 
+Route::prefix('c/brands')->name('brands.')->group(function () {
+
+    // ---------- CRUD ----------
+    Route::get('/',          [BrandController::class, 'index'])->name('index');
+    Route::get('/create',   [BrandController::class, 'create'])->name('create');
+    Route::post('/',        [BrandController::class, 'store'])->name('store');
+    Route::get('/{id}/edit',[BrandController::class, 'edit'])->name('edit');
+    Route::put('/{id}',     [BrandController::class, 'update'])->name('update');
+    Route::delete('/{id}',  [BrandController::class, 'destroy'])->name('destroy');
+
+    // ---------- FITUR TAMBAHAN ----------
+    // 1. Toggle “Tampil di Homepage”
+    Route::patch('/{id}/toggle-home', [BrandController::class, 'toggleHome'])
+         ->name('toggleHome');
+
+    // 2. Naik / Turun urutan di homepage carousel
+    Route::patch('/{id}/move-order/{direction}', [BrandController::class, 'moveOrder'])
+         ->where('direction', 'up|down')
+         ->name('moveOrder');
+
+    // 3. Aktif / Non‑aktif brand
+    Route::patch('/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
+         ->name('toggleStatus');
+});
+
+// Route untuk Manajemen Produk
+Route::prefix('c/products')->name('products.')->group(function () {
+
+    // ---------- Sudah aktif ----------
+    Route::get('/',                    [ProductController::class, 'index'])->name('index');
+    Route::post('/',                    [ProductController::class, 'store'])->name('store');
+    Route::patch('/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggleStatus');
+    Route::delete('/{id}',             [ProductController::class, 'destroy'])->name('destroy');
+
+    // ---------- Sementara dummy, ganti ke controller saat halamannya dibuat ----------
+    Route::get('/create',    [ProductController::class, 'create'])->name('create');
+    Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
+});
+
 
 // DUMMY ROUTE
-// ==== Manajemen Produk ====
-Route::get('/products', fn () => 'Halaman Produk (dummy)')->name('products.index');
-Route::get('/products/create', fn () => 'Halaman Tambah Produk (dummy)')->name('products.create');
-Route::get('/brands', fn () => 'Halaman Brand (dummy)')->name('brands.index');
- 
 // ==== Manajemen Konten ====
-Route::get('/banners', fn () => 'Halaman Banner (dummy)')->name('banners.index');
-Route::get('/advantages', fn () => 'Halaman Keunggulan (dummy)')->name('advantages.index');
-Route::get('/social-media', fn () => 'Halaman Media Sosial (dummy)')->name('social-media.index');
-Route::get('/customer-service', fn () => 'Halaman Customer Service (dummy)')->name('customer-service.index');
-Route::get('/admin-handles', fn () => 'Halaman Admin Handle (dummy)')->name('admin-handles.index');
-Route::get('/banks', fn () => 'Halaman Informasi Bank (dummy)')->name('banks.index');
- 
+Route::get('/banners', fn() => 'Halaman Banner (dummy)')->name('banners.index');
+Route::get('/advantages', fn() => 'Halaman Keunggulan (dummy)')->name('advantages.index');
+Route::get('/social-media', fn() => 'Halaman Media Sosial (dummy)')->name('social-media.index');
+Route::get('/customer-service', fn() => 'Halaman Customer Service (dummy)')->name('customer-service.index');
+Route::get('/admin-handles', fn() => 'Halaman Admin Handle (dummy)')->name('admin-handles.index');
+Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.index');
+
 // ==== Pesanan ====
-Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
- 
+Route::get('/orders', fn() => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
+
 // ==== Laporan ====
-Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
- 
+Route::get('/reports/mitra-sales', fn() => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
+
 // ==== Pengguna ====
-Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
-Route::get('/sellers', fn () => 'Halaman Kelola Seller (dummy)')->name('sellers.index');
- 
+Route::get('/users', fn() => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
+Route::get('/sellers', fn() => 'Halaman Kelola Seller (dummy)')->name('sellers.index');
+
 // ==== Pemasaran ====
-Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
-Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
- 
+Route::get('/coupons', fn() => 'Halaman Kupon (dummy)')->name('coupons.index');
+Route::get('/coupons/create', fn() => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
+
 // ==== Akun ====
-Route::get('/settings/profile', fn () => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
- 
+Route::get('/settings/profile', fn() => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
+
 // logout harus POST karena dipanggil lewat <form method="POST"> di sidebar
 Route::post('/logout', function () {
     // nanti ganti dengan Auth::logout() beneran
