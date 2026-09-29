@@ -15,6 +15,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SellerController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -102,6 +103,11 @@ Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount']
 
 Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
 Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
+
+Route::get('/sellers', [SellerController::class, 'index'])->name('seller.index');
+Route::post('/sellers', [SellerController::class, 'store'])->name('seller.store');
+Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('seller.update');
+Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('seller.destroy');
 
 //routes chyntia
 // Route untuk halaman Katalog / Ready Stock
@@ -203,17 +209,17 @@ Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.inde
     })->name('admin.laporan'); 
     
 // ==== Pengguna ====
-// Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
- Route::get('seller/index', function () {
-        return view('seller.index');
-    })->name('seller.index');
- Route::get('seller/create', function () {
-        return view('seller.create');
-    })->name('seller.create');
+// // Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
+//  Route::get('seller/index', function () {
+//         return view('seller.index');
+//     })->name('seller.index');
+//  Route::get('seller/create', function () {
+//         return view('seller.create');
+//     })->name('seller.create');
 
-    Route::get('seller/edit', function () {
-        return view('seller.edit');
-    })->name('seller.edit');
+//     Route::get('seller/edit', function () {
+//         return view('seller.edit');
+//     })->name('seller.edit');
    
      
 // ==== Pemasaran ====
