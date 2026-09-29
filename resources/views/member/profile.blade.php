@@ -17,19 +17,10 @@
         <p class="text-gray-500 text-sm mt-1">Kelola profil dan riwayat pesanan Anda</p>
     </div>
 
-    <!-- Flash message & error -->
+    <!-- Flash message sukses (error validasi tampil di bawah masing-masing input) -->
     @if (session('success'))
         <div class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs p-3 rounded-lg">
             {{ session('success') }}
-        </div>
-    @endif
-    @if ($errors->any())
-        <div class="mb-6 bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-lg">
-            <ul class="list-disc pl-4">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
         </div>
     @endif
 
@@ -244,51 +235,59 @@
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Nama</label>
                             <input type="text" name="name" value="{{ old('name', $user->name) }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                   class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('name') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                            @error('name') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Email</label>
                             <input type="email" name="email" value="{{ old('email', $user->email) }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                   class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('email') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                            @error('email') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Telepon</label>
                             <input type="text" name="phone" value="{{ old('phone', $user->detail?->phone) }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                   class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('phone') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                            @error('phone') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Alamat</label>
                             <textarea name="address" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">{{ old('address', $user->detail?->address) }}</textarea>
+                                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('address') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">{{ old('address', $user->detail?->address) }}</textarea>
+                            @error('address') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block font-semibold text-gray-700 mb-1">Kota / Kabupaten</label>
                                 <input type="text" name="city" value="{{ old('city', $user->detail?->city) }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('city') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                                @error('city') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block font-semibold text-gray-700 mb-1">Provinsi</label>
                                 <input type="text" name="province" value="{{ old('province', $user->detail?->province) }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('province') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                                @error('province') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block font-semibold text-gray-700 mb-1">Kode Pos</label>
                                 <input type="text" name="postal_code" value="{{ old('postal_code', $user->detail?->postal_code) }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('postal_code') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                                @error('postal_code') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block font-semibold text-gray-700 mb-1">ID Seller</label>
                                 <input type="text" name="seller_id" value="{{ old('seller_id', $user->detail?->seller_id) }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('seller_id') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                                @error('seller_id') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Ekspedisi Favorit</label>
                             <select name="shipping_expedition"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                    class="w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-1 text-sm {{ $errors->has('shipping_expedition') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
                                 <option value="">- Pilih -</option>
                                 @foreach (['JNE', 'J&T', 'SiCepat'] as $exp)
                                     <option value="{{ $exp }}" @selected(old('shipping_expedition', $user->detail?->shipping_expedition) === $exp)>
@@ -296,6 +295,7 @@
                                     </option>
                                 @endforeach
                             </select>
+                            @error('shipping_expedition') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-lg text-xs leading-relaxed">
@@ -339,12 +339,14 @@
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Password Saat Ini</label>
                             <input type="password" name="current_password"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                   class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('current_password') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                            @error('current_password') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Password Baru</label>
                             <input type="password" name="password"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                   class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('password') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                            @error('password') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Konfirmasi Password Baru</label>
