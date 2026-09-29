@@ -221,6 +221,189 @@ class ProductController extends Controller
     }
 
     /* --------------------------------------------------------------
+       EDIT – form Edit Produk
+    -------------------------------------------------------------- */
+    public function edit($id)
+    {
+        $product = Product::with([
+            'categories', 'colors', 'models', 'sizes', 'prices',
+            'images', 'freeItems', 'priceRules',
+        ])->findOrFail($id);
+
+        return view('products.edit', [
+            'product'    => $product,
+            // Merek produk saat ini tetap muncul walau sudah dinonaktifkan
+            'brands'     => Brand::active()->orWhere('id', $product->brand_id)->orderBy('name')->get(['id', 'name']),
+            'categories' => Category::orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    /* --------------------------------------------------------------
+       UPDATE – perbarui produk beserta seluruh turunannya (transaksi).
+       - Warna / model / ukuran: baris ber-ID diperbarui, tanpa ID dibuat baru,
+         yang tidak dikirim lagi dihapus.
+       - Matriks harga, FREE item, dan harga otomatis dibuat ulang.
+       - Gambar umum: hapus berdasarkan ID, gambar baru ditambahkan.
+    -------------------------------------------------------------- */
+    public function update(Request $request, $id): RedirectResponse
+    {
+        $product = Product::findOrFail($id);
+
+        $data = $request->validate($this->updateRules(), $this->messages(), $this->attributes());
+
+        $stored   = []; // file baru (dibersihkan bila transaksi gagal)
+        $obsolete = []; // file lama (dihapus setelah transaksi berhasil)
+
+        $put = function ($file, string $dir) use (&$stored) {
+            $path = $file->store($dir, 'public');
+            $stored[] = $path;
+
+            return $path;
+        };
+
+        $pick = function (array $map, $index) {
+            return ($index !== null && $index !== '' && isset($map[(int) $index]))
+                ? $map[(int) $index]
+                : null;
+        };
+
+        try {
+            DB::transaction(function () use ($request, $data, $product, $put, $pick, &$obsolete) {
+                $product->update([
+                    'name'             => $data['name'],
+                    'brand_id'         => $data['brand_id'],
+                    'category_id'      => ! empty($data['category_ids']) ? $data['category_ids'][0] : null,
+                    'description'      => $data['description'] ?? null,
+                    'is_active'        => (bool) $data['is_active'],
+                    'product_type'     => $data['product_type'],
+                    'show_public'      => $request->boolean('show_public'),
+                    'show_member'      => $request->boolean('show_member'),
+                    'show_distributor' => $request->boolean('show_distributor'),
+                    'weight_grams'     => $data['weight_grams'],
+                    'product_note'     => $data['product_note'] ?? null,
+                ]);
+
+                $product->categories()->sync($data['category_ids'] ?? []);
+
+                // Bonus, rule, dan harga dirujuk lewat indeks form -> buat ulang.
+                // Dihapus lebih dulu agar tidak menghalangi penghapusan varian.
+                $product->freeItems()->delete();
+                $product->priceRules()->delete();
+                $product->prices()->delete();
+
+                // Warna
+                $colorIds = $this->syncVariants(
+                    $request, $product->colors(), 'colors', $data['colors'], true,
+                    fn ($row) => [
+                        'name'     => $row['name'],
+                        'hex_code' => ! empty($row['hex_code'])
+                            ? '#' . strtoupper(ltrim($row['hex_code'], '#'))
+                            : null,
+                    ],
+                    $put, $obsolete, 'product-colors'
+                );
+
+                // Model
+                $modelIds = $this->syncVariants(
+                    $request, $product->models(), 'models', $data['models'], true,
+                    fn ($row) => [
+                        'name'        => $row['name'],
+                        'description' => $row['description'] ?? null,
+                    ],
+                    $put, $obsolete, 'product-models'
+                );
+
+                // Ukuran
+                $sizeIds = $this->syncVariants(
+                    $request, $product->sizes(), 'sizes', $data['sizes'], false,
+                    fn ($row, $i) => [
+                        'size'         => $row['size'],
+                        'is_available' => $request->boolean("sizes.$i.available"),
+                    ],
+                    $put, $obsolete, ''
+                );
+
+                // Matriks harga (sel kosong = tidak ada harga khusus)
+                foreach ($data['prices'] ?? [] as $m => $row) {
+                    foreach ($row ?? [] as $s => $price) {
+                        if ($price !== null && $price !== '' && isset($modelIds[$m], $sizeIds[$s])) {
+                            $product->prices()->create([
+                                'product_model_id' => $modelIds[$m],
+                                'product_size_id'  => $sizeIds[$s],
+                                'price'            => (int) $price,
+                            ]);
+                        }
+                    }
+                }
+
+                // Gambar umum: hapus yang dipilih
+                $deleteIds = array_map('intval', $data['general_images_to_delete'] ?? []);
+                if ($deleteIds) {
+                    foreach ($product->images()->whereIn('id', $deleteIds)->get() as $img) {
+                        $obsolete[] = $img->path;
+                        $img->delete();
+                    }
+                }
+
+                // Gambar umum: tambah yang baru di urutan paling belakang
+                $max  = $product->images()->max('sort_order');
+                $next = $max === null ? 0 : ((int) $max + 1);
+
+                foreach ($request->file('general_images', []) as $file) {
+                    $product->images()->create([
+                        'path'       => $put($file, 'product-images'),
+                        'is_primary' => false,
+                        'sort_order' => $next++,
+                    ]);
+                }
+
+                // Pastikan tepat satu gambar utama
+                $primary = $product->images()->where('is_primary', true)->orderBy('sort_order')->first()
+                    ?? $product->images()->orderBy('sort_order')->orderBy('id')->first();
+
+                $product->images()->update(['is_primary' => false]);
+                if ($primary) {
+                    $primary->update(['is_primary' => true]);
+                }
+                $product->update(['image' => $primary?->path]);
+
+                // FREE barang / bonus
+                foreach ($data['free_items'] ?? [] as $item) {
+                    $product->freeItems()->create([
+                        'name'             => $item['name'],
+                        'quantity'         => $item['quantity'],
+                        'product_color_id' => $pick($colorIds, $item['color'] ?? null),
+                        'product_model_id' => $pick($modelIds, $item['model'] ?? null),
+                        'product_size_id'  => $pick($sizeIds, $item['size'] ?? null),
+                    ]);
+                }
+
+                // Harga otomatis (tambah / potong)
+                foreach ($data['price_rules'] ?? [] as $rule) {
+                    $product->priceRules()->create([
+                        'label'            => $rule['label'] ?? null,
+                        'type'             => $rule['type'],
+                        'amount'           => (int) $rule['amount'],
+                        'product_color_id' => $pick($colorIds, $rule['color'] ?? null),
+                        'product_model_id' => $pick($modelIds, $rule['model'] ?? null),
+                        'product_size_id'  => $pick($sizeIds, $rule['size'] ?? null),
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Storage::disk('public')->delete($stored);
+
+            throw $e;
+        }
+
+        // Transaksi sukses: baru aman menghapus file lama
+        Storage::disk('public')->delete(array_filter($obsolete));
+
+        return redirect()->route('products.index')
+            ->with('success', "Produk {$product->name} berhasil diperbarui.");
+    }
+
+    /* --------------------------------------------------------------
        TOGGLE STATUS (Aktifkan / Nonaktifkan)
     -------------------------------------------------------------- */
     public function toggleStatus($id): RedirectResponse
@@ -254,6 +437,68 @@ class ProductController extends Controller
 
         return redirect()->route('products.index')
             ->with('success', 'Produk berhasil dihapus.');
+    }
+
+    /* --------------------------------------------------------------
+       Sinkronkan satu jenis varian (warna / model / ukuran).
+       Mengembalikan peta indeks form => id baris.
+    -------------------------------------------------------------- */
+    private function syncVariants(
+        Request $request,
+        $relation,
+        string $key,
+        array $rows,
+        bool $hasImage,
+        callable $attrs,
+        callable $put,
+        array &$obsolete,
+        string $dir
+    ): array {
+        $existing = $relation->get()->keyBy('id');
+        $ids  = [];
+        $keep = [];
+
+        foreach ($rows as $i => $row) {
+            $attributes = $attrs($row, $i);
+
+            // Hanya ID milik produk ini yang diperbarui; selain itu dibuat baru
+            $model = ! empty($row['id']) ? $existing->get((int) $row['id']) : null;
+
+            if ($hasImage) {
+                if ($request->hasFile("$key.$i.image")) {
+                    if ($model && $model->image) {
+                        $obsolete[] = $model->image;
+                    }
+                    $attributes['image'] = $put($request->file("$key.$i.image"), $dir);
+                } elseif ($model && $request->boolean("$key.$i.remove_image")) {
+                    if ($model->image) {
+                        $obsolete[] = $model->image;
+                    }
+                    $attributes['image'] = null;
+                }
+            }
+
+            if ($model) {
+                $model->update($attributes);
+            } else {
+                $model = $relation->create($attributes + ($hasImage ? ['image' => null] : []));
+            }
+
+            $ids[$i] = $model->id;
+            $keep[]  = $model->id;
+        }
+
+        // Varian yang tidak dikirim lagi = dihapus
+        foreach ($existing as $id => $old) {
+            if (! in_array($id, $keep, true)) {
+                if ($hasImage && $old->image) {
+                    $obsolete[] = $old->image;
+                }
+                $old->delete();
+            }
+        }
+
+        return $ids;
     }
 
     /* --------------------------------------------------------------
@@ -311,6 +556,28 @@ class ProductController extends Controller
             'price_rules.*.model'  => 'nullable|integer|min:0',
             'price_rules.*.size'   => 'nullable|integer|min:0',
         ];
+    }
+
+    /* --------------------------------------------------------------
+       Aturan validasi form Edit Produk:
+       sama dengan Buat Produk, ditambah ID/hapus gambar, dan harga boleh kosong.
+    -------------------------------------------------------------- */
+    private function updateRules(): array
+    {
+        return array_merge($this->rules(), [
+            'colors.*.id'           => 'nullable|integer',
+            'colors.*.remove_image' => 'nullable|boolean',
+            'models.*.id'           => 'nullable|integer',
+            'models.*.remove_image' => 'nullable|boolean',
+            'sizes.*.id'            => 'nullable|integer',
+
+            'prices'     => 'nullable|array',
+            'prices.*'   => 'nullable|array',
+            'prices.*.*' => 'nullable|integer|min:0',
+
+            'general_images_to_delete'   => 'nullable|array',
+            'general_images_to_delete.*' => 'integer',
+        ]);
     }
 
     private function messages(): array

@@ -130,14 +130,23 @@
 
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse ($products as $product)
+                        @php
+                            // Gambar utama diambil dari relasi images (kolom path, is_primary, sort_order).
+                            // Fallback ke kolom image lama bila ada.
+                            $primaryImage = $product->relationLoaded('images') || method_exists($product, 'images')
+                                ? ($product->images->firstWhere('is_primary', true)
+                                    ?? $product->images->sortBy('sort_order')->first())
+                                : null;
+                            $imagePath = $primaryImage->path ?? $product->image ?? null;
+                        @endphp
                         <tr>
                             {{-- Produk --}}
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-16 w-16">
-                                        @if ($product->image)
-                                            <img class="h-16 w-16 rounded-lg object-cover"
-                                                 src="{{ asset('storage/' . $product->image) }}"
+                                        @if ($imagePath)
+                                            <img class="h-16 w-16 rounded-lg object-cover border border-zinc-200"
+                                                 src="{{ asset('storage/' . ltrim($imagePath, '/')) }}"
                                                  alt="{{ $product->name }}">
                                         @else
                                             <div class="h-16 w-16 rounded-lg bg-gray-200 flex items-center justify-center">

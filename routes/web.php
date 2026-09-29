@@ -14,6 +14,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -95,9 +98,15 @@ Route::put('/settings/password', [SettingsController::class, 'updatePassword'])-
 
 //routes chyntia
 // Route untuk halaman Katalog / Ready Stock
-Route::get('/katalog', function () {
-    return view('katalog');
-});
+Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.index');
+Route::get('/katalog/{product}', [CatalogController::class, 'show'])->name('catalog.show');
+Route::post('/order', [OrderController::class, 'store'])->name('order.store');
+
+Route::get('/cart/data', [CartController::class, 'index'])->name('cart.data');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::patch('/cart/items/{key}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/items/{key}', [CartController::class, 'remove'])->name('cart.remove');
+
 // Route untuk Halaman Pre Order Member
 Route::middleware(['auth'])->group(function () {
     Route::get('/member/pre-order', function () {
@@ -136,23 +145,23 @@ Route::prefix('c/brands')->name('brands.')->group(function () {
     Route::get('/',          [BrandController::class, 'index'])->name('index');
     Route::get('/create',   [BrandController::class, 'create'])->name('create');
     Route::post('/',        [BrandController::class, 'store'])->name('store');
-    Route::get('/{id}/edit',[BrandController::class, 'edit'])->name('edit');
+    Route::get('/{id}/edit', [BrandController::class, 'edit'])->name('edit');
     Route::put('/{id}',     [BrandController::class, 'update'])->name('update');
     Route::delete('/{id}',  [BrandController::class, 'destroy'])->name('destroy');
 
     // ---------- FITUR TAMBAHAN ----------
     // 1. Toggle “Tampil di Homepage”
     Route::patch('/{id}/toggle-home', [BrandController::class, 'toggleHome'])
-         ->name('toggleHome');
+        ->name('toggleHome');
 
     // 2. Naik / Turun urutan di homepage carousel
     Route::patch('/{id}/move-order/{direction}', [BrandController::class, 'moveOrder'])
-         ->where('direction', 'up|down')
-         ->name('moveOrder');
+        ->where('direction', 'up|down')
+        ->name('moveOrder');
 
     // 3. Aktif / Non‑aktif brand
     Route::patch('/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
-         ->name('toggleStatus');
+        ->name('toggleStatus');
 });
 
 // Route untuk Manajemen Produk
@@ -161,6 +170,7 @@ Route::prefix('c/products')->name('products.')->group(function () {
     // ---------- Sudah aktif ----------
     Route::get('/',                    [ProductController::class, 'index'])->name('index');
     Route::post('/',                    [ProductController::class, 'store'])->name('store');
+    Route::put('/{id}',                 [ProductController::class, 'update'])->name('update');
     Route::patch('/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggleStatus');
     Route::delete('/{id}',             [ProductController::class, 'destroy'])->name('destroy');
 
@@ -168,6 +178,7 @@ Route::prefix('c/products')->name('products.')->group(function () {
     Route::get('/create',    [ProductController::class, 'create'])->name('create');
     Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
 });
+Route::patch('/products/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
 
 
 // DUMMY ROUTE
@@ -181,27 +192,27 @@ Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.inde
 
 // ==== Pesanan ====
 // Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
- Route::get('orders/index', function () {
-        return view('orders.index');
-    })->name('orders.index');
- 
+Route::get('orders/index', function () {
+    return view('orders.index');
+})->name('orders.index');
+
 // ==== Laporan ====
 // Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
 // Route Laporan Penjualan Mitra (File: admin/reports/mitra.blade.php)
-    Route::get('/admin/laporan', function () {
-        return view('admin.laporan');
-    })->name('admin.laporan'); 
-    
+Route::get('/admin/laporan', function () {
+    return view('admin.laporan');
+})->name('admin.laporan');
+
 // ==== Pengguna ====
-Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
- Route::get('seller/index', function () {
-        return view('seller.index');
-    })->name('seller.index');
-     
+Route::get('/users', fn() => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
+Route::get('seller/index', function () {
+    return view('seller.index');
+})->name('seller.index');
+
 // ==== Pemasaran ====
 // Route::get('/coupons', fn () => 'Halaman Kupon (dummy)')->name('coupons.index');
 // Route::get('/coupons/create', fn () => 'Halaman Tambah Kupon (dummy)')->name('coupons.create');
- Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     // Route Manajemen Kupon
     Route::get('kupon/index', function () {
         return view('kupon.index');
@@ -214,8 +225,6 @@ Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.in
     Route::get('kupon/edit', function () {
         return view('kupon.edit');
     })->name('kupon.edit');
-
-   
 });
 
 // ==== Akun ====
