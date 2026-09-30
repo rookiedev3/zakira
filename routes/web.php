@@ -118,6 +118,11 @@ Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.index
 Route::get('/katalog/{product}', [CatalogController::class, 'show'])->name('catalog.show');
 Route::post('/order', [OrderController::class, 'store'])->name('order.store');
 
+Route::get('/cart', [CartController::class, 'page'])->name('cart.page');
+Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon.apply');
+Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
+Route::post('/cart/payment', [CartController::class, 'selectPayment'])->name('cart.payment');
+
 Route::get('/cart/data', [CartController::class, 'index'])->name('cart.data');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::patch('/cart/items/{key}', [CartController::class, 'update'])->name('cart.update');

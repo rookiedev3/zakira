@@ -118,4 +118,21 @@ class Product extends Model
         ]));
     }
 
+    public function priceFor($modelId = null, $colorId = null, $sizeId = null): int
+    {
+        $match = $this->prices
+            ->filter(function ($p) use ($modelId, $sizeId) {
+                return (is_null($p->product_size_id)  || $p->product_size_id  == $sizeId)
+                    && (is_null($p->product_model_id) || $p->product_model_id == $modelId);
+            })
+            ->sortByDesc(
+                fn($p) =>
+                (int) ! is_null($p->product_size_id) +
+                    (int) ! is_null($p->product_model_id)
+            )
+            ->first();
+
+        // Cadangan: harga terendah bila tidak ada baris yang cocok
+        return (int) ($match->price ?? $this->prices->min('price') ?? 0);
+    }
 }

@@ -7,6 +7,12 @@
     $waUrl = $waNumber
         ? 'https://wa.me/' . $waNumber . '?text=' . urlencode('Halo, saya tertarik dengan produk ' . $product->name)
         : '#';
+
+    // Harga awal sesuai pilihan default (item pertama tiap varian)
+    $firstKey = ($product->models->first()->id ?? 0) . '|'
+              . ($product->colors->first()->id ?? 0) . '|'
+              . ($product->sizes->first()->id ?? 0);
+    $initialPrice = $priceMap[$firstKey] ?? 0;
 @endphp
 
 @section('content')
@@ -15,7 +21,7 @@
 
         {{-- ========== Kolom 1: Gambar ========== --}}
         <div class="space-y-4">
-            <div class="relative aspect-2/3 bg-gray-100 rounded-lg overflow-hidden cursor-zoom-in" id="imageContainer">
+            <div class="relative aspect-[2/3] bg-gray-100 rounded-lg overflow-hidden cursor-zoom-in" id="imageContainer">
                 @if($product->image)
                     <img id="mainImage"
                          src="{{ asset('storage/' . $product->image) }}"
@@ -60,9 +66,11 @@
                 <p class="text-gray-700 leading-relaxed">{{ $product->description }}</p>
             @endif
 
-            {{-- Harga --}}
-            <div class="text-2xl font-bold text-[#B4775E]">
-                {{ $product->price_range ?? 'Hubungi penjual' }}
+            {{-- Harga (berubah sesuai varian yang dipilih) --}}
+            <div id="productPrice" class="text-2xl font-bold text-[#B4775E]">
+                {{ $initialPrice > 0
+                    ? 'Rp ' . number_format($initialPrice, 0, ',', '.')
+                    : ($product->price_range ?? 'Hubungi penjual') }}
             </div>
 
             {{-- Merek --}}
@@ -240,10 +248,30 @@ document.addEventListener('DOMContentLoaded', () => {
         qty.value = (parseInt(qty.value) || 1) + 1;
     });
 
-    // ---------- Tambah ke keranjang (tanpa reload) ----------
+    // ---------- Harga berubah sesuai varian ----------
     const form = document.getElementById('cartForm');
     const btn = document.getElementById('addToCartBtn');
+    const priceEl = document.getElementById('productPrice');
 
+    const PRICES = @json($priceMap);
+    const FALLBACK = @json($product->price_range ?? 'Hubungi penjual');
+    const rupiah = new Intl.NumberFormat('id-ID');
+
+    const selected = (name) => {
+        const el = form.querySelector(`input[name="${name}"]:checked`);
+        return el ? el.value : 0;
+    };
+
+    function updatePrice() {
+        const key = [selected('model_id'), selected('color_id'), selected('size_id')].join('|');
+        const price = PRICES[key] || 0;
+        priceEl.textContent = price > 0 ? 'Rp ' + rupiah.format(price) : FALLBACK;
+    }
+
+    form.addEventListener('change', updatePrice);
+    updatePrice();
+
+    // ---------- Tambah ke keranjang (tanpa reload) ----------
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         btn.disabled = true;

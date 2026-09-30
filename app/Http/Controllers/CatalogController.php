@@ -44,17 +44,28 @@ class CatalogController extends Controller
 
     public function show(Product $product)
     {
-        // Pastikan hanya produk yang aktif & ditampilkan publik yang dapat diakses
         if (! $product->is_active || ! $product->show_public) {
             abort(404);
         }
 
-        // Muat relasi yang diperlukan untuk tampilan detail
         $product->load(['brand', 'categories', 'colors', 'models', 'sizes', 'prices']);
 
-        // Hitung rentang harga (sama seperti yang di‑index)
         $product->price_range = $product->price_range ?? '-';
 
-        return view('catalog.show', compact('product'));
+        // Peta harga: "modelId|colorId|sizeId" => harga
+        $models = $product->models->isNotEmpty() ? $product->models->pluck('id') : collect([null]);
+        $colors = $product->colors->isNotEmpty() ? $product->colors->pluck('id') : collect([null]);
+        $sizes  = $product->sizes->isNotEmpty()  ? $product->sizes->pluck('id')  : collect([null]);
+
+        $priceMap = [];
+        foreach ($models as $m) {
+            foreach ($colors as $c) {
+                foreach ($sizes as $s) {
+                    $priceMap[($m ?? 0) . '|' . ($c ?? 0) . '|' . ($s ?? 0)] = $product->priceFor($m, $c, $s);
+                }
+            }
+        }
+
+        return view('catalog.show', compact('product', 'priceMap'));
     }
 }
