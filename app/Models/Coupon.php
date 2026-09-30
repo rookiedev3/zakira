@@ -84,6 +84,10 @@ class Coupon extends Model
             return 'inactive';
         }
 
+        if ($this->starts_at && $this->starts_at->isFuture()) {
+            return 'upcoming';
+        }
+
         if ($this->expires_at && $this->expires_at->isPast()) {
             return 'expired';
         }
@@ -99,9 +103,11 @@ class Coupon extends Model
     {
         return match ($this->status) {
             'active' => 'Aktif',
+            'upcoming' => 'Belum Aktif',
             'inactive' => 'Nonaktif',
             'expired' => 'Kedaluwarsa',
             'used_up' => 'Limit Tercapai',
+            default => 'Nonaktif',
         };
     }
 

@@ -31,6 +31,7 @@
                 <select id="kupon-status-filter" class="appearance-none ps-3 pe-10 block h-10 py-2 text-base sm:text-sm leading-[1.375rem] rounded-lg shadow-xs border bg-white dark:bg-white/10 text-zinc-700 dark:text-zinc-300 border-zinc-200 border-b-zinc-300/80 dark:border-white/10 focus:outline-none">
                     <option value="">Semua Status</option>
                     <option value="active">Aktif</option>
+                    <option value="upcoming">Belum Aktif</option>
                     <option value="inactive">Nonaktif</option>
                     <option value="expired">Kedaluwarsa</option>
                     <option value="used_up">Limit Tercapai</option>
@@ -67,7 +68,7 @@
                             <th class="px-6 py-3">Kode</th>
                             <th class="px-6 py-3">Diskon</th>
                             <th class="px-6 py-3">Target</th>
-                            <th class="px-6 py-3">Kedaluwarsa</th>
+                            <th class="px-6 py-3">Periode</th>
                             <th class="px-6 py-3">Penggunaan</th>
                             <th class="px-6 py-3">Status</th>
                             <th class="px-6 py-3 text-right">Aksi</th>
@@ -78,9 +79,11 @@
                             @php
                                 $statusColor = match ($coupon->status) {
                                     'active' => 'bg-green-100 text-green-800',
+                                    'upcoming' => 'bg-blue-100 text-blue-800',
                                     'inactive' => 'bg-gray-100 text-gray-600',
                                     'expired' => 'bg-red-100 text-red-800',
                                     'used_up' => 'bg-amber-100 text-amber-800',
+                                    default => 'bg-gray-100 text-gray-600',
                                 };
                                 $usagePercent = $coupon->usage_limit
                                     ? min(100, round(($coupon->used_count / $coupon->usage_limit) * 100))
@@ -91,14 +94,14 @@
                                 data-type="{{ $coupon->type }}"
                                 data-audience="{{ $coupon->customer_scope }}"
                                 data-search="{{ strtolower($coupon->name . ' ' . $coupon->code) }}">
-<td class="px-6 py-4">
-    <div class="max-w-[200px]">
-        <div class="font-medium text-gray-900 truncate" title="{{ $coupon->name }}">{{ $coupon->name }}</div>
-        @if ($coupon->description)
-            <div class="text-gray-400 text-[11px] mt-0.5 truncate" title="{{ $coupon->description }}">{{ $coupon->description }}</div>
-        @endif
-    </div>
-</td>
+                                <td class="px-6 py-4">
+                                    <div class="max-w-[200px]">
+                                        <div class="font-medium text-gray-900 truncate" title="{{ $coupon->name }}">{{ $coupon->name }}</div>
+                                        @if ($coupon->description)
+                                            <div class="text-gray-400 text-[11px] mt-0.5 truncate" title="{{ $coupon->description }}">{{ $coupon->description }}</div>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded font-semibold text-zinc-800">{{ $coupon->code }}</span>
                                 </td>
@@ -112,12 +115,14 @@
                                     <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">{{ $coupon->audience_label }}</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-gray-600">
-                                    @if ($coupon->expires_at)
-                                        <div>{{ $coupon->expires_at->format('d/m/Y') }}</div>
-                                        <div class="text-[10px] text-gray-400">{{ $coupon->expires_at->format('H:i') }}</div>
-                                    @else
-                                        <span class="text-gray-400">Tidak ada</span>
-                                    @endif
+                                    <div class="text-[11px]">
+                                        Mulai:
+                                        {{ $coupon->starts_at ? $coupon->starts_at->format('d/m/Y H:i') : 'Langsung' }}
+                                    </div>
+                                    <div class="text-[11px]">
+                                        Berakhir:
+                                        {{ $coupon->expires_at ? $coupon->expires_at->format('d/m/Y H:i') : 'Tidak ada' }}
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm">
