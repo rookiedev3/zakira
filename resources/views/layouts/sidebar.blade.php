@@ -1,35 +1,19 @@
-{{--
-resources/views/layouts/sidebar.blade.php
-
-LAYOUT KLASIK (@extends / @yield) — Tailwind CSS murni, tanpa Flux/Livewire.
-Toggle sidebar mobile & dropdown profile pakai JS vanilla biasa.
-
-Cara pakai di halaman lain:
-
-@extends('layouts.sidebar')
-
-@section('title', 'Dashboard')
-
-@section('content')
-... isi halaman ...
-@endsection
---}}
 <!DOCTYPE html>
 <html lang="id">
-
+ 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Zakira Admin')</title>
-
+ 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Script CDN Tailwind untuk Development/Darurat -->
     <script src="https://cdn.tailwindcss.com"></script>
-
+ 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
+ 
     <style>
         /* Link menu sidebar */
         .nav-link {
@@ -44,12 +28,12 @@ Cara pakai di halaman lain:
             font-weight: 500;
             color: #71717a; /* zinc-500 */
         }
-
+ 
         .nav-link:hover {
             background: rgba(39, 39, 42, 0.05);
             color: #27272a; /* zinc-800 */
         }
-
+ 
         /* Menu aktif: putih, border tipis, teks & ikon coklat */
         .nav-link.active {
             background: #ffffff;
@@ -58,18 +42,18 @@ Cara pakai di halaman lain:
         }
     </style>
 </head>
-
+ 
 <body class="min-h-screen bg-white font-sans text-zinc-800" style="font-family: 'Inter', sans-serif;">
-
+ 
     <!-- Backdrop mobile (klik untuk tutup sidebar) -->
     <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/30 z-20 hidden lg:hidden"></div>
-
+ 
     <div class="flex min-h-screen">
-
+ 
         <!-- SIDEBAR -->
         <aside id="sidebar"
             class="fixed lg:sticky top-0 h-screen w-64 -translate-x-full lg:translate-x-0 transition-transform duration-200 z-30 flex flex-col gap-4 p-4 border-r border-zinc-200 bg-zinc-50 overflow-y-auto">
-
+ 
             <!-- Toggle close (mobile) -->
             <button type="button" onclick="toggleSidebar()"
                 class="lg:hidden self-end w-10 h-10 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800/5 hover:text-zinc-800">
@@ -78,15 +62,15 @@ Cara pakai di halaman lain:
                         d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
                 </svg>
             </button>
-
+ 
             <!-- Brand -->
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 px-1">
                 <img src="{{ asset('images/logo-zakira.png') }}" alt="Zakira Logo" class="h-16 mx-auto object-contain">
             </a>
-
+ 
             <!-- Nav -->
             <nav class="flex flex-col gap-1 flex-1">
-
+ 
                 <div class="px-1 py-2 text-xs text-zinc-400">Platform</div>
                 <a href="{{ route('dashboard') }}"
                     class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -97,7 +81,7 @@ Cara pakai di halaman lain:
                     </svg>
                     Dashboard
                 </a>
-
+ 
                 <div class="px-1 py-2 text-xs text-zinc-400">Manajemen Produk</div>
                 <a href="{{ route('products.index') }}"
                     class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
@@ -127,7 +111,7 @@ Cara pakai di halaman lain:
                     </svg>
                     Kategori
                 </a>
-
+ 
                 <div class="px-1 py-2 text-xs text-zinc-400">Manajemen Konten</div>
                 <a href="{{ route('banners.index') }}"
                     class="nav-link {{ request()->routeIs('banners.*') ? 'active' : '' }}">
@@ -183,7 +167,7 @@ Cara pakai di halaman lain:
                     </svg>
                     Informasi Bank
                 </a>
-
+ 
                 <div class="px-1 py-2 text-xs text-zinc-400">Pesanan</div>
                 <a href="{{ route('orders.index') }}"
                     class="nav-link {{ request()->routeIs('orders.*') ? 'active' : '' }}">
@@ -194,7 +178,7 @@ Cara pakai di halaman lain:
                     </svg>
                     Kelola Pesanan
                 </a>
-
+ 
                 <div class="px-1 py-2 text-xs text-zinc-400">Laporan</div>
                 <a href="{{ route('admin.laporan') }}"
                     class="nav-link {{ request()->routeIs('admin.laporan*') ? 'active' : '' }}">
@@ -205,7 +189,7 @@ Cara pakai di halaman lain:
                     </svg>
                     Laporan Penjualan Mitra
                 </a>
-
+ 
                 <div class="px-1 py-2 text-xs text-zinc-400">Pengguna</div>
                 <a href="{{ route('users.index') }}"
                     class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
@@ -225,7 +209,7 @@ Cara pakai di halaman lain:
                     </svg>
                     Kelola Seller
                 </a>
-
+ 
                 <div class="px-1 py-2 text-xs text-zinc-400">Pemasaran</div>
                 <a href="{{ route('kupon.index') }}"
                     class="nav-link {{ request()->routeIs('kupon.*') ? 'active' : '' }}">
@@ -237,7 +221,7 @@ Cara pakai di halaman lain:
                     Kupon
                 </a>
             </nav>
-
+ 
             <!-- Profile dropdown (pakai <details>, tanpa JS library) -->
             <details class="relative">
                 <summary class="list-none flex items-center gap-2 p-1 rounded-lg hover:bg-zinc-800/5 cursor-pointer">
@@ -249,7 +233,7 @@ Cara pakai di halaman lain:
                         <path stroke-linecap="round" stroke-linejoin="round" d="m7 15 5 5 5-5M7 9l5-5 5 5" />
                     </svg>
                 </summary>
-
+ 
                 <div
                     class="absolute bottom-full left-0 mb-2 w-56 bg-white border border-zinc-200 rounded-lg shadow-lg p-1 z-40">
                     <div class="flex items-center gap-2 px-2 py-2 text-sm">
@@ -276,14 +260,14 @@ Cara pakai di halaman lain:
                 </div>
             </details>
         </aside>
-
+ 
         <!-- Simpan & pulihkan posisi scroll sidebar (dijalankan tepat setelah sidebar dibuat, sebelum halaman tampil) -->
         <script>
             (function () {
                 var sidebar = document.getElementById('sidebar');
                 var key = 'sidebar-scroll';
                 var saved = sessionStorage.getItem(key);
-
+ 
                 if (saved !== null) {
                     sidebar.scrollTop = parseInt(saved, 10);
                 } else {
@@ -291,23 +275,23 @@ Cara pakai di halaman lain:
                     var active = sidebar.querySelector('.nav-link.active');
                     if (active) active.scrollIntoView({ block: 'center' });
                 }
-
+ 
                 function save() {
                     sessionStorage.setItem(key, sidebar.scrollTop);
                 }
-
+ 
                 sidebar.addEventListener('click', function (e) {
                     if (e.target.closest('a')) save();
                 });
                 window.addEventListener('beforeunload', save);
             })();
         </script>
-
+ 
         <!-- MAIN AREA -->
         <div class="flex-1 flex flex-col min-w-0">
-
+ 
             <!-- Header mobile -->
-            <header class="lg:hidden flex items-center h-14 px-6 border-b border-zinc-200">
+            <header class="lg:hidden relative z-10 flex items-center h-14 px-6 border-b border-zinc-200 bg-white">
                 <button type="button" onclick="toggleSidebar()"
                     class="w-10 h-10 -ms-2.5 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800/5">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -316,22 +300,61 @@ Cara pakai di halaman lain:
                             clip-rule="evenodd" />
                     </svg>
                 </button>
-                <span
-                    class="ml-auto w-8 h-8 flex items-center justify-center rounded-md bg-zinc-200 text-zinc-800 text-sm font-medium">UA</span>
+ 
+                <!-- Profile dropdown (mobile) — membuka ke bawah -->
+                <details id="mobile-profile" class="ml-auto relative">
+                    <summary
+                        class="list-none flex items-center justify-center w-8 h-8 rounded-md bg-zinc-200 text-zinc-800 text-sm font-medium cursor-pointer hover:bg-zinc-300 [&::-webkit-details-marker]:hidden">
+                        UA
+                    </summary>
+ 
+                    <div
+                        class="absolute right-0 top-full mt-2 w-56 bg-white border border-zinc-200 rounded-lg shadow-lg p-1 z-40">
+                        <div class="flex items-center gap-2 px-2 py-2 text-sm">
+                            <span
+                                class="w-8 h-8 flex items-center justify-center rounded-lg bg-neutral-200 text-black text-xs font-medium">UA</span>
+                            <div class="leading-tight">
+                                <p class="font-semibold text-zinc-800">User Admin</p>
+                                <p class="text-xs text-zinc-500">admin@gmail.com</p>
+                            </div>
+                        </div>
+                        <hr class="my-1 border-zinc-100">
+                        <a href="{{ route('settings.profile') }}"
+                            class="flex items-center px-2 py-1.5 rounded-md text-sm font-medium text-zinc-800 hover:bg-zinc-50">
+                            Pengaturan
+                        </a>
+                        <hr class="my-1 border-zinc-100">
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit"
+                                class="w-full text-left flex items-center px-2 py-1.5 rounded-md text-sm font-medium text-zinc-800 hover:bg-zinc-50">
+                                Keluar
+                            </button>
+                        </form>
+                    </div>
+                </details>
             </header>
-
+ 
             <main class="p-6 lg:p-8">
                 @yield('content')
             </main>
         </div>
     </div>
-
+ 
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
             document.getElementById('sidebar-backdrop').classList.toggle('hidden');
         }
+ 
+        // Tutup dropdown profil (desktop & mobile) saat klik di luar
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('details[open]').forEach(function (d) {
+                if (!d.contains(e.target)) d.removeAttribute('open');
+            });
+        });
     </script>
 </body>
-
+ 
 </html>
+ 

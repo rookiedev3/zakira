@@ -1,7 +1,7 @@
 @extends('settings.layout')
 
-@section('content')
-    <div class="bg-white rounded-xl shadow-sm p-6">
+@section('settings')
+    <div class="bg-white rounded-xl shadow-sm border border-zinc-200 p-6">
         <h2 class="font-semibold text-lg">Update password</h2>
         <p class="text-gray-500 text-sm mb-4">Untuk menjaga akun tetap aman, gunakan password yang kuat, panjang, dan acak.</p>
 
@@ -25,7 +25,7 @@
                        class="w-full border rounded-lg px-4 py-2 mt-1">
             </div>
 
-            <button class="bg-brand-600 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-brand-700">
+            <button class="bg-[#9c6b3a] text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-[#7d5330]">
                 Simpan
             </button>
         </form>
