@@ -23,6 +23,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\PaymentConfirmationController;
+use App\Http\Controllers\Admin\ManageOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -154,7 +155,14 @@ Route::get('/payment/confirmation/{order:order_number}', [PaymentConfirmationCon
 
 Route::post('/payment/confirmation/{order:order_number}', [PaymentConfirmationController::class, 'store'])
     ->name('payment.confirmation.store')->middleware(['signed', 'throttle:10,1']);
-    
+
+Route::get('orders', [ManageOrderController::class, 'index'])->name('admin.orders.index');
+Route::patch('orders/{order}/status', [ManageOrderController::class, 'updateStatus'])->name('admin.orders.status');
+Route::patch('orders/{order}/payment', [ManageOrderController::class, 'updatePayment'])->name('admin.orders.payment');
+Route::patch('orders/{order}/dp-paid', [ManageOrderController::class, 'markDpPaid'])->name('admin.orders.dp-paid');
+Route::patch('orders/{order}/remaining-paid', [ManageOrderController::class, 'markRemainingPaid'])->name('admin.orders.remaining-paid');
+Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
+
 // Route untuk Halaman Pre Order Member
 Route::middleware(['auth'])->group(function () {
     Route::get('/member/pre-order', function () {
@@ -240,9 +248,7 @@ Route::patch('/products/{id}/toggle-status', [ProductController::class, 'toggleS
 
 // ==== Pesanan ====
 // Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
-Route::get('orders/index', function () {
-    return view('orders.index');
-})->name('orders.index');
+Route::get('orders/index', [ManageOrderController::class, 'index'])->name('orders.index');
 
 // ==== Laporan ====
 // Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
