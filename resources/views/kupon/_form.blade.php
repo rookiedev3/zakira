@@ -287,8 +287,8 @@
                 <span class="text-sm font-medium text-zinc-800">Dapat dikombinasi dengan kupon lain</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" name="show_in_checkout" value="1" @checked(old('show_in_checkout', $coupon->show_in_checkout ?? false)) class="w-4 h-4 rounded border-zinc-300 text-[var(--color-accent)] focus:ring-[var(--color-accent)]">
-                <span class="text-sm font-medium text-zinc-800">Tampilkan di halaman checkout</span>
+                <input type="checkbox" name="show_in_checkout" value="1" @checked(old('show_in_checkout', $coupon->show_in_checkout ?? true)) class="w-4 h-4 rounded border-zinc-300 text-[var(--color-accent)] focus:ring-[var(--color-accent)]">
+                <span class="text-sm font-medium text-zinc-800">Tampilkan di halaman keranjang & checkout</span>
             </label>
         </div>
     </div>

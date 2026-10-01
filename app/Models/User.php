@@ -40,7 +40,7 @@ class User extends Authenticatable
     protected function name(): Attribute
     {
         return Attribute::make(
-            set: fn (string $value) => ucwords(strtolower(trim($value))),
+            set: fn(string $value) => ucwords(strtolower(trim($value))),
         );
     }
 
@@ -60,5 +60,11 @@ class User extends Authenticatable
     public function detail(): HasOne
     {
         return $this->hasOne(UserDetail::class);
+    }
+
+    public function wishlistProducts()
+    {
+        return $this->belongsToMany(\App\Models\Product::class, 'wishlists')
+            ->withTimestamps();
     }
 }

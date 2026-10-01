@@ -128,33 +128,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
             </tr>`).join('');
 
-        // ----- Kartu kupon -----
-        const couponBlock = state.coupon
-            ? `<div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-                    <div class="text-sm text-green-800">
-                        <i class="fas fa-ticket-alt mr-2"></i>
-                        Kupon <span class="font-semibold">${esc(state.coupon.code)}</span> diterapkan
-                        (hemat ${esc(state.coupon.discount_formatted)})
-                    </div>
-                    <button type="button" data-action="coupon-remove" class="text-red-600 hover:text-red-800 text-sm">
-                        <i class="fas fa-times"></i> Hapus
-                    </button>
-               </div>`
-            : `<div>
-                    <label for="couponCode" class="block text-sm font-medium text-gray-700 mb-2">Kode Kupon</label>
-                    <div class="flex space-x-2">
-                        <input type="text" id="couponCode" value="${esc(couponDraft)}" placeholder="Masukkan kode kupon"
-                               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#B4775E] focus:border-[#B4775E]">
-                        <button type="button" data-action="coupon-apply"
-                                class="bg-[#B4775E] text-white px-4 h-10 rounded-lg text-sm font-medium hover:bg-[#9C6650] transition-colors whitespace-nowrap">
-                            Terapkan
-                        </button>
-                    </div>
-               </div>`;
-
-        const couponAlert = couponMsg
-            ? `<p class="mt-3 text-sm ${couponMsg.type === 'error' ? 'text-red-600' : 'text-green-600'}">${esc(couponMsg.text)}</p>`
+        // ----- Kupon (tampilan mengikuti halaman referensi Zakira) -----
+        const msgs = couponMsg ? [].concat(couponMsg.text) : [];
+        const msgColor = couponMsg && couponMsg.type === 'success' ? 'text-green-600' : 'text-red-500';
+        const couponAlert = msgs.length
+            ? `<div class="mt-2">${msgs.map((m) => `<p class="${msgColor} text-sm">${esc(m)}</p>`).join('')}</div>`
             : '';
+
+        // Input kode kupon manual
+        const couponInput = `
+            <div class="mb-6">
+                <label for="couponCode" class="block text-sm font-medium text-gray-700 mb-2">Kode Kupon</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="couponCode" value="${esc(couponDraft)}" placeholder="Masukkan kode kupon"
+                           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#B4775E] focus:border-[#B4775E]">
+                    <button type="button" data-action="coupon-apply"
+                            class="bg-[#B4775E] text-white px-4 h-10 rounded-lg text-sm font-medium hover:bg-[#9C6650] transition-colors whitespace-nowrap">
+                        Terapkan
+                    </button>
+                </div>
+                ${couponAlert}
+            </div>`;
+
+        // Kupon Tersedia
+        const couponCards = (state.available_coupons || []).map((c) => `
+            <div data-action="coupon-pick" data-code="${esc(c.code)}" data-applied="${c.applied ? 1 : 0}"
+                 class="border rounded-lg p-4 cursor-pointer transition-all ${c.applied ? 'border-[#B4775E] bg-[#B4775E]/5 ring-1 ring-[#B4775E]' : 'border-gray-200 hover:border-[#B4775E]'}">
+                <div class="flex items-center justify-between mb-2">
+                    <h5 class="font-medium text-gray-900">${esc(c.title)}</h5>
+                    <input type="radio" name="coupon" value="${esc(c.code)}" class="text-[#B4775E]" ${c.applied ? 'checked' : ''}>
+                </div>
+                <div class="mb-2">
+                    <span class="inline-block border border-dashed border-[#B4775E] text-[#B4775E] rounded px-2 py-0.5 text-xs font-semibold tracking-wide">${esc(c.code)}</span>
+                </div>
+                ${c.description ? `<p class="text-sm text-gray-600 mb-2">${esc(c.description)}</p>` : ''}
+                <div class="text-sm">
+                    <span class="font-medium text-[#B4775E]">
+                        ${esc(c.discount_label.replace(' OFF', ' Off'))}${c.max_discount_formatted ? ` (Max ${esc(c.max_discount_formatted)})` : ''}
+                    </span>
+                    ${c.min_amount_formatted ? `<div class="text-xs text-gray-500 mt-1">Min. pembelian: ${esc(c.min_amount_formatted)}</div>` : ''}
+                </div>
+                ${c.expires_at ? `<div class="text-xs text-gray-500 mt-1">Berlaku sampai: ${esc(c.expires_at)}</div>` : ''}
+            </div>`).join('');
+
+        const couponBlock = couponInput + (couponCards
+            ? `<div>
+                    <h4 class="text-md font-medium text-gray-800 mb-3">Kupon Tersedia</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${couponCards}</div>
+               </div>`
+            : '');
 
         const isDp = state.payment_method === 'dp';
 
@@ -181,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Kupon Diskon</h3>
                 ${couponBlock}
-                ${couponAlert}
             </div>
 
             <div class="bg-white rounded-lg shadow-sm border p-6">
@@ -248,8 +269,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Terapkan data terbaru ke halaman + badge + sidebar
     function apply(data) {
         state = data;
+        if (data.coupon_notice) couponMsg = { text: data.coupon_notice, type: 'error' };
         draw();
         window.Cart?.render(data);
+    }
+
+    async function applyCode(code) {
+        const { ok, data } = await api(URLS.couponApply, 'POST', { code });
+        if (ok) {
+            couponDraft = '';
+            couponMsg = null;
+            apply(data);
+        } else {
+            const text = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Kupon tidak dapat dipakai.');
+            couponMsg = { text, type: 'error' };
+            draw();
+        }
     }
 
     // Simpan isi input kupon selagi diketik
@@ -266,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tombol-tombol
     root.addEventListener('click', async (e) => {
-        const btn = e.target.closest('button[data-action]');
+        const btn = e.target.closest('[data-action]');
         if (!btn || btn.disabled) return;
 
         const action = btn.dataset.action;
@@ -275,12 +310,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (action === 'remove') {
             if (!confirm('Hapus produk dari keranjang?')) return;
+            couponMsg = null;
             apply((await api(`${URLS.items}/${key}`, 'DELETE')).data);
 
         } else if (action === 'inc') {
+            couponMsg = null;
             apply((await api(`${URLS.items}/${key}`, 'PATCH', { quantity: qty + 1 })).data);
 
         } else if (action === 'dec') {
+            couponMsg = null;
             apply((await api(`${URLS.items}/${key}`, 'PATCH', { quantity: Math.max(1, qty - 1) })).data);
 
         } else if (action === 'coupon-apply') {
@@ -289,15 +327,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 couponMsg = { text: 'Masukkan kode kupon terlebih dahulu.', type: 'error' };
                 return draw();
             }
-            const { ok, data } = await api(URLS.couponApply, 'POST', { code });
-            if (ok) {
-                couponDraft = '';
-                couponMsg = { text: data.message, type: 'success' };
-                apply(data);
+            applyCode(code);
+
+        } else if (action === 'coupon-pick') {
+            // Klik kartu: pakai kupon, atau lepas bila sedang dipakai
+            if (btn.dataset.applied === '1') {
+                couponMsg = null;
+                apply((await api(URLS.couponRemove, 'DELETE')).data);
             } else {
-                const text = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Kupon tidak dapat dipakai.');
-                couponMsg = { text, type: 'error' };
-                draw();
+                const c = (state.available_coupons || []).find((x) => x.code === btn.dataset.code);
+                if (c && !c.eligible) {
+                    couponMsg = { text: c.errors, type: 'error' };
+                    return draw();
+                }
+                applyCode(btn.dataset.code);
             }
 
         } else if (action === 'coupon-remove') {

@@ -93,9 +93,9 @@ class CartController extends Controller
             'code' => 'required|string|max:50',
         ]);
 
-        $subtotal = $this->payload()['subtotal'];
+        $summary = $this->summary();
 
-        if ($subtotal <= 0) {
+        if ($summary['subtotal'] <= 0) {
             return response()->json(['message' => 'Keranjang masih kosong.'], 422);
         }
 
@@ -105,7 +105,7 @@ class CartController extends Controller
             return response()->json(['message' => 'Kode kupon tidak ditemukan.'], 422);
         }
 
-        if ($error = $this->couponError($coupon, $subtotal)) {
+        if ($error = $this->couponError($coupon, $summary)) {
             return response()->json(['message' => $error], 422);
         }
 
@@ -136,51 +136,217 @@ class CartController extends Controller
         return response()->json($this->payload());
     }
 
-    /* ---------------- Helper ---------------- */
+    /* ================================================================
+     |  Helper Kupon
+     ================================================================ */
 
     private function findCoupon(string $code): ?Coupon
     {
-        if (! class_exists(Coupon::class)) {
-            return null;
-        }
-
-        return Coupon::whereRaw('LOWER(code) = ?', [mb_strtolower($code)])->first();
+        return Coupon::with(['categories', 'brands', 'products'])
+            ->whereRaw('LOWER(code) = ?', [mb_strtolower($code)])
+            ->first();
     }
 
-    /** Kembalikan pesan error bila kupon tidak bisa dipakai, atau null bila valid. */
-    private function couponError(Coupon $coupon, int $subtotal): ?string
+    /** Pesan error pertama, atau null bila kupon valid. */
+    private function couponError(Coupon $coupon, array $summary): ?string
     {
-        if (! $coupon->is_active) {
-            return 'Kupon tidak aktif.';
-        }
-
-        if ($coupon->expires_at && now()->gt($coupon->expires_at)) {
-            return 'Kupon sudah kedaluwarsa.';
-        }
-
-        if ($coupon->min_purchase && $subtotal < $coupon->min_purchase) {
-            return 'Minimal belanja Rp ' . number_format($coupon->min_purchase, 0, ',', '.') . ' untuk memakai kupon ini.';
-        }
-
-        return null;
+        return $this->couponErrors($coupon, $summary)[0] ?? null;
     }
 
-    private function discountFor(Coupon $coupon, int $subtotal): int
+    /**
+     * Semua alasan kupon belum bisa dipakai (array kosong = valid).
+     * Dipakai untuk validasi saat diterapkan dan untuk daftar "Kupon Tersedia".
+     *
+     * @param array $summary hasil $this->summary()
+     * @return string[]
+     */
+    private function couponErrors(Coupon $coupon, array $summary): array
     {
-        if ($coupon->type === 'percent') {
-            $discount = (int) floor($subtotal * $coupon->value / 100);
+        // 1. Status (active / upcoming / inactive / expired / used_up) dari accessor model
+        switch ($coupon->status) {
+            case 'inactive':
+                return ['Kupon tidak aktif.'];
+            case 'upcoming':
+                return ['Kupon belum bisa digunakan. Berlaku mulai '
+                    . $coupon->starts_at->translatedFormat('d F Y H:i') . '.'];
+            case 'expired':
+                return ['Kupon sudah kedaluwarsa.'];
+            case 'used_up':
+                return ['Kuota penggunaan kupon sudah habis.'];
+        }
 
-            if ($coupon->max_discount) {
-                $discount = min($discount, (int) $coupon->max_discount);
+        $errors = [];
+
+        // 2. Minimal belanja & minimal jumlah barang
+        $minAmount = (int) $coupon->minimum_amount;
+        if ($minAmount > 0 && $summary['subtotal'] < $minAmount) {
+            $errors[] = 'Minimal belanja Rp ' . number_format($minAmount, 0, ',', '.') . ' untuk memakai kupon ini.';
+        }
+
+        $minQty = (int) $coupon->minimum_quantity;
+        if ($minQty > 0 && $summary['count'] < $minQty) {
+            $errors[] = 'Minimal pembelian ' . $minQty . ' barang untuk memakai kupon ini.';
+        }
+
+        // 3. Target pelanggan (semua / member / non_member)
+        if ($coupon->customer_scope === 'member' && ! $this->isMember()) {
+            $errors[] = 'Kupon ini khusus untuk member.';
+        }
+
+        if ($coupon->customer_scope === 'non_member' && $this->isMember()) {
+            $errors[] = 'Kupon ini tidak berlaku untuk member.';
+        }
+
+        // 4. Khusus pelanggan baru
+        if ($coupon->new_customers_only && ! $this->isNewCustomer()) {
+            $errors[] = 'Kupon ini hanya untuk pelanggan baru.';
+        }
+
+        // 5. Batas pemakaian per pelanggan
+        if ($coupon->usage_limit_per_customer
+            && $this->customerUsageCount($coupon) >= $coupon->usage_limit_per_customer) {
+            $errors[] = 'Anda sudah mencapai batas pemakaian kupon ini.';
+        }
+
+        // 6. Batasan produk / kategori / brand
+        if ($this->eligibleSubtotal($coupon, $summary['lines']) <= 0) {
+            $errors[] = 'Kupon tidak berlaku untuk produk di keranjang Anda.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Daftar kupon yang ditampilkan di keranjang ("Kupon Tersedia").
+     * Hanya kupon aktif, belum kedaluwarsa, kuota masih ada, dan show_in_checkout = true.
+     * Kupon yang belum memenuhi syarat tetap tampil (redup) beserta alasannya.
+     */
+    private function availableCoupons(array $summary, ?string $appliedCode): array
+    {
+        if ($summary['subtotal'] <= 0) {
+            return [];
+        }
+
+        $rupiah  = fn ($n) => 'Rp ' . number_format($n, 0, ',', '.');
+        $applied = $appliedCode ? mb_strtolower($appliedCode) : null;
+
+        return Coupon::with(['categories', 'brands', 'products'])
+            ->where('active', true)
+            ->where('show_in_checkout', true)
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()->addMinute()))
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->where(fn ($q) => $q->whereNull('usage_limit')
+                ->orWhere('usage_limit', 0)
+                ->orWhereColumn('used_count', '<', 'usage_limit'))
+            ->latest('id')
+            ->get()
+            ->map(function (Coupon $c) use ($summary, $rupiah, $applied) {
+                $errors   = $this->couponErrors($c, $summary);
+                $eligible = empty($errors);
+
+                return [
+                    'code'                     => $c->code,
+                    'title'                    => $c->checkout_label ?: $c->name,
+                    'description'              => $c->checkout_description ?: $c->description,
+                    'discount_label'           => $c->discount_label . ' OFF',
+                    'max_discount_formatted'   => ($c->type === 'percentage' && $c->max_discount_amount)
+                        ? $rupiah((int) $c->max_discount_amount) : null,
+                    'min_amount_formatted'     => (int) $c->minimum_amount > 0
+                        ? $rupiah((int) $c->minimum_amount) : null,
+                    'min_quantity'             => (int) $c->minimum_quantity ?: null,
+                    'expires_at'               => optional($c->expires_at)->translatedFormat('d F Y'),
+                    'audience'                 => $c->customer_scope !== 'all' ? $c->audience_label : null,
+                    'eligible'                 => $eligible,
+                    'errors'                   => $errors,
+                    'saving_formatted'         => $eligible ? $rupiah($this->discountFor($c, $summary)) : null,
+                    'applied'                  => $applied === mb_strtolower($c->code),
+                ];
+            })
+            ->sortBy(fn ($c) => $c['applied'] ? 0 : ($c['eligible'] ? 1 : 2))
+            ->values()
+            ->all();
+    }
+
+    private function discountFor(Coupon $coupon, array $summary): int
+    {
+        // Diskon hanya dihitung dari barang yang memenuhi syarat kupon
+        $base = $this->eligibleSubtotal($coupon, $summary['lines']);
+
+        if ($coupon->type === 'percentage') {
+            $discount = (int) floor($base * (float) $coupon->value / 100);
+
+            if ($coupon->max_discount_amount) {
+                $discount = min($discount, (int) $coupon->max_discount_amount);
             }
-        } else {
+        } else { // fixed
             $discount = (int) $coupon->value;
         }
 
-        return max(0, min($discount, $subtotal));
+        return max(0, min($discount, $base));
     }
 
-    private function payload(): array
+    /**
+     * Total harga barang di keranjang yang memenuhi batasan kupon.
+     * - restriction_type = null / tidak ada relasi dipilih -> semua barang
+     * - 'only'   -> hanya produk/kategori/brand yang dipilih
+     * - 'except' -> semua kecuali produk/kategori/brand yang dipilih
+     */
+    private function eligibleSubtotal(Coupon $coupon, array $lines): int
+    {
+        $productIds  = $coupon->products->pluck('id')->all();
+        $categoryIds = $coupon->categories->pluck('id')->all();
+        $brandIds    = $coupon->brands->pluck('id')->all();
+
+        $hasRestriction = $coupon->restriction_type
+            && ($productIds || $categoryIds || $brandIds);
+
+        $total = 0;
+
+        foreach ($lines as $line) {
+            if (! $hasRestriction) {
+                $total += $line['total'];
+                continue;
+            }
+
+            $matches = in_array($line['product_id'], $productIds, true)
+                || ($line['brand_id'] && in_array($line['brand_id'], $brandIds))
+                || count(array_intersect($line['category_ids'], $categoryIds)) > 0;
+
+            if (($coupon->restriction_type === 'only' && $matches)
+                || ($coupon->restriction_type === 'except' && ! $matches)) {
+                $total += $line['total'];
+            }
+        }
+
+        return $total;
+    }
+
+    /* ---- Data yang perlu disesuaikan dengan sistem Anda ---- */
+
+    /** TODO: sesuaikan dengan cara sistem Anda menandai member. */
+    private function isMember(): bool
+    {
+        return (bool) optional(auth()->user())->is_member;
+    }
+
+    /** TODO: cek riwayat order pelanggan (tabel orders belum punya user_id/email/telepon). */
+    private function isNewCustomer(): bool
+    {
+        return true;
+    }
+
+    /** TODO: hitung pemakaian kupon oleh pelanggan ini (butuh tabel coupon_usages / kolom di orders). */
+    private function customerUsageCount(Coupon $coupon): int
+    {
+        return 0;
+    }
+
+    /* ================================================================
+     |  Ringkasan & Payload Keranjang
+     ================================================================ */
+
+    /** Hitung isi keranjang (tanpa kupon). */
+    public function summary(): array
     {
         $cart = session('cart', []);
 
@@ -192,6 +358,7 @@ class CartController extends Controller
         $rupiah = fn ($n) => 'Rp ' . number_format($n, 0, ',', '.');
 
         $items    = [];
+        $lines    = [];
         $count    = 0;
         $subtotal = 0;
 
@@ -213,6 +380,9 @@ class CartController extends Controller
 
             $items[] = [
                 'key'                => $key,
+                'product_id'         => (int) $product->id,
+                'unit_price'         => (int) $price,
+                'line_total'         => (int) $lineTotal,
                 'name'               => $product->name,
                 'image'              => $product->image ? asset('storage/' . $product->image) : null,
                 'categories'         => $product->categories->pluck('name')->values()->all(),
@@ -224,28 +394,57 @@ class CartController extends Controller
                 'quantity'           => $row['quantity'],
             ];
 
+            // Data mentah per baris, dipakai untuk validasi & hitung kupon
+            $lines[] = [
+                'product_id'   => (int) $product->id,
+                'category_ids' => $product->categories->pluck('id')->all(),
+                'brand_id'     => $product->brand_id ?? null, // TODO: pastikan kolom brand_id ada di tabel products
+                'quantity'     => (int) $row['quantity'],
+                'total'        => (int) $lineTotal,
+            ];
+
             $count    += $row['quantity'];
             $subtotal += $lineTotal;
         }
 
         session(['cart' => $cart]);
 
+        return [
+            'items'    => $items,
+            'lines'    => $lines,
+            'count'    => $count,
+            'subtotal' => (int) $subtotal,
+        ];
+    }
+
+    public function payload(): array
+    {
+        $summary  = $this->summary();
+        $subtotal = $summary['subtotal'];
+        $rupiah   = fn ($n) => 'Rp ' . number_format($n, 0, ',', '.');
+
         // Kupon: validasi ulang setiap kali keranjang berubah
         $coupon   = null;
         $discount = 0;
+        $notice   = null;
 
         if ($subtotal <= 0) {
             session()->forget('coupon');
         } elseif ($code = session('coupon')) {
             $model = $this->findCoupon($code);
 
-            if ($model && ! $this->couponError($model, $subtotal)) {
-                $discount = $this->discountFor($model, $subtotal);
+            if ($model && ! $this->couponError($model, $summary)) {
+                $discount = $this->discountFor($model, $summary);
                 $coupon   = [
                     'code'               => $model->code,
+                    'name'               => $model->name,
+                    'label'              => $model->discount_label,
                     'discount_formatted' => $rupiah($discount),
                 ];
             } else {
+                // Kupon tidak lagi memenuhi syarat (mis. jumlah barang dikurangi) -> lepas + beri tahu
+                $reason = $model ? $this->couponError($model, $summary) : 'Kupon sudah tidak tersedia.';
+                $notice = 'Kupon ' . $code . ' dilepas. ' . $reason;
                 session()->forget('coupon');
             }
         }
@@ -257,16 +456,20 @@ class CartController extends Controller
         $dpAmount  = (int) round($total * $dpPercent / 100);
 
         return [
-            'items'              => $items,
-            'count'              => $count,
+            'items'              => $summary['items'],
+            'count'              => $summary['count'],
             'subtotal'           => $subtotal,
             'subtotal_formatted' => $rupiah($subtotal),
             'discount'           => $discount,
             'discount_formatted' => $rupiah($discount),
             'coupon'             => $coupon,
+            'coupon_notice'      => $notice,
+            'available_coupons'  => $this->availableCoupons($summary, $coupon['code'] ?? null),
+            'total'              => (int) $total,
             'total_formatted'    => $rupiah($total),
             'payment_method'     => session('payment_method', 'dp'),
             'dp_percent'         => $dpPercent,
+            'dp_amount'          => $dpAmount,
             'dp_formatted'       => $rupiah($dpAmount),
             'remaining_formatted'=> $rupiah($total - $dpAmount),
         ];

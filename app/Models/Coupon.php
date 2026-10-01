@@ -84,7 +84,7 @@ class Coupon extends Model
             return 'inactive';
         }
 
-        if ($this->starts_at && $this->starts_at->isFuture()) {
+        if ($this->starts_at && $this->starts_at->greaterThan(now()->addMinute())) {
             return 'upcoming';
         }
 

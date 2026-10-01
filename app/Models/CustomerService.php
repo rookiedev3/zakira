@@ -35,4 +35,16 @@ class CustomerService extends Model
 
         return 'https://wa.me/' . $number;
     }
+
+    /**
+     * Ambil CS untuk tombol WhatsApp:
+     * prioritas is_floating_whatsapp = true, kalau tidak ada ambil CS yang ada.
+     */
+    public static function forFloatingWhatsapp(): ?self
+    {
+        return static::query()
+            ->orderByDesc('is_floating_whatsapp') // true (1) duluan
+            ->orderBy('order')
+            ->first();
+    }
 }

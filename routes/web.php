@@ -20,6 +20,9 @@ use App\Http\Controllers\SellerController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\PaymentConfirmationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -139,6 +142,19 @@ Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::patch('/cart/items/{key}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/items/{key}', [CartController::class, 'remove'])->name('cart.remove');
 
+Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/berhasil/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+Route::post('/wishlist/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+
+Route::get('/payment/confirmation/{order:order_number}', [PaymentConfirmationController::class, 'show'])
+    ->name('payment.confirmation')->middleware('signed');
+
+Route::post('/payment/confirmation/{order:order_number}', [PaymentConfirmationController::class, 'store'])
+    ->name('payment.confirmation.store')->middleware(['signed', 'throttle:10,1']);
+    
 // Route untuk Halaman Pre Order Member
 Route::middleware(['auth'])->group(function () {
     Route::get('/member/pre-order', function () {
