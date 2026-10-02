@@ -5,7 +5,6 @@
 @section('content')
 @php
     use Illuminate\Support\Facades\Storage;
-    use Illuminate\Support\Facades\URL;
 
     $statusLabels  = ['pending' => 'Menunggu', 'processing' => 'Diproses', 'shipped' => 'Dikirim', 'delivered' => 'Terkirim', 'cancelled' => 'Dibatalkan'];
     $statusClasses = [
@@ -41,6 +40,7 @@
     $chevron       = '<svg class="shrink-0 ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>';
 
     $sel = fn (string $key, string $value) => (string) request($key) === $value ? 'selected' : '';
+    $rp  = fn ($n) => 'Rp ' . number_format((int) $n, 0, ',', '.');
 @endphp
 
 <div class="space-y-6">
@@ -257,10 +257,11 @@
                             <!-- Aksi -->
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end space-x-2">
-                                    <a href="{{ URL::signedRoute('checkout.success', $param) }}" target="_blank" rel="noopener"
-                                       class="{{ $btnView }}">
+                                    {{-- Lihat: buka modal Detail Pesanan --}}
+                                    <button type="button" class="{{ $btnView }}"
+                                            onclick="document.getElementById('order-detail-{{ $order->id }}').showModal()">
                                         <span>Lihat</span>
-                                    </a>
+                                    </button>
 
                                     <!-- Dropdown Status Pesanan -->
                                     <details class="relative" data-dd>
@@ -344,11 +345,395 @@
 
 </div>
 
+{{-- ============ Modal Detail Pesanan (satu <dialog> per pesanan) ============ --}}
+@foreach ($orders as $order)
+    @php
+        $isFull     = $order->payment_method === 'full';
+        $dpPaid     = (bool) $order->dp_paid_at;
+        $remPaid    = (bool) $order->remaining_paid_at;
+        $payKey     = $order->payment_status ?? 'pending';
+        $proofs     = $order->paymentConfirmations;
+        $remaining  = max(0, (int) $order->total - (int) $order->amount_due);
+        $dpPercent  = (int) $order->total > 0 ? round($order->amount_due / $order->total * 100, 1) : 0;
+        $remPercent = round(100 - $dpPercent, 1);
+        $coupon     = $order->coupon ?? null;
+        $discount   = (int) ($order->discount_amount ?? 0);
+        $wib        = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->timezone('Asia/Jakarta')->format('d M Y H:i') : '-';
+
+        $dpLabel  = $dpPaid ? 'DP Lunas' : 'DP Pending';
+        $remLabel = ! $dpPaid ? 'Menunggu DP' : ($remPaid ? 'Lunas Semua' : 'Sisa Pending');
+        $remBadge = match ($remLabel) {
+            'Lunas Semua'  => ['bg-green-100 text-green-800',   'fa-check-double'],
+            'Sisa Pending' => ['bg-orange-100 text-orange-800', 'fa-hourglass-half'],
+            default        => ['bg-gray-100 text-gray-600',     'fa-minus'],
+        };
+
+        // Bagian bukti bayar: [judul, label status, koleksi, tampil walau kosong?, label tombol]
+        $proofSections = $isFull
+            ? [['Bukti Pembayaran', 'Bukti Terupload', $proofs, true, 'Lihat Bukti']]
+            : [
+                ['Bukti Pembayaran DP', 'Bukti DP Terupload', $proofs->where('type', 'dp'), true, 'Lihat Bukti DP'],
+                ['Bukti Pelunasan', 'Bukti Pelunasan Terupload', $proofs->where('type', 'remaining'), false, 'Lihat Bukti Pelunasan'],
+            ];
+
+        $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors';
+        $btnGhost   = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-transparent text-zinc-800 hover:bg-zinc-800/5 transition-colors';
+    @endphp
+
+    <dialog id="order-detail-{{ $order->id }}" data-order-dialog
+            class="m-auto p-0 bg-transparent w-[calc(100%-2rem)] max-w-4xl overflow-hidden backdrop:bg-black/30">
+        <div class="bg-white rounded-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b shrink-0">
+                <h3 class="text-xl font-semibold text-gray-900">Detail Pesanan #{{ $order->order_number }}</h3>
+                <button type="button" class="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-800 hover:bg-zinc-800/5"
+                        onclick="this.closest('dialog').close()" aria-label="Tutup">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                </button>
+            </div>
+
+            <!-- Body (satu-satunya area scroll) -->
+            <div class="p-6 flex-1 min-h-0 overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- Informasi Pesanan -->
+                    <div>
+                        <h4 class="font-semibold text-gray-900 mb-3">Informasi Pesanan</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Order ID:</span>
+                                <span class="font-medium">{{ $order->order_number }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tanggal:</span>
+                                <span class="font-medium">{{ $wib($order->created_at) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Subtotal:</span>
+                                <span class="font-medium">{{ $rp($order->subtotal ?? ($order->total + $discount)) }}</span>
+                            </div>
+                            @if ($discount > 0)
+                                <div class="flex justify-between text-green-600">
+                                    <span>Diskon Kupon:</span>
+                                    <span class="font-medium">-{{ $rp($discount) }}</span>
+                                </div>
+                            @endif
+                            <div class="flex justify-between border-t pt-2 mt-2">
+                                <span class="text-gray-900 font-semibold">Total:</span>
+                                <span class="font-bold text-lg text-primary-600">{{ $rp($order->total) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Status:</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusClasses[$order->status] ?? 'bg-gray-100 text-gray-800' }}">
+                                    {{ $statusLabels[$order->status] ?? ucfirst($order->status) }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Metode Bayar:</span>
+                                <span class="font-medium">
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ $isFull ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
+                                        <i class="fas {{ $isFull ? 'fa-money-bill' : 'fa-chart-pie' }} mr-1"></i>
+                                        {{ $isFull ? 'Bayar Penuh' : 'Down Payment' }}
+                                    </span>
+                                </span>
+                            </div>
+                            @unless ($isFull)
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Status DP:</span>
+                                    <span class="font-medium">
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ $dpPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                                            <i class="fas {{ $dpPaid ? 'fa-check' : 'fa-clock' }} mr-1"></i>
+                                            {{ $dpLabel }}
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Status Sisa:</span>
+                                    <span class="font-medium">
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs {{ $remBadge[0] }}">
+                                            <i class="fas {{ $remBadge[1] }} mr-1"></i>
+                                            {{ $remLabel }}
+                                        </span>
+                                    </span>
+                                </div>
+                            @endunless
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Pembayaran:</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $paymentClasses[$payKey] ?? 'bg-gray-100 text-gray-800' }}">
+                                    {{ $paymentLabels[$payKey] ?? ucfirst($payKey) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informasi Pelanggan -->
+                    <div>
+                        <h4 class="font-semibold text-gray-900 mb-3">Informasi Pelanggan</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Nama:</span>
+                                <span class="font-medium">{{ trim($order->first_name . ' ' . $order->last_name) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Email:</span>
+                                <span class="font-medium">{{ $order->email ?: '-' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">WhatsApp:</span>
+                                <span class="font-medium">{{ $order->whatsapp_number ?: '-' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Seller:</span>
+                                <span class="font-medium">{{ $order->seller_name ?? 'Pembelian Website' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">ID Seller:</span>
+                                <span class="font-medium">{{ $order->seller_id ?: '-' }}</span>
+                            </div>
+                            @if (! empty($order->admin_handle))
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Admin Handle:</span>
+                                    <span class="font-medium">{{ $order->admin_handle }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informasi Kupon -->
+                @if ($coupon)
+                    <div class="mt-6">
+                        <h4 class="font-semibold text-gray-900 mb-3">Informasi Kupon</h4>
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <i class="fas fa-ticket-alt text-green-600"></i>
+                                <h5 class="font-medium text-green-900">{{ $coupon->name }}</h5>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {{ $coupon->code }}
+                                </span>
+                            </div>
+
+                            @if (! empty($coupon->description))
+                                <p class="text-sm text-green-700 mb-3">{{ $coupon->description }}</p>
+                            @endif
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="text-green-700 font-medium">Tipe Diskon:</span>
+                                    <div class="text-green-900">
+                                        @if ($coupon->type === 'percentage')
+                                            {{ number_format($coupon->value, 2, '.', ',') }}%
+                                            @if (! empty($coupon->max_discount))
+                                                (Max: {{ $rp($coupon->max_discount) }})
+                                            @endif
+                                        @else
+                                            {{ $rp($coupon->value) }}
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span class="text-green-700 font-medium">Diskon Diberikan:</span>
+                                    <div class="text-green-900 font-semibold">{{ $rp($discount) }}</div>
+                                </div>
+
+                                @if (! empty($coupon->min_purchase))
+                                    <div>
+                                        <span class="text-green-700 font-medium">Min. Pembelian:</span>
+                                        <div class="text-green-900">{{ $rp($coupon->min_purchase) }}</div>
+                                    </div>
+                                @endif
+
+                                @if (! empty($coupon->expires_at))
+                                    <div>
+                                        <span class="text-green-700 font-medium">Berlaku Sampai:</span>
+                                        <div class="text-green-900">{{ $wib($coupon->expires_at) }}</div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- Statistik penggunaan kupon -->
+                            <div class="mt-3 pt-3 border-t border-green-200">
+                                <div class="flex items-center justify-between text-xs text-green-600">
+                                    <span>
+                                        <i class="fas fa-chart-bar mr-1"></i>
+                                        Penggunaan: {{ $coupon->used_count ?? 0 }}
+                                        @if (! empty($coupon->usage_limit))
+                                            / {{ $coupon->usage_limit }}
+                                        @endif
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Digunakan: {{ $wib($order->coupon_used_at ?? $order->created_at) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Rincian Pembayaran DP -->
+                @unless ($isFull)
+                    <div class="mt-6">
+                        <h4 class="font-semibold text-gray-900 mb-3">Rincian Pembayaran DP</h4>
+                        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-700">Down Payment ({{ number_format($dpPercent, 1) }}%)</div>
+                                    <div class="text-lg font-semibold text-blue-900">{{ $rp($order->amount_due) }}</div>
+                                    @if ($dpPaid)
+                                        <div class="text-xs text-green-600 mt-1">
+                                            <i class="fas fa-check mr-1"></i>
+                                            Dibayar {{ $wib($order->dp_paid_at) }}
+                                        </div>
+                                    @else
+                                        <div class="text-xs text-yellow-600 mt-1">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            Menunggu pembayaran
+                                        </div>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-700">Sisa Pembayaran ({{ number_format($remPercent, 1) }}%)</div>
+                                    <div class="text-lg font-semibold text-orange-900">{{ $rp($remaining) }}</div>
+                                    @if (! $dpPaid)
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            <i class="fas fa-minus mr-1"></i>
+                                            Menunggu DP terlebih dahulu
+                                        </div>
+                                    @elseif ($remPaid)
+                                        <div class="text-xs text-green-600 mt-1">
+                                            <i class="fas fa-check mr-1"></i>
+                                            Dibayar {{ $wib($order->remaining_paid_at) }}
+                                        </div>
+                                    @else
+                                        <div class="text-xs text-orange-600 mt-1">
+                                            <i class="fas fa-hourglass-half mr-1"></i>
+                                            Menunggu pelunasan
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endunless
+
+                <!-- Bukti Pembayaran -->
+                @foreach ($proofSections as [$proofTitle, $proofStatus, $proofList, $showEmpty, $proofBtn])
+                    @if ($proofList->isNotEmpty() || $showEmpty)
+                        <div class="mt-6">
+                            <h4 class="font-semibold text-gray-900 mb-3">{{ $proofTitle }}</h4>
+                            @forelse ($proofList as $p)
+                                @php $proofUrl = Storage::disk('public')->url($p->proof_path); @endphp
+                                <div class="bg-gray-50 rounded-lg p-4 {{ ! $loop->last ? 'mb-3' : '' }}">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-700">Status:</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2">
+                                                <i class="fas fa-check mr-1"></i>
+                                                {{ $proofStatus }}
+                                            </span>
+                                        </div>
+                                        <div class="text-sm text-gray-500">{{ $wib($p->created_at) }}</div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <a href="{{ $proofUrl }}" target="_blank" rel="noopener" class="{{ $btnPrimary }}">
+                                            <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path fill-rule="evenodd" d="M1.38 8.28a.87.87 0 0 1 0-.566 7.003 7.003 0 0 1 13.238.006.87.87 0 0 1 0 .566A7.003 7.003 0 0 1 1.379 8.28ZM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" clip-rule="evenodd"/></svg>
+                                            <span>{{ $proofBtn }}</span>
+                                        </a>
+                                        <a href="{{ $proofUrl }}" download class="{{ $btnGhost }}">
+                                            <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z"/><path d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"/></svg>
+                                            <span>Download</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <i class="fas fa-times mr-1"></i> Belum ada bukti pembayaran
+                                    </span>
+                                </div>
+                            @endforelse
+                        </div>
+                    @endif
+                @endforeach
+
+                <!-- Alamat Pengiriman -->
+                <div class="mt-6">
+                    <h4 class="font-semibold text-gray-900 mb-3">Alamat Pengiriman</h4>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <p class="text-sm text-gray-600">
+                            {{ $order->address }}<br>
+                            {{ $order->city }}, {{ $order->province }} {{ $order->postal_code }}<br>
+                            {{ $order->country ?? 'Indonesia' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Item Pesanan -->
+                <div class="mt-6">
+                    <h4 class="font-semibold text-gray-900 mb-3">Item Pesanan</h4>
+                    <div class="space-y-3">
+                        @foreach ($order->items as $item)
+                            @php
+                                $name  = $item->product_name ?? $item->product->name ?? '-';
+                                $image = $item->product_image ?? $item->product->image ?? null;
+                                $price = (int) $item->price;
+                                $qty   = (int) $item->quantity;
+                                $attrs = array_filter([
+                                    ! empty($item->model) ? 'Model: '  . $item->model : null,
+                                    ! empty($item->color) ? 'Warna: '  . $item->color : null,
+                                    ! empty($item->size)  ? 'Ukuran: ' . $item->size  : null,
+                                ]);
+                            @endphp
+                            <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                                <div class="w-16 h-16 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                                    @if ($image)
+                                        <img src="{{ Storage::disk('public')->url($image) }}" alt="{{ $name }}" class="w-full h-full object-cover">
+                                    @endif
+                                </div>
+                                <div class="flex-1">
+                                    <h5 class="font-medium text-gray-900">{{ $name }}</h5>
+                                    @if ($attrs)
+                                        <div class="text-sm text-gray-500">{{ implode(' | ', $attrs) }}</div>
+                                    @endif
+                                    <div class="text-sm text-gray-500">{{ $rp($price) }} × {{ $qty }}</div>
+                                </div>
+                                <div class="text-sm font-medium text-gray-900">{{ $rp($price * $qty) }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end p-6 border-t bg-gray-50 shrink-0">
+                <button type="button" onclick="this.closest('dialog').close()"
+                        class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg text-zinc-800 hover:bg-zinc-800/5 transition-colors">
+                    <span>Tutup</span>
+                </button>
+            </div>
+        </div>
+    </dialog>
+@endforeach
+
+<style>
+    /* Kunci scroll halaman di belakang modal */
+    html:has(dialog[data-order-dialog][open]),
+    body:has(dialog[data-order-dialog][open]) { overflow: hidden; }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // Filter dropdown langsung diterapkan; kolom cari lewat Enter
     document.querySelectorAll('#filterForm [data-autosubmit]').forEach((el) =>
         el.addEventListener('change', () => el.form.submit())
+    );
+
+    // Modal detail: klik area gelap di luar kotak menutup modal
+    document.querySelectorAll('dialog[data-order-dialog]').forEach((dlg) =>
+        dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); })
     );
 
     // Dropdown aksi: menu memakai posisi fixed agar tidak terpotong oleh tabel

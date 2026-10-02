@@ -145,6 +145,7 @@ Route::delete('/cart/items/{key}', [CartController::class, 'remove'])->name('car
 
 Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/seller', [CheckoutController::class, 'lookupSeller'])->middleware('throttle:30,1')->name('checkout.seller');
 Route::get('/checkout/berhasil/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');

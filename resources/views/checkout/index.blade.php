@@ -3,9 +3,9 @@
 @section('title', 'Checkout')
 
 @php
-    $in  = 'w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#B4775E] focus:border-[#B4775E]';
-    $lbl = 'block text-sm font-medium text-gray-700 mb-2';
-    $req = '<span class="text-red-500">*</span>';
+$in = 'w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#B4775E] focus:border-[#B4775E]';
+$lbl = 'block text-sm font-medium text-gray-700 mb-2';
+$req = '<span class="text-red-500">*</span>';
 @endphp
 
 @section('content')
@@ -23,9 +23,9 @@
     </div>
 
     @if ($errors->has('coupon') || session('error'))
-        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {{ $errors->first('coupon') ?: session('error') }}
-        </div>
+    <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ $errors->first('coupon') ?: session('error') }}
+    </div>
     @endif
 
     <form id="checkoutForm" method="POST" action="{{ route('checkout.store') }}" novalidate>
@@ -47,24 +47,40 @@
                             <p class="text-sm text-green-700 mt-1">Tidak perlu login member. Isi data penerima dan pilih pengiriman untuk menyelesaikan pesanan.</p>
                         </div>
 
+                        {{-- Nama Seller (otomatis dari ID) --}}
                         <div>
-                            <label for="seller_id" class="{{ $lbl }}">ID Seller <span class="text-gray-400 font-normal">(opsional)</span></label>
-                            <input type="text" id="seller_id" name="seller_id" value="{{ old('seller_id') }}" autocomplete="off"
-                                   class="{{ $in }}" placeholder="Kosongkan bila membeli langsung dari website">
+                            <label for="seller_name" class="{{ $lbl }}">Nama Seller {!! $req !!}</label>
+                            <input type="text" id="seller_name" readonly
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none"
+                                placeholder="Nama seller otomatis dari ID">
+                        </div>
+
+                        {{-- ID Seller + Cek ID --}}
+                        <div>
+                            <label for="seller_id" class="{{ $lbl }}">ID Seller {!! $req !!}</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="seller_id" name="seller_id" value="{{ old('seller_id', $prefill['seller_id']) }}" autocomplete="off"
+                                    class="flex-1 {{ $in }}" placeholder="Masukkan ID seller, contoh ZK1234">
+                                <button type="button" id="sellerCheck"
+                                    class="px-4 py-2 rounded-lg bg-[#B4775E] text-white font-medium hover:bg-[#9C6650] transition-colors disabled:opacity-60 whitespace-nowrap">
+                                    Cek ID
+                                </button>
+                            </div>
+                            <div id="sellerMsg" class="mt-1"></div>
                             @error('seller_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
 
                         <div>
                             <label for="whatsapp_number" class="{{ $lbl }}">No WhatsApp {!! $req !!}</label>
-                            <input type="text" id="whatsapp_number" name="whatsapp_number" value="{{ old('whatsapp_number') }}"
-                                   inputmode="tel" class="{{ $in }}" placeholder="Contoh: 081234567890">
+                            <input type="text" id="whatsapp_number" name="whatsapp_number" value="{{ old('whatsapp_number', $prefill['whatsapp_number']) }}"
+                                inputmode="tel" class="{{ $in }}" placeholder="Contoh: 081234567890">
                             @error('whatsapp_number')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
 
                         <div>
                             <label for="country" class="{{ $lbl }}">Negara</label>
                             <input type="text" id="country" value="Indonesia" disabled
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-500">
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-500">
                         </div>
 
                         <div>
@@ -72,7 +88,7 @@
                             <select id="shipping_method" name="shipping_method" class="{{ $in }}">
                                 <option value="">Pilih ekspedisi</option>
                                 @foreach ($shipping as $s)
-                                    <option value="{{ $s }}" @selected(old('shipping_method') === $s)>{{ $s }}</option>
+                                <option value="{{ $s }}" @selected(old('shipping_method', $prefill['shipping_method'])===$s)>{{ $s }}</option>
                                 @endforeach
                             </select>
                             <p class="text-xs text-gray-500 mt-1">Pilih ekspedisi yang digunakan. Biaya ongkir tidak dihitung otomatis di website.</p>
@@ -88,26 +104,26 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="first_name" class="{{ $lbl }}">Nama Depan {!! $req !!}</label>
-                                <input type="text" id="first_name" name="first_name" value="{{ old('first_name') }}" class="{{ $in }}" placeholder="Nama depan">
+                                <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $prefill['first_name']) }}" class="{{ $in }}" placeholder="Nama depan">
                                 @error('first_name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                             </div>
                             <div>
                                 <label for="last_name" class="{{ $lbl }}">Nama Belakang {!! $req !!}</label>
-                                <input type="text" id="last_name" name="last_name" value="{{ old('last_name') }}" class="{{ $in }}" placeholder="Nama belakang">
+                                <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $prefill['last_name']) }}" class="{{ $in }}" placeholder="Nama belakang">
                                 @error('last_name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                             </div>
                         </div>
 
                         <div>
                             <label for="address" class="{{ $lbl }}">Alamat {!! $req !!}</label>
-                            <textarea id="address" name="address" rows="3" class="{{ $in }}" placeholder="Alamat lengkap">{{ old('address') }}</textarea>
+                            <textarea id="address" name="address" rows="3" class="{{ $in }}" placeholder="Alamat lengkap">{{ old('address', $prefill['address']) }}</textarea>
                             @error('address')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="city" class="{{ $lbl }}">Kota {!! $req !!}</label>
-                                <input type="text" id="city" name="city" value="{{ old('city') }}" class="{{ $in }}" placeholder="Kota">
+                                <input type="text" id="city" name="city" value="{{ old('city', $prefill['city']) }}" class="{{ $in }}" placeholder="Kota">
                                 @error('city')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                             </div>
                             <div>
@@ -115,7 +131,7 @@
                                 <select id="province" name="province" class="{{ $in }}">
                                     <option value="">Pilih provinsi</option>
                                     @foreach ($provinces as $p)
-                                        <option value="{{ $p }}" @selected(old('province') === $p)>{{ $p }}</option>
+                                    <option value="{{ $p }}" @selected(old('province', $prefill['province'])===$p)>{{ $p }}</option>
                                     @endforeach
                                 </select>
                                 @error('province')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
@@ -124,8 +140,8 @@
 
                         <div>
                             <label for="postal_code" class="{{ $lbl }}">Kode Pos {!! $req !!}</label>
-                            <input type="text" id="postal_code" name="postal_code" value="{{ old('postal_code') }}" inputmode="numeric" maxlength="5"
-                                   class="{{ $in }}" placeholder="12345">
+                            <input type="text" id="postal_code" name="postal_code" value="{{ old('postal_code', $prefill['postal_code']) }}" inputmode="numeric" maxlength="5"
+                                class="{{ $in }}" placeholder="12345">
                             @error('postal_code')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
 
@@ -146,23 +162,23 @@
                     <h2 class="text-xl font-semibold text-gray-900 mb-6">Pesanan Anda</h2>
                     <div class="space-y-4">
                         @foreach ($cart['items'] as $it)
-                            <div class="flex items-start space-x-4 py-4 border-b border-gray-200 last:border-b-0">
-                                <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                                    @if ($it['image'])
-                                        <img src="{{ $it['image'] }}" alt="{{ $it['name'] }}" class="w-full h-full object-cover">
-                                    @endif
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="font-medium text-gray-900 text-sm">{{ $it['name'] }}</h3>
-                                    <div class="text-xs text-gray-500 mt-1">
-                                        @if ($it['model'])<div>Model: {{ $it['model'] }}</div>@endif
-                                        @if ($it['color'])<div>Warna: {{ $it['color'] }}</div>@endif
-                                        @if ($it['size'])<div>Ukuran: {{ $it['size'] }}</div>@endif
-                                        <div>Qty: {{ $it['quantity'] }}</div>
-                                    </div>
-                                </div>
-                                <div class="text-sm font-medium text-gray-900">{{ $it['subtotal_formatted'] }}</div>
+                        <div class="flex items-start space-x-4 py-4 border-b border-gray-200 last:border-b-0">
+                            <div class="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                                @if ($it['image'])
+                                <img src="{{ $it['image'] }}" alt="{{ $it['name'] }}" class="w-full h-full object-cover">
+                                @endif
                             </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-medium text-gray-900 text-sm">{{ $it['name'] }}</h3>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    @if ($it['model'])<div>Model: {{ $it['model'] }}</div>@endif
+                                    @if ($it['color'])<div>Warna: {{ $it['color'] }}</div>@endif
+                                    @if ($it['size'])<div>Ukuran: {{ $it['size'] }}</div>@endif
+                                    <div>Qty: {{ $it['quantity'] }}</div>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium text-gray-900">{{ $it['subtotal_formatted'] }}</div>
+                        </div>
                         @endforeach
                     </div>
                 </div>
@@ -176,7 +192,7 @@
                         <div class="flex space-x-2">
                             <input type="text" id="coupon_code" placeholder="Masukkan kode kupon" class="flex-1 {{ $in }}">
                             <button type="button" id="couponApply"
-                                    class="bg-[#B4775E] text-white px-4 h-10 rounded-lg text-sm font-medium hover:bg-[#9C6650] transition-colors whitespace-nowrap">
+                                class="bg-[#B4775E] text-white px-4 h-10 rounded-lg text-sm font-medium hover:bg-[#9C6650] transition-colors whitespace-nowrap">
                                 Terapkan
                             </button>
                         </div>
@@ -184,33 +200,33 @@
                     </div>
 
                     @if (count($cart['available_coupons']))
-                        <div>
-                            <div class="flex items-center justify-between mb-3">
-                                <h4 class="text-md font-medium text-gray-800">Voucher Tersedia</h4>
-                                <span class="text-xs text-gray-500">Opsional</span>
-                            </div>
-                            <div class="space-y-3">
-                                @foreach ($cart['available_coupons'] as $c)
-                                    <div data-coupon="{{ $c['code'] }}"
-                                         class="border rounded-lg p-3 transition-all cursor-pointer {{ $c['applied'] ? 'border-[#B4775E] bg-[#B4775E]/5' : 'border-gray-200 hover:border-[#B4775E]' }}">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="min-w-0">
-                                                <div class="flex items-center gap-2 flex-wrap">
-                                                    <h5 class="font-medium text-gray-900 text-sm">{{ $c['title'] }}</h5>
-                                                    <span class="border border-dashed border-[#B4775E] text-[#B4775E] rounded px-1.5 text-[11px] font-semibold">{{ $c['code'] }}</span>
-                                                </div>
-                                                @if ($c['description'])<p class="text-xs text-gray-600 mt-1">{{ $c['description'] }}</p>@endif
-                                                <div class="text-xs text-[#B4775E] font-medium mt-1">
-                                                    {{ str_replace(' OFF', ' Off', $c['discount_label']) }}@if ($c['max_discount_formatted']) (Maks. {{ $c['max_discount_formatted'] }})@endif
-                                                </div>
-                                                @if ($c['min_amount_formatted'])<div class="text-xs text-gray-500 mt-1">Min. pembelian {{ $c['min_amount_formatted'] }}</div>@endif
-                                            </div>
-                                            <input type="radio" name="coupon" value="{{ $c['code'] }}" @checked($c['applied']) class="mt-1 text-[#B4775E] pointer-events-none">
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-md font-medium text-gray-800">Voucher Tersedia</h4>
+                            <span class="text-xs text-gray-500">Opsional</span>
                         </div>
+                        <div class="space-y-3">
+                            @foreach ($cart['available_coupons'] as $c)
+                            <div data-coupon="{{ $c['code'] }}"
+                                class="border rounded-lg p-3 transition-all cursor-pointer {{ $c['applied'] ? 'border-[#B4775E] bg-[#B4775E]/5' : 'border-gray-200 hover:border-[#B4775E]' }}">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h5 class="font-medium text-gray-900 text-sm">{{ $c['title'] }}</h5>
+                                            <span class="border border-dashed border-[#B4775E] text-[#B4775E] rounded px-1.5 text-[11px] font-semibold">{{ $c['code'] }}</span>
+                                        </div>
+                                        @if ($c['description'])<p class="text-xs text-gray-600 mt-1">{{ $c['description'] }}</p>@endif
+                                        <div class="text-xs text-[#B4775E] font-medium mt-1">
+                                            {{ str_replace(' OFF', ' Off', $c['discount_label']) }}@if ($c['max_discount_formatted']) (Maks. {{ $c['max_discount_formatted'] }})@endif
+                                        </div>
+                                        @if ($c['min_amount_formatted'])<div class="text-xs text-gray-500 mt-1">Min. pembelian {{ $c['min_amount_formatted'] }}</div>@endif
+                                    </div>
+                                    <input type="radio" name="coupon" value="{{ $c['code'] }}" @checked($c['applied']) class="mt-1 text-[#B4775E] pointer-events-none">
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
                     @endif
                 </div>
 
@@ -219,14 +235,16 @@
                     <h3 class="text-xl font-bold text-gray-800">Informasi Pembayaran</h3>
                     <p class="text-gray-700">Mohon transfer ke rekening berikut dengan menyertakan bukti transfer:</p>
                     <div class="space-y-5">
-                        @foreach ($banks as $b)
-                            <div class="pt-4 border-t-2 border-dashed border-gray-700">
-                                <div class="text-sm text-gray-700 space-y-1">
-                                    <div><span class="font-semibold text-gray-800">{{ $b['bank'] }}:</span> <span class="font-mono text-[#B4775E]">{{ $b['number'] }}</span></div>
-                                    <div>A/N: <span class="font-medium text-gray-800">{{ $b['name'] }}</span></div>
-                                </div>
+                        @forelse ($banks as $b)
+                        <div class="pt-4 border-t-2 border-dashed border-gray-700">
+                            <div class="text-sm text-gray-700 space-y-1">
+                                <div><span class="font-semibold text-gray-800">{{ $b['bank'] }}:</span> <span class="font-mono text-[#B4775E]">{{ $b['number'] }}</span></div>
+                                <div>A/N: <span class="font-medium text-gray-800">{{ $b['name'] }}</span></div>
                             </div>
-                        @endforeach
+                        </div>
+                        @empty
+                        <p class="text-sm text-gray-600">Informasi rekening akan dikirim admin melalui WhatsApp.</p>
+                        @endforelse
                     </div>
                     <p class="text-gray-700 font-medium mt-4">Alhamdulillah, Jazakumullahu Khairan 🥰</p>
                 </div>
@@ -237,9 +255,9 @@
                     <div class="space-y-3">
                         <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>{{ $cart['subtotal_formatted'] }}</span></div>
                         @if ($cart['coupon'])
-                            <div class="flex justify-between text-green-600">
-                                <span>Diskon ({{ $cart['coupon']['code'] }})</span><span>- {{ $cart['discount_formatted'] }}</span>
-                            </div>
+                        <div class="flex justify-between text-green-600">
+                            <span>Diskon ({{ $cart['coupon']['code'] }})</span><span>- {{ $cart['discount_formatted'] }}</span>
+                        </div>
                         @endif
                         <hr>
                         <div class="flex justify-between text-lg font-semibold text-gray-900">
@@ -251,7 +269,7 @@
 
                             <div class="flex items-start space-x-3">
                                 <input type="radio" id="checkout_payment_dp" name="checkout_payment_method" value="dp"
-                                       class="mt-1 text-[#B4775E] focus:ring-[#B4775E]" @checked($cart['payment_method'] === 'dp')>
+                                    class="mt-1 text-[#B4775E] focus:ring-[#B4775E]" @checked($cart['payment_method']==='dp' )>
                                 <label for="checkout_payment_dp" class="flex-1 cursor-pointer">
                                     <div class="flex justify-between items-center">
                                         <span class="font-medium text-gray-900">Down Payment (DP)</span>
@@ -266,7 +284,7 @@
 
                             <div class="flex items-start space-x-3">
                                 <input type="radio" id="checkout_payment_full" name="checkout_payment_method" value="full"
-                                       class="mt-1 text-[#B4775E] focus:ring-[#B4775E]" @checked($cart['payment_method'] === 'full')>
+                                    class="mt-1 text-[#B4775E] focus:ring-[#B4775E]" @checked($cart['payment_method']==='full' )>
                                 <label for="checkout_payment_full" class="flex-1 cursor-pointer">
                                     <div class="flex justify-between items-center">
                                         <span class="font-medium text-gray-900">Pembayaran Penuh</span>
@@ -279,7 +297,7 @@
                     </div>
 
                     <button type="submit" id="submitOrder"
-                            class="mt-6 w-full h-11 inline-flex items-center justify-center bg-[#B4775E] text-white rounded-lg text-sm font-medium hover:bg-[#9C6650] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                        class="mt-6 w-full h-11 inline-flex items-center justify-center bg-[#B4775E] text-white rounded-lg text-sm font-medium hover:bg-[#9C6650] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                         Buat Pesanan
                     </button>
                 </div>
@@ -289,74 +307,171 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const csrf = @json(csrf_token());
-    const URLS = {
-        apply:   @json(route('cart.coupon.apply')),
-        remove:  @json(route('cart.coupon.remove')),
-        payment: @json(route('cart.payment')),
-    };
-    const coupons = @json($cart['available_coupons']);
-    const msg = document.getElementById('couponMsg');
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    document.addEventListener('DOMContentLoaded', () => {
+        const csrf = @json(csrf_token());
+        const URLS = {
+            apply: @json(route('cart.coupon.apply')),
+            remove: @json(route('cart.coupon.remove')),
+            payment: @json(route('cart.payment')),
+            seller: @json(route('checkout.seller')),
+        };
+        const coupons = @json($cart['available_coupons']);
+        const msg = document.getElementById('couponMsg');
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        } [c]));
 
-    const showErrors = (lines) => {
-        msg.innerHTML = [].concat(lines).map((l) => `<p class="text-red-500 text-sm">${esc(l)}</p>`).join('');
-    };
+        const showErrors = (lines) => {
+            msg.innerHTML = [].concat(lines).map((l) => `<p class="text-red-500 text-sm">${esc(l)}</p>`).join('');
+        };
 
-    async function api(url, method, body = null) {
-        const res = await fetch(url, {
-            method,
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
-            body: body ? JSON.stringify(body) : null,
+        async function api(url, method, body = null) {
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: body ? JSON.stringify(body) : null,
+            });
+            return {
+                ok: res.ok,
+                data: await res.json().catch(() => ({}))
+            };
+        }
+
+        // Total & DP dihitung server, jadi cukup muat ulang halaman setelah kupon/pembayaran berubah.
+        // Isian formulir dijaga lewat sessionStorage agar tidak hilang saat reload.
+        const form = document.getElementById('checkoutForm');
+        const KEY = 'zk_checkout_draft';
+        const fields = ['seller_id', 'whatsapp_number', 'shipping_method', 'first_name', 'last_name', 'address', 'city', 'province', 'postal_code', 'notes'];
+        const save = () => sessionStorage.setItem(KEY, JSON.stringify(Object.fromEntries(fields.map((f) => [f, form.elements[f]?.value ?? '']))));
+        const reload = () => {
+            save();
+            location.reload();
+        };
+        try {
+            const draft = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+            // Draf (setelah reload kupon/pembayaran) adalah keadaan terbaru, jadi menimpa isian otomatis dari akun
+            if (draft) fields.forEach((f) => {
+                if (form.elements[f]) form.elements[f].value = draft[f] ?? '';
+            });
+        } catch (e) {}
+
+        // ===== Cek ID Seller =====
+        const sellerId = document.getElementById('seller_id');
+        const sellerName = document.getElementById('seller_name');
+        const sellerMsg = document.getElementById('sellerMsg');
+        const sellerBtn = document.getElementById('sellerCheck');
+        let sellerTimer;
+
+        async function lookupSeller() {
+            const id = sellerId.value.trim();
+            if (!id) {
+                sellerName.value = '';
+                sellerMsg.innerHTML = '';
+                return;
+            }
+
+            sellerBtn.disabled = true;
+            sellerBtn.textContent = 'Cek...';
+            try {
+                const res = await fetch(`${URLS.seller}?seller_id=${encodeURIComponent(id)}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (id !== sellerId.value.trim()) return; // input sudah berubah, abaikan hasil lama
+
+                if (res.ok && data.found) {
+                    sellerName.value = data.name;
+                    sellerMsg.innerHTML = `<p class="text-green-600 text-sm">✓ Seller ditemukan: <strong>${esc(data.name)}</strong></p>`;
+                } else {
+                    sellerName.value = '';
+                    sellerMsg.innerHTML = `<p class="text-red-500 text-sm">ID Seller tidak ditemukan.</p>`;
+                }
+            } finally {
+                sellerBtn.disabled = false;
+                sellerBtn.textContent = 'Cek ID';
+            }
+        }
+
+        sellerBtn.addEventListener('click', lookupSeller);
+        sellerId.addEventListener('blur', lookupSeller);
+        sellerId.addEventListener('input', () => {
+            clearTimeout(sellerTimer);
+            sellerName.value = '';
+            sellerMsg.innerHTML = '';
+            sellerTimer = setTimeout(lookupSeller, 350);
         });
-        return { ok: res.ok, data: await res.json().catch(() => ({})) };
-    }
+        sellerId.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                lookupSeller();
+            }
+        });
 
-    // Total & DP dihitung server, jadi cukup muat ulang halaman setelah kupon/pembayaran berubah.
-    // Isian formulir dijaga lewat sessionStorage agar tidak hilang saat reload.
-    const form = document.getElementById('checkoutForm');
-    const KEY = 'zk_checkout_draft';
-    const fields = ['seller_id', 'whatsapp_number', 'shipping_method', 'first_name', 'last_name', 'address', 'city', 'province', 'postal_code', 'notes'];
-    const save = () => sessionStorage.setItem(KEY, JSON.stringify(Object.fromEntries(fields.map((f) => [f, form.elements[f]?.value ?? '']))));
-    const reload = () => { save(); location.reload(); };
-    try {
-        const draft = JSON.parse(sessionStorage.getItem(KEY) || 'null');
-        if (draft) fields.forEach((f) => { if (form.elements[f] && !form.elements[f].value) form.elements[f].value = draft[f] ?? ''; });
-    } catch (e) {}
+        // Isi nama seller saat halaman dimuat ulang (old input / draf)
+        if (sellerId.value.trim()) lookupSeller();
 
-    async function applyCode(code) {
-        const { ok, data } = await api(URLS.apply, 'POST', { code });
-        if (ok) return reload();
-        showErrors(data.errors ? Object.values(data.errors).flat() : (data.message || 'Kupon tidak dapat dipakai.'));
-    }
+        async function applyCode(code) {
+            const {
+                ok,
+                data
+            } = await api(URLS.apply, 'POST', {
+                code
+            });
+            if (ok) return reload();
+            showErrors(data.errors ? Object.values(data.errors).flat() : (data.message || 'Kupon tidak dapat dipakai.'));
+        }
 
-    const input = document.getElementById('coupon_code');
-    document.getElementById('couponApply').addEventListener('click', () => {
-        const code = input.value.trim();
-        code ? applyCode(code) : showErrors('Masukkan kode kupon terlebih dahulu.');
+        const input = document.getElementById('coupon_code');
+        document.getElementById('couponApply').addEventListener('click', () => {
+            const code = input.value.trim();
+            code ? applyCode(code) : showErrors('Masukkan kode kupon terlebih dahulu.');
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('couponApply').click();
+            }
+        });
+
+        document.querySelectorAll('[data-coupon]').forEach((el) => el.addEventListener('click', async () => {
+            const c = coupons.find((x) => x.code === el.dataset.coupon);
+            if (!c) return;
+            if (c.applied) {
+                await api(URLS.remove, 'DELETE');
+                return reload();
+            }
+            if (!c.eligible) return showErrors(c.errors);
+            applyCode(c.code);
+        }));
+
+        document.querySelectorAll('input[name=checkout_payment_method]').forEach((r) => r.addEventListener('change', async () => {
+            const {
+                ok
+            } = await api(URLS.payment, 'POST', {
+                method: r.value
+            });
+            if (ok) reload();
+        }));
+
+        // Cegah klik ganda pada "Buat Pesanan"; bersihkan draf setelah berhasil dikirim
+        form.addEventListener('submit', () => {
+            sessionStorage.removeItem(KEY);
+            const b = document.getElementById('submitOrder');
+            b.disabled = true;
+            b.textContent = 'Memproses...';
+        });
     });
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('couponApply').click(); } });
-
-    document.querySelectorAll('[data-coupon]').forEach((el) => el.addEventListener('click', async () => {
-        const c = coupons.find((x) => x.code === el.dataset.coupon);
-        if (!c) return;
-        if (c.applied) { await api(URLS.remove, 'DELETE'); return reload(); }
-        if (!c.eligible) return showErrors(c.errors);
-        applyCode(c.code);
-    }));
-
-    document.querySelectorAll('input[name=checkout_payment_method]').forEach((r) => r.addEventListener('change', async () => {
-        const { ok } = await api(URLS.payment, 'POST', { method: r.value });
-        if (ok) reload();
-    }));
-
-    // Cegah klik ganda pada "Buat Pesanan"; bersihkan draf setelah berhasil dikirim
-    form.addEventListener('submit', () => {
-        sessionStorage.removeItem(KEY);
-        const b = document.getElementById('submitOrder');
-        b.disabled = true; b.textContent = 'Memproses...';
-    });
-});
 </script>
 @endsection

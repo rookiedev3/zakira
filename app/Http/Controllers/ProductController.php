@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
@@ -49,18 +50,21 @@ class ProductController extends Controller
         return view('products.index', [
             'products'        => $products,
             'brandOptions'    => Brand::orderBy('name')->get(['id', 'name']),
+            // Filter index tetap menampilkan semua kategori (termasuk inactive)
             'categoryOptions' => Category::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     /* --------------------------------------------------------------
-       CREATE – form Buat Produk
+       CREATE – form Buat Produk (hanya merek & kategori aktif)
     -------------------------------------------------------------- */
     public function create()
     {
+        $categories = Category::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
         return view('products.create', [
             'brands'     => Brand::active()->orderBy('name')->get(['id', 'name']),
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'categories' => $categories,
         ]);
     }
 
@@ -222,19 +226,33 @@ class ProductController extends Controller
 
     /* --------------------------------------------------------------
        EDIT – form Edit Produk
+       Merek & kategori aktif + yang sudah terpasang di produk ini
+       (supaya tidak hilang / ter-unsync diam-diam walau sudah dinonaktifkan)
     -------------------------------------------------------------- */
     public function edit($id)
     {
         $product = Product::with([
-            'categories', 'colors', 'models', 'sizes', 'prices',
-            'images', 'freeItems', 'priceRules',
+            'categories',
+            'colors',
+            'models',
+            'sizes',
+            'prices',
+            'images',
+            'freeItems',
+            'priceRules',
         ])->findOrFail($id);
+
+        $currentCategoryIds = $product->categories->pluck('id')->all();
 
         return view('products.edit', [
             'product'    => $product,
-            // Merek produk saat ini tetap muncul walau sudah dinonaktifkan
             'brands'     => Brand::active()->orWhere('id', $product->brand_id)->orderBy('name')->get(['id', 'name']),
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'categories' => Category::where(function ($q) use ($currentCategoryIds) {
+                $q->where('is_active', true)
+                    ->orWhereIn('id', $currentCategoryIds);
+            })
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -249,7 +267,7 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
 
-        $data = $request->validate($this->updateRules(), $this->messages(), $this->attributes());
+        $data = $request->validate($this->updateRules($product), $this->messages(), $this->attributes());
 
         $stored   = []; // file baru (dibersihkan bila transaksi gagal)
         $obsolete = []; // file lama (dihapus setelah transaksi berhasil)
@@ -293,34 +311,52 @@ class ProductController extends Controller
 
                 // Warna
                 $colorIds = $this->syncVariants(
-                    $request, $product->colors(), 'colors', $data['colors'], true,
-                    fn ($row) => [
+                    $request,
+                    $product->colors(),
+                    'colors',
+                    $data['colors'],
+                    true,
+                    fn($row) => [
                         'name'     => $row['name'],
                         'hex_code' => ! empty($row['hex_code'])
                             ? '#' . strtoupper(ltrim($row['hex_code'], '#'))
                             : null,
                     ],
-                    $put, $obsolete, 'product-colors'
+                    $put,
+                    $obsolete,
+                    'product-colors'
                 );
 
                 // Model
                 $modelIds = $this->syncVariants(
-                    $request, $product->models(), 'models', $data['models'], true,
-                    fn ($row) => [
+                    $request,
+                    $product->models(),
+                    'models',
+                    $data['models'],
+                    true,
+                    fn($row) => [
                         'name'        => $row['name'],
                         'description' => $row['description'] ?? null,
                     ],
-                    $put, $obsolete, 'product-models'
+                    $put,
+                    $obsolete,
+                    'product-models'
                 );
 
                 // Ukuran
                 $sizeIds = $this->syncVariants(
-                    $request, $product->sizes(), 'sizes', $data['sizes'], false,
-                    fn ($row, $i) => [
+                    $request,
+                    $product->sizes(),
+                    'sizes',
+                    $data['sizes'],
+                    false,
+                    fn($row, $i) => [
                         'size'         => $row['size'],
                         'is_available' => $request->boolean("sizes.$i.available"),
                     ],
-                    $put, $obsolete, ''
+                    $put,
+                    $obsolete,
+                    ''
                 );
 
                 // Matriks harga (sel kosong = tidak ada harga khusus)
@@ -503,6 +539,7 @@ class ProductController extends Controller
 
     /* --------------------------------------------------------------
        Aturan validasi form Buat Produk
+       (kategori hanya boleh yang aktif)
     -------------------------------------------------------------- */
     private function rules(): array
     {
@@ -518,7 +555,9 @@ class ProductController extends Controller
             'product_note'     => 'nullable|string|max:1000',
             'description'      => 'nullable|string',
             'category_ids'     => 'nullable|array',
-            'category_ids.*'   => 'exists:categories,id',
+            'category_ids.*'   => [
+                Rule::exists('categories', 'id')->where('is_active', true),
+            ],
 
             'colors'              => 'required|array|min:1',
             'colors.*.name'       => 'required|string|max:100',
@@ -560,11 +599,23 @@ class ProductController extends Controller
 
     /* --------------------------------------------------------------
        Aturan validasi form Edit Produk:
-       sama dengan Buat Produk, ditambah ID/hapus gambar, dan harga boleh kosong.
+       sama dengan Buat Produk, ditambah ID/hapus gambar, harga boleh kosong,
+       dan kategori = aktif ATAU yang sudah terpasang di produk ini.
     -------------------------------------------------------------- */
-    private function updateRules(): array
+    private function updateRules(Product $product): array
     {
+        $currentCategoryIds = $product->categories()->pluck('categories.id')->all();
+
         return array_merge($this->rules(), [
+            'category_ids.*' => [
+                Rule::exists('categories', 'id')->where(function ($q) use ($currentCategoryIds) {
+                    $q->where(function ($w) use ($currentCategoryIds) {
+                        $w->where('is_active', true)
+                            ->orWhereIn('id', $currentCategoryIds);
+                    });
+                }),
+            ],
+
             'colors.*.id'           => 'nullable|integer',
             'colors.*.remove_image' => 'nullable|boolean',
             'models.*.id'           => 'nullable|integer',
@@ -601,6 +652,7 @@ class ProductController extends Controller
             'is_active'             => 'Status',
             'product_type'          => 'Jenis produk',
             'weight_grams'          => 'Berat produk',
+            'category_ids.*'        => 'Kategori',
             'colors'                => 'Warna',
             'colors.*.name'         => 'Nama warna',
             'colors.*.hex_code'     => 'Kode hex',

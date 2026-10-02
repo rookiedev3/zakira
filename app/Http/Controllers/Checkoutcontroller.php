@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankAccount;
 use App\Models\Coupon;
 use App\Models\CustomerOrder;
+use App\Models\Seller;
+use App\Models\UserDetail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -63,12 +67,6 @@ class CheckoutController extends Controller
         'Papua Barat Daya',
     ];
 
-    /** Bawaan; bisa ditimpa lewat config/cart.php => 'bank_accounts'. */
-    private const BANKS = [
-        ['bank' => 'BSI', 'number' => '824682748372', 'name' => 'ADN'],
-        ['bank' => 'BSI', 'number' => '20920029020',  'name' => 'Zahwa'],
-    ];
-
     public function __construct(private CartController $cart) {}
 
     /** Halaman Checkout */
@@ -84,15 +82,89 @@ class CheckoutController extends Controller
             'cart'      => $cart,
             'shipping'  => self::SHIPPING,
             'provinces' => self::PROVINCES,
-            'banks'     => config('cart.bank_accounts', self::BANKS),
+            'banks'     => $this->banks(),
+            'prefill'   => $this->prefill(),
         ]);
+    }
+
+    /**
+     * Data awal formulir dari akun yang sedang login (user + user_details).
+     * Tamu (belum login) mendapat isian kosong. Nilai provinsi & ekspedisi
+     * hanya dipakai bila cocok dengan daftar pilihan di halaman ini.
+     */
+    private function prefill(): array
+    {
+        $empty = [
+            'seller_id'       => '',
+            'whatsapp_number' => '',
+            'shipping_method' => '',
+            'first_name'      => '',
+            'last_name'       => '',
+            'address'         => '',
+            'city'            => '',
+            'province'        => '',
+            'postal_code'     => '',
+        ];
+
+        $user = Auth::user();
+        if (! $user) {
+            return $empty;
+        }
+
+        $detail = UserDetail::where('user_id', $user->id)->first();
+
+        // Nama lengkap dipecah: kata pertama = nama depan, sisanya = nama belakang
+        $parts = preg_split('/\s+/', trim((string) ($user->name ?? '')), 2);
+
+        return [
+            'seller_id'       => (string) ($detail->seller_id ?? ''),
+            'whatsapp_number' => (string) ($detail->phone ?? ''),
+            'shipping_method' => $this->matchOption($detail->shipping_expedition ?? null, self::SHIPPING),
+            'first_name'      => $parts[0] ?? '',
+            'last_name'       => $parts[1] ?? '',
+            'address'         => (string) ($detail->address ?? ''),
+            'city'            => (string) ($detail->city ?? ''),
+            'province'        => $this->matchOption($detail->province ?? null, self::PROVINCES),
+            'postal_code'     => (string) ($detail->postal_code ?? ''),
+        ];
+    }
+
+    /** Cocokkan nilai (tanpa peduli huruf besar/kecil) ke daftar pilihan; kosong bila tidak cocok. */
+    private function matchOption(?string $value, array $options): string
+    {
+        $value = mb_strtolower(trim((string) $value));
+        if ($value === '') {
+            return '';
+        }
+
+        foreach ($options as $option) {
+            if (mb_strtolower($option) === $value) {
+                return $option;
+            }
+        }
+
+        return '';
+    }
+
+    /** Cek ID seller (dipakai tombol "Cek ID" di halaman checkout) */
+    public function lookupSeller(Request $request)
+    {
+        $id = trim((string) $request->query('seller_id'));
+
+        $seller = $id !== ''
+            ? Seller::whereRaw('LOWER(seller_id) = ?', [mb_strtolower($id)])->first()
+            : null;
+
+        return $seller
+            ? response()->json(['found' => true, 'name' => $seller->name])
+            : response()->json(['found' => false], 404);
     }
 
     /** Tombol "Buat Pesanan" */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'seller_id'       => 'nullable|string|max:50',
+            'seller_id'       => ['required', 'string', 'max:50', Rule::exists('sellers', 'seller_id')],
             'whatsapp_number' => ['required', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
             'shipping_method' => ['required', Rule::in(self::SHIPPING)],
             'first_name'      => 'required|string|max:100',
@@ -103,9 +175,12 @@ class CheckoutController extends Controller
             'postal_code'     => ['required', 'digits:5'],
             'notes'           => 'nullable|string|max:1000',
         ], [
+            'seller_id.required'    => 'ID Seller wajib diisi.',
+            'seller_id.exists'      => 'ID Seller tidak ditemukan.',
             'whatsapp_number.regex' => 'Format nomor WhatsApp tidak valid. Contoh: 081234567890.',
             'postal_code.digits'    => 'Kode pos harus 5 digit angka.',
         ], [
+            'seller_id'       => 'ID Seller',
             'whatsapp_number' => 'No WhatsApp',
             'shipping_method' => 'Ekspedisi',
             'first_name'      => 'Nama depan',
@@ -116,6 +191,9 @@ class CheckoutController extends Controller
             'postal_code'     => 'Kode pos',
         ]);
 
+        // Ambil seller dari database — nama seller tidak dipercaya dari browser
+        $seller = Seller::where('seller_id', $data['seller_id'])->firstOrFail();
+
         // Hitung ulang dari server (harga, kupon, total) — jangan percaya data dari browser
         $cart = $this->cart->payload();
 
@@ -123,7 +201,7 @@ class CheckoutController extends Controller
             return redirect(url('/cart'))->with('error', 'Keranjang masih kosong.');
         }
 
-        $order = DB::transaction(function () use ($data, $cart) {
+        $order = DB::transaction(function () use ($data, $cart, $seller) {
             $couponCode = null;
 
             if ($cart['coupon']) {
@@ -145,7 +223,8 @@ class CheckoutController extends Controller
 
             $order = CustomerOrder::create([
                 'order_number'    => $this->newOrderNumber(),
-                'seller_id'       => $data['seller_id'] ?? null,
+                'seller_id'       => $seller->seller_id,
+                // 'seller_name'  => $seller->name, // aktifkan jika tabel customer_orders punya kolom seller_name
                 'whatsapp_number' => $data['whatsapp_number'],
                 'shipping_method' => $data['shipping_method'],
                 'first_name'      => $data['first_name'],
@@ -194,9 +273,27 @@ class CheckoutController extends Controller
 
         return view('checkout.success', [
             'order' => $order->load('items'),
-            'banks' => config('cart.bank_accounts', self::BANKS),
+            'banks' => $this->banks(),
             'paymentConfirmUrl' => URL::signedRoute('payment.confirmation', ['order' => $order->order_number]),
         ]);
+    }
+
+    /**
+     * Rekening bank dari database, dinormalisasi ke format yang dipakai view
+     * (bank, number, name) sehingga Blade tidak perlu diubah.
+     */
+    private function banks(): array
+    {
+        return BankAccount::query()
+            ->where('status', true) // sesuaikan: boolean => true, string => 'active'
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($b) => [
+                'bank'   => $b->bank_name,
+                'number' => $b->account_number,
+                'name'   => $b->account_holder_name,
+            ])
+            ->all();
     }
 
     private function newOrderNumber(): string

@@ -38,7 +38,7 @@ class LandingController extends Controller
             ->take(8)
             ->get();
 
-        $brands = Brand::orderBy('name')->get();
+        $brands = Brand::home()->get();
 
         return view('welcome', compact('sliders', 'promos', 'advantages', 'products', 'brands'));
     }
