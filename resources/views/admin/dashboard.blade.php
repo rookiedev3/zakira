@@ -3,7 +3,7 @@
 @section('title', 'Dashboard Admin — Zakira Moslem Hijab Identity')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-6 py-8 space-y-6">
+<div class="max-w-7xl mx-auto px-6 py-8 space-y-10">
     
     <!-- Header Dashboard -->
     <div>
@@ -66,7 +66,7 @@
         <!-- Pesanan Pending -->
         <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center">
             <div>
-                <p class="text-gray-500 text-xs font-medium">Pesanannnn Pending</p>
+                <p class="text-gray-500 text-xs font-medium">Pesanan Pending</p>
                 <h4 class="text-2xl font-bold text-amber-600 mt-1">5</h4>
             </div>
             <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center">
@@ -98,78 +98,92 @@
 
     </div>
 
-    <!-- Baris 3: Statistik Down Payment (DP) lengkap dengan Pendapatan Sisa -->
-    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-        <h3 class="font-bold text-gray-800 text-base mb-6">Statistik Down Payment</h3>
-        <div class="grid grid-cols-2 md:grid-cols-6 gap-6 text-center">
-            <div class="border-r border-gray-100 last:border-none">
-                <p class="text-blue-600 font-bold text-xl">4</p>
-                <span class="text-gray-400 text-xs mt-1 block">Total Pesanan DP</span>
-            </div>
-            <div class="border-r border-gray-100 last:border-none">
-                <p class="text-emerald-600 font-bold text-xl">3</p>
-                <span class="text-gray-400 text-xs mt-1 block">DP Terbayar</span>
-            </div>
-            <div class="border-r border-gray-100 last:border-none">
-                <p class="text-amber-600 font-bold text-xl">3</p>
-                <span class="text-gray-400 text-xs mt-1 block">DP Pending</span>
-            </div>
-            <div class="border-r border-gray-100 last:border-none">
-                <p class="text-purple-600 font-bold text-xl">2</p>
-                <span class="text-gray-400 text-xs mt-1 block">Lunas Penuh</span>
-            </div>
-            <div class="border-r border-gray-100 last:border-none">
-                <p class="text-blue-600 font-bold text-base">Rp 210.000</p>
-                <span class="text-gray-400 text-xs mt-1 block">Pendapatan DP</span>
+    <!-- Baris 3: Statistik Down Payment (DP) — 3 kolom x 2 baris, angka berwarna -->
+    <div class="bg-white p-7 rounded-2xl border border-gray-100 shadow-sm">
+        <h3 class="text-xl font-medium text-gray-900 mb-5">Statistik Down Payment</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-8 text-center">
+            <div>
+                <p class="text-[#155dfc] font-medium text-xl">7</p>
+                <span class="text-gray-500 text-base mt-2 block">Total Pesanan DP</span>
             </div>
             <div>
-                <p class="text-emerald-600 font-bold text-base">Rp 420.000</p>
-                <span class="text-gray-400 text-xs mt-1 block">Pendapatan Sisa</span>
+                <p class="text-[#00a63e] font-medium text-xl">4</p>
+                <span class="text-gray-500 text-base mt-2 block">DP Terbayar</span>
+            </div>
+            <div>
+                <p class="text-[#d08700] font-medium text-xl">7</p>
+                <span class="text-gray-500 text-base mt-2 block">DP Pending</span>
+            </div>
+            <div>
+                <p class="text-[#9810fa] font-medium text-xl">3</p>
+                <span class="text-gray-500 text-base mt-2 block">Lunas Penuh</span>
+            </div>
+            <div>
+                <p class="text-[#4f39f6] font-medium text-xl">Rp 291.000</p>
+                <span class="text-gray-500 text-base mt-2 block">Pendapatan DP</span>
+            </div>
+            <div>
+                <p class="text-[#009689] font-medium text-xl">Rp 609.000</p>
+                <span class="text-gray-500 text-base mt-2 block">Pendapatan Sisa</span>
             </div>
         </div>
     </div>
 
     <!-- Baris 4: Pesanan Terbaru & Produk Terpopuler -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
         
-        <!-- Pesanan Terbaru (dilengkapi badge DP System / Full Payment)[cite: 10] -->
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                <h3 class="font-bold text-gray-800 text-base">Pesanan Terbaru</h3>
-                <a href="#" class="text-xs text-amber-800 hover:underline font-semibold">Lihat Semua</a>
+        <!-- Pesanan Terbaru (dilengkapi badge DP System / Full Payment) -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex justify-between items-center px-7 py-6 border-b border-gray-200">
+                <h3 class="text-xl font-medium text-gray-900">Pesanan Terbaru</h3>
+                <a href="#" class="text-base font-medium text-gray-900 mr-4 hover:underline">Lihat Semua</a>
             </div>
 
-            <div class="space-y-3">
+            <div class="px-7 pt-3">
                 <!-- Item Pesanan 1 -->
-                <div class="p-3 bg-gray-50 rounded-xl flex justify-between items-center text-xs">
+                <div class="flex justify-between items-start gap-4 pt-8 pb-4 border-b border-gray-100 last:border-b-0">
                     <div>
-                        <span class="font-bold text-gray-800">#ORD260924113552OSF</span>
-                        <p class="text-gray-400 mt-0.5">Guest • 24 Sep 2026 11:35</p>
+                        <p class="text-base text-gray-500">#ORD261002163117Z1V</p>
+                        <p class="text-base text-gray-600 mt-1">User Customer</p>
+                        <p class="text-base text-gray-500 mt-1">02 Oct 2026 16:31</p>
                     </div>
-                    <div class="text-right space-y-1">
-                        <div>
-                            <span class="font-bold text-gray-900">Rp 100.000</span>
-                            <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-semibold inline-block ml-1">Pending</span>
-                        </div>
-                        <div>
-                            <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-semibold inline-block">DP System</span>
+                    <div class="flex items-start gap-5">
+                        <span class="bg-[#fef3c6] text-[#973c00] text-sm font-medium px-3 py-1 rounded-lg">Pending</span>
+                        <div class="text-right mt-1.5">
+                            <p class="text-xl font-semibold text-gray-900">Rp 100.000</p>
+                            <span class="inline-block mt-1 bg-[#dbeafe] text-[#1447e6] text-sm font-medium px-3 py-1 rounded-lg">DP System</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Item Pesanan 2 -->
-                <div class="p-3 bg-gray-50 rounded-xl flex justify-between items-center text-xs">
+                <div class="flex justify-between items-start gap-4 pt-8 pb-4 border-b border-gray-100 last:border-b-0">
                     <div>
-                        <span class="font-bold text-gray-800">#ORD260922170018I42</span>
-                        <p class="text-gray-400 mt-0.5">User Customer • 22 Sep 2026 17:00</p>
+                        <p class="text-base text-gray-500">#ORD261002090107V6D</p>
+                        <p class="text-base text-gray-600 mt-1">User Customer</p>
+                        <p class="text-base text-gray-500 mt-1">02 Oct 2026 09:01</p>
                     </div>
-                    <div class="text-right space-y-1">
-                        <div>
-                            <span class="font-bold text-gray-900">Rp 500.000</span>
-                            <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-semibold inline-block ml-1">Pending</span>
+                    <div class="flex items-start gap-5">
+                        <span class="bg-[#d0fae5] text-[#007a55] text-sm font-medium px-3 py-1 rounded-lg">Shipped</span>
+                        <div class="text-right mt-1.5">
+                            <p class="text-xl font-semibold text-gray-900">Rp 270.000</p>
+                            <span class="inline-block mt-1 bg-[#dbeafe] text-[#1447e6] text-sm font-medium px-3 py-1 rounded-lg">DP System</span>
                         </div>
-                        <div>
-                            <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-semibold inline-block">DP System</span>
+                    </div>
+                </div>
+
+                <!-- Item Pesanan 3 -->
+                <div class="flex justify-between items-start gap-4 pt-8 pb-4 border-b border-gray-100 last:border-b-0">
+                    <div>
+                        <p class="text-base text-gray-500">#ORD26100113314314X</p>
+                        <p class="text-base text-gray-600 mt-1">Guest</p>
+                        <p class="text-base text-gray-500 mt-1">01 Oct 2026 13:31</p>
+                    </div>
+                    <div class="flex items-start gap-5">
+                        <span class="bg-[#dbeafe] text-[#193cb8] text-sm font-medium px-3 py-1 rounded-lg">Processing</span>
+                        <div class="text-right mt-1.5">
+                            <p class="text-xl font-semibold text-gray-900">Rp 200.000</p>
+                            <span class="inline-block mt-1 bg-[#d0fae5] text-[#007a55] text-sm font-medium px-3 py-1 rounded-lg">Full Payment</span>
                         </div>
                     </div>
                 </div>
@@ -177,37 +191,37 @@
         </div>
 
         <!-- Produk Terpopuler -->
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                <h3 class="font-bold text-gray-800 text-base">Produk Terpopuler</h3>
-                <a href="#" class="text-xs text-amber-800 hover:underline font-semibold">Lihat Semua</a>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="flex justify-between items-center px-7 py-6 border-b border-gray-200">
+                <h3 class="text-xl font-medium text-gray-900">Produk Terpopuler</h3>
+                <a href="#" class="text-base font-medium text-gray-900 mr-4 hover:underline">Lihat Semua</a>
             </div>
 
-            <div class="space-y-3">
-                <div class="p-3 bg-gray-50 rounded-xl flex justify-between items-center text-xs">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            <div class="px-7 pt-3">
+                <div class="flex justify-between items-center pt-8 pb-4 border-b border-gray-100 last:border-b-0">
+                    <div class="flex items-center gap-5">
+                        <div class="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-gray-800">Baju Koko</h4>
-                            <p class="text-gray-400 text-[11px]">0 terjual (30 hari)</p>
+                            <h4 class="text-base text-gray-500">Baju Koko</h4>
+                            <p class="text-sm text-gray-600 mt-1">0 terjual (30 hari)</p>
                         </div>
                     </div>
-                    <span class="font-bold text-gray-800">Rp 0</span>
+                    <span class="text-xl font-semibold text-gray-900">Rp 0</span>
                 </div>
 
-                <div class="p-3 bg-gray-50 rounded-xl flex justify-between items-center text-xs">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <div class="flex justify-between items-center pt-8 pb-4 border-b border-gray-100 last:border-b-0">
+                    <div class="flex items-center gap-5">
+                        <div class="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-gray-800">Almet PNC1</h4>
-                            <p class="text-gray-400 text-[11px]">0 terjual (30 hari)</p>
+                            <h4 class="text-base text-gray-500">Almet PNC1</h4>
+                            <p class="text-sm text-gray-600 mt-1">0 terjual (30 hari)</p>
                         </div>
                     </div>
-                    <span class="font-bold text-gray-800">Rp 0</span>
+                    <span class="text-xl font-semibold text-gray-900">Rp 0</span>
                 </div>
             </div>
         </div>
