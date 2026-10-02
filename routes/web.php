@@ -41,7 +41,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/logout', [AuthController::class, 'destroy'])->name('logout');
+    Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
 
     Route::middleware('role:admin')->group(function () {
@@ -283,7 +283,7 @@ Route::get('orders/index', [ManageOrderController::class, 'index'])->name('order
 // Route::get('/settings/profile', fn() => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
 
 // logout harus POST karena dipanggil lewat <form method="POST"> di sidebar
-Route::post('/logout', function () {
-    // nanti ganti dengan Auth::logout() beneran
-    return redirect()->route('dashboard');
-})->name('logout');
+// Route::post('/logout', function () {
+//     // nanti ganti dengan Auth::logout() beneran
+//     return redirect()->route('dashboard');
+// })->name('logout');
