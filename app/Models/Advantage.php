@@ -20,8 +20,16 @@ class Advantage extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image_path
-            ? Storage::url($this->image_path)
-            : null;
+        if (! $this->image_path) {
+            return null;
+        }
+
+        // File statis di public/ (contoh: images/meme.jpeg)
+        if (file_exists(public_path($this->image_path))) {
+            return asset($this->image_path);
+        }
+
+        // File upload lewat storage:link (contoh: advantages/xxx.jpg)
+        return Storage::url($this->image_path);
     }
 }
