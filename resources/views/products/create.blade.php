@@ -5,18 +5,20 @@
 
 @section('content')
 @php
-    // Class "pf-input" & "pf-btn-brown" didefinisikan di <style> di bawah,
-    // jadi tidak perlu rebuild Tailwind agar border hitam & tombol coklat muncul.
-    $inputCls = 'pf-input w-full block h-10 py-2 ps-3 pe-3 text-base sm:text-sm leading-[1.375rem] rounded-lg appearance-none bg-white text-zinc-700 placeholder-zinc-400 shadow-xs disabled:bg-zinc-50 disabled:text-zinc-500 disabled:shadow-none dark:bg-white/10 dark:text-zinc-300 dark:placeholder-zinc-400 dark:disabled:bg-white/[7%]';
-    $selectCls = 'pf-input w-full block h-10 py-2 ps-3 pe-10 text-base sm:text-sm leading-[1.375rem] rounded-lg appearance-none bg-white text-zinc-700 shadow-xs disabled:bg-zinc-50 disabled:text-zinc-500 disabled:shadow-none dark:bg-white/10 dark:text-zinc-300 dark:[&>option]:bg-zinc-700 dark:[&>option]:text-white';
-    $textareaCls = 'pf-input block w-full p-3 text-base sm:text-sm rounded-lg resize-y bg-white text-zinc-700 placeholder-zinc-400 shadow-xs disabled:bg-zinc-50 disabled:text-zinc-500 disabled:shadow-none dark:bg-white/10 dark:text-zinc-300 dark:placeholder-zinc-400';
+    // Class "pf-field", "pf-btn-brown", "pf-btn-gray", "pf-file", dll didefinisikan di <style> di bawah,
+    // jadi tidak perlu rebuild Tailwind agar border abu-abu & warna coklat muncul.
+    $inputCls = 'pf-field w-full block h-10 py-2 ps-3 pe-3 text-base sm:text-sm leading-[1.375rem] rounded-lg appearance-none bg-white text-zinc-700 placeholder-zinc-400 shadow-xs disabled:bg-zinc-50 disabled:text-zinc-500 disabled:shadow-none dark:bg-white/10 dark:text-zinc-300 dark:placeholder-zinc-400 dark:disabled:bg-white/[7%]';
+    $selectCls = 'pf-field w-full block h-10 py-2 ps-3 pe-10 text-base sm:text-sm leading-[1.375rem] rounded-lg appearance-none bg-white text-zinc-700 shadow-xs disabled:bg-zinc-50 disabled:text-zinc-500 disabled:shadow-none dark:bg-white/10 dark:text-zinc-300 dark:[&>option]:bg-zinc-700 dark:[&>option]:text-white';
+    $textareaCls = 'pf-field block w-full p-3 text-base sm:text-sm rounded-lg resize-y bg-white text-zinc-700 placeholder-zinc-400 shadow-xs disabled:bg-zinc-50 disabled:text-zinc-500 disabled:shadow-none dark:bg-white/10 dark:text-zinc-300 dark:placeholder-zinc-400';
+    $inputSoftCls = $inputCls;
     $labelCls = 'inline-flex items-center text-sm font-medium text-zinc-800 dark:text-white mb-3';
-    $fileCls = 'block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100';
-    $addBtnCls = 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-75 disabled:cursor-default disabled:pointer-events-none';
+    $fileCls = 'pf-file block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold';
+    $addBtnCls = 'pf-btn-gray relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-4 text-sm font-medium rounded-lg focus:outline-none disabled:opacity-75 disabled:cursor-default disabled:pointer-events-none';
     $delBtnCls = 'relative inline-flex items-center justify-center whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500/30';
     $ghostBtnCls = 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 ps-4 pe-4 text-sm font-medium rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:bg-transparent dark:border-white/10 dark:text-white dark:hover:bg-white/15';
     $backBtnCls = 'pf-btn-brown relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 ps-4 pe-4 text-sm font-medium rounded-lg shadow-sm focus:outline-none';
-    $primaryBtnCls = 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 ps-4 pe-4 text-sm font-medium rounded-lg bg-blue-600 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:ring-offset-1 disabled:opacity-75 disabled:cursor-default disabled:pointer-events-none';
+    $primaryBtnCls = 'pf-btn-brown relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 ps-4 pe-4 text-sm font-medium rounded-lg shadow-sm focus:outline-none disabled:opacity-75 disabled:cursor-default disabled:pointer-events-none';
+    // Centang/ceklis tetap biru
     $checkCls = 'rounded border-zinc-300 text-blue-600 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20';
     $plusIcon = '<svg class="shrink-0" style="width:1rem;height:1rem" width="16" height="16" data-flux-icon="" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z"/></svg>';
 
@@ -32,17 +34,35 @@
 @endphp
 
 <style>
-    /* Border input, select, textarea: hitam tipis (1px) */
-    .pf-input { border: 1px solid #000; }
-    .pf-input:focus { outline: none; border-color: #000; box-shadow: 0 0 0 2px rgba(0, 0, 0, .15); }
-    .pf-input:disabled { border-color: #52525b; }
-    .pf-input.border-red-400 { border-color: #f87171; }
-    .dark .pf-input { border-color: rgba(255, 255, 255, .35); }
+    /* Input, select, textarea: border abu-abu tipis, tanpa highlight hitam */
+    .pf-field { border: 1px solid #e4e4e7; box-shadow: 0 1px 2px rgba(0, 0, 0, .05); }
+    /* Saat kolom diklik: border & cincin coklat (sama dengan tombol) */
+    .pf-field:focus { outline: none; border-color: #8b5a2b; box-shadow: 0 0 0 2px rgba(139, 90, 43, .25); }
+    .pf-field:disabled { background-color: #fafafa; }
+    .pf-field.border-red-400 { border-color: #f87171; }
+    .dark .pf-field { border-color: rgba(255, 255, 255, .2); }
 
-    /* Tombol kembali: coklat */
+    /* Daftar dropdown (meniru tampilan bawaan browser, sorotan biru) */
+    .pf-dd { position: fixed; z-index: 9999; box-sizing: border-box; max-height: 15rem; overflow-y: auto; background: #fff; border: 1px solid #c4c4c4; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+    .pf-dd-item { padding: .45rem .75rem; color: #27272a; cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
+    .pf-dd-item.is-active { background-color: #2563eb; color: #fff; }
+
+    /* Tombol abu-abu muda (semua tombol "Tambah ...") */
+    .pf-btn-gray { background-color: #f4f4f5; color: #27272a; }
+    .pf-btn-gray:hover { background-color: #e4e4e7; }
+    .pf-btn-gray:focus-visible { box-shadow: 0 0 0 2px rgba(161, 161, 170, .35); }
+
+    /* Tombol utama & kembali: coklat solid */
     .pf-btn-brown { background-color: #8b5a2b; color: #fff; border: 1px solid #6f4520; }
     .pf-btn-brown:hover { background-color: #6f4520; color: #fff; }
     .pf-btn-brown:focus-visible { box-shadow: 0 0 0 2px rgba(139, 90, 43, .4); }
+
+    /* Tombol "Choose file" pada input file */
+    .pf-file::file-selector-button { background-color: #f6ede3; color: #8b5a2b; cursor: pointer; }
+    .pf-file:hover::file-selector-button { background-color: #eddcc9; }
+
+    /* Badge "Utama" */
+    .pf-badge-brown { background-color: #8b5a2b; }
 </style>
 
 <div class="[grid-area:main] p-6 lg:p-8 [[data-flux-container]_&]:px-0" data-flux-main="">
@@ -174,7 +194,7 @@
                                     <input type="checkbox" name="category_ids[]" value="{{ $category->id }}"
                                            {{ in_array($category->id, old('category_ids', [])) ? 'checked' : '' }}
                                            class="{{ $checkCls }}">
-                                    <span class="text-sm text-gray-700">{{ $category->name }}</span>
+                                    <span class="text-sm text-zinc-600">{{ $category->name }}</span>
                                 </label>
                             @endforeach
                         </div>
@@ -212,16 +232,9 @@
 
                 <!-- Pricing Matrix -->
                 <div id="matrix-wrap" class="hidden">
-                    <div class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">Harga Produk</h3>
-                            <p class="text-sm text-gray-600 mt-1">Tentukan harga untuk setiap kombinasi model dan ukuran. Semua field harus diisi.</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <input type="text" id="quick-fill-input" inputmode="numeric" placeholder="Isi cepat, contoh: 150.000"
-                                   class="{{ $inputCls }} !w-44 !h-8 text-right">
-                            <button type="button" id="quick-fill-btn" class="{{ $addBtnCls }}">Terapkan ke Semua</button>
-                        </div>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Harga Produk</h3>
+                        <p class="text-sm text-gray-600 mt-1">Tentukan harga untuk setiap kombinasi model dan ukuran. Semua field harus diisi.</p>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full border-separate border-spacing-0 border border-gray-200 rounded-lg overflow-hidden">
@@ -299,6 +312,7 @@
 (function () {
     const C = {
         input:  @json($inputCls),
+        inputSoft: @json($inputSoftCls),
         select: @json($selectCls),
         label:  @json($labelCls),
         file:   @json($fileCls),
@@ -338,22 +352,13 @@
 
     const sections = {
         colors: {
-            title: 'Warna', wrap: 'border border-zinc-300 rounded-lg p-4', min: 1,
-            build: v => {
-                const hexVal = v.hex_code ? (v.hex_code.startsWith('#') ? v.hex_code : '#' + v.hex_code) : '#000000';
-                return header('Warna') + `
+            title: 'Warna', wrap: 'border border-zinc-200 rounded-lg p-4', min: 1,
+            build: v => header('Warna') + `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${field('Nama Warna', textInput('name', v.name, 'contoh: Merah, Biru, Hitam', true))}
-                    <div>
-                        <label class="${C.label}">Kode Hex (Opsional)</label>
-                        <div class="flex items-center gap-2">
-                            <input type="color" data-color-sync value="${esc(hexVal)}" class="pf-input w-10 h-10 p-0.5 rounded-lg cursor-pointer bg-white">
-                            <input type="text" data-f="hex_code" value="${esc(v.hex_code)}" class="${C.input} flex-1 uppercase" placeholder="contoh: #FF0000" maxlength="7">
-                        </div>
-                    </div>
+                    ${field('Nama Warna', `<input type="text" data-f="name" value="${esc(v.name)}" class="${C.inputSoft}" placeholder="contoh: Merah, Biru, Hitam" required>`)}
+                    ${field('Kode Hex (Opsional)', `<input type="text" data-f="hex_code" value="${esc(v.hex_code)}" class="${C.inputSoft}" placeholder="contoh: #FF0000" maxlength="7">`)}
                 </div>
-                ${fileBlock('Gambar Warna')}`;
-            },
+                ${fileBlock('Gambar Warna')}`,
         },
         models: {
             title: 'Model', wrap: 'border border-zinc-300 rounded-lg p-4', min: 1,
@@ -482,37 +487,12 @@
                 const val = prices[key] ?? '';
                 return `<td class="px-4 py-3 whitespace-nowrap text-center border-b border-r border-gray-200 last:border-r-0">
                     <input type="text" inputmode="numeric" data-price-key="${key}" value="${val === '' ? '' : fmt(val)}"
-                           class="${C.input} matrix-cell-input min-w-[120px] text-center text-sm" placeholder="Masukkan harga" required>
+                           class="${C.inputSoft} matrix-cell-input min-w-[120px] text-sm" placeholder="Masukkan harga" required>
                     <input type="hidden" name="prices[${mi}][${si}]" value="${val}">
                 </td>`;
             }).join('')}
         </tr>`).join('');
     }
-
-    // Isi cepat semua harga matriks
-    $('#quick-fill-input').addEventListener('input', e => {
-        const raw = e.target.value.replace(/[^0-9]/g, '');
-        e.target.value = raw === '' ? '' : fmt(raw);
-    });
-
-    $('#quick-fill-btn').addEventListener('click', () => {
-        const input = $('#quick-fill-input');
-        const raw = input.value.replace(/[^0-9]/g, '');
-        if (!raw) { input.focus(); return; }
-        const intVal = parseInt(raw, 10);
-
-        $$('#models-list > div').forEach(mr => {
-            $$('#sizes-list > div').forEach(sr => {
-                prices[mr.dataset.uid + ':' + sr.dataset.uid] = intVal;
-            });
-        });
-
-        $$('.matrix-cell-input').forEach(inp => {
-            inp.value = fmt(intVal);
-            inp.classList.remove('border-red-400', 'bg-red-50');
-            if (inp.nextElementSibling) inp.nextElementSibling.value = intVal;
-        });
-    });
 
     // Pratinjau gambar varian (warna / model), gaya sama seperti halaman edit
     function renderVariantPreview(input) {
@@ -549,7 +529,7 @@
             div.className = 'relative group w-20 h-20';
             div.innerHTML = `
                 <img src="${url}" alt="${esc(file.name)}" class="w-20 h-20 object-cover rounded-lg border border-zinc-300">
-                ${idx === 0 ? '<span class="absolute -top-2 -left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">Utama</span>' : ''}
+                ${idx === 0 ? '<span class="pf-badge-brown absolute -top-2 -left-2 text-white text-xs px-2 py-1 rounded">Utama</span>' : ''}
                 <button type="button" data-remove-gallery="${idx}" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors">×</button>
                 <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 rounded-b-lg">Order: ${idx}</div>`;
             grid.appendChild(div);
@@ -702,6 +682,105 @@
         });
     });
     renderMatrix();
+})();
+</script>
+
+<script>
+// Dropdown: tampilan kolom tetap bawaan, hanya daftar pilihannya yang diganti agar sorotannya biru (bukan abu-abu)
+(function () {
+    let dd = null, sel = null, active = -1;
+
+    function close() {
+        if (dd) { dd.remove(); }
+        dd = null; sel = null; active = -1;
+    }
+
+    function setActive(i) {
+        if (!dd) return;
+        active = i;
+        Array.from(dd.children).forEach((el, k) => el.classList.toggle('is-active', k === i));
+        const el = dd.children[i];
+        if (el) el.scrollIntoView({ block: 'nearest' });
+    }
+
+    function choose(i) {
+        if (!sel) return;
+        const s = sel;
+        s.selectedIndex = i;
+        close();
+        s.dispatchEvent(new Event('input', { bubbles: true }));
+        s.dispatchEvent(new Event('change', { bubbles: true }));
+        s.focus();
+    }
+
+    function open(select) {
+        close();
+        sel = select;
+        const cs = getComputedStyle(select);
+        dd = document.createElement('div');
+        dd.className = 'pf-dd';
+        dd.setAttribute('role', 'listbox');
+        dd.style.fontSize = cs.fontSize;
+        dd.style.fontFamily = cs.fontFamily;
+
+        Array.from(select.options).forEach((opt, i) => {
+            const it = document.createElement('div');
+            it.className = 'pf-dd-item';
+            it.setAttribute('role', 'option');
+            it.textContent = opt.text;
+            if (opt.disabled) it.style.opacity = '.5';
+            it.addEventListener('mouseenter', () => setActive(i));
+            it.addEventListener('mousedown', ev => {
+                ev.preventDefault();
+                if (!opt.disabled) choose(i);
+            });
+            dd.appendChild(it);
+        });
+
+        document.body.appendChild(dd);
+
+        const r = select.getBoundingClientRect();
+        dd.style.width = r.width + 'px';
+        dd.style.left = r.left + 'px';
+        const h = Math.min(dd.scrollHeight, 240);
+        const below = window.innerHeight - r.bottom;
+        if (below < h + 12 && r.top > below) {
+            dd.style.bottom = (window.innerHeight - r.top + 6) + 'px';
+        } else {
+            dd.style.top = (r.bottom + 6) + 'px';
+        }
+        setActive(select.selectedIndex);
+    }
+
+    document.addEventListener('mousedown', e => {
+        const s = e.target.closest ? e.target.closest('select.pf-field') : null;
+        if (s && !s.disabled) {
+            e.preventDefault();          // cegah daftar bawaan browser (abu-abu)
+            s.focus();
+            if (dd && sel === s) close(); else open(s);
+            return;
+        }
+        if (dd && !dd.contains(e.target)) close();
+    }, true);
+
+    document.addEventListener('keydown', e => {
+        if (dd) {
+            if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+            if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(active + 1, sel.options.length - 1)); return; }
+            if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(active - 1, 0)); return; }
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(active); return; }
+            if (e.key === 'Tab') close();
+            return;
+        }
+        const s = e.target.closest ? e.target.closest('select.pf-field') : null;
+        if (s && !s.disabled && (e.key === 'Enter' || e.key === ' ' || (e.key === 'ArrowDown' && e.altKey))) {
+            e.preventDefault();
+            open(s);
+        }
+    }, true);
+
+    window.addEventListener('scroll', e => { if (dd && !dd.contains(e.target) && e.target !== dd) close(); }, true);
+    window.addEventListener('resize', close);
 })();
 </script>
 @endsection
