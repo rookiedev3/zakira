@@ -24,6 +24,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\PaymentConfirmationController;
 use App\Http\Controllers\Admin\ManageOrderController;
+use App\Http\Controllers\LaporanController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -126,6 +127,10 @@ Route::put('/kupon/{kupon}', [CouponController::class, 'update'])->name('kupon.u
 Route::delete('/kupon/{kupon}', [CouponController::class, 'destroy'])->name('kupon.destroy');
 Route::post('/kupon/{kupon}/duplicate', [CouponController::class, 'duplicate'])->name('kupon.duplicate');
 Route::patch('/kupon/{kupon}/toggle', [CouponController::class, 'toggleActive'])->name('kupon.toggle');
+
+Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
+Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
+Route::get('/admin/laporan/export', [LaporanController::class, 'export'])->name('admin.laporan.export');
 
 //routes chyntia
 // Route untuk halaman Katalog / Ready Stock
@@ -254,9 +259,9 @@ Route::get('orders/index', [ManageOrderController::class, 'index'])->name('order
 // ==== Laporan ====
 // Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
 // Route Laporan Penjualan Mitra (File: admin/reports/mitra.blade.php)
-Route::get('/admin/laporan', function () {
-    return view('admin.laporan');
-})->name('admin.laporan');
+// Route::get('/admin/laporan', function () {
+//     return view('admin.laporan');
+// })->name('admin.laporan');
 
 // ==== Pengguna ====
 // Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');

@@ -3,8 +3,22 @@
 @section('title', 'Laporan Penjualan Mitra — Zakira Admin')
 
 @section('content')
+@php
+    $rupiah = fn ($n) => 'Rp ' . number_format((int) $n, 0, ',', '.');
+
+    // Status order (Pending, Processing, Shipped, dll.): selalu abu-abu
+    $statusClass = fn ($s) => 'bg-zinc-100 text-zinc-700';
+
+    // Status pembayaran: Paid = hijau, Pending = kuning
+    $paymentClass = fn ($s) => match (strtolower((string) $s)) {
+        'paid'    => 'bg-emerald-100 text-emerald-800',
+        'pending' => 'bg-yellow-100 text-yellow-800',
+        default   => 'bg-zinc-100 text-zinc-700',
+    };
+@endphp
+
 <div class="space-y-6">
-    
+
     <!-- Header Halaman & Tombol Reset Filter -->
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
@@ -12,7 +26,7 @@
             <p class="text-sm text-zinc-500 mt-0.5">Monitoring performa brand dan seller secara real-time</p>
         </div>
         <div>
-            <a href="#" class="text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 px-3.5 py-2 rounded-lg hover:bg-zinc-50 transition shadow-sm inline-block">
+            <a href="{{ route('admin.laporan') }}" class="text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 px-3.5 py-2 rounded-lg hover:bg-zinc-50 transition shadow-sm inline-block">
                 Reset Filter
             </a>
         </div>
@@ -20,12 +34,12 @@
 
     <!-- 3 Kartu Statistik Atas -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+
         <!-- Kartu 1: Order/Closing Hari Ini -->
         <div class="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex justify-between items-center">
             <div>
                 <p class="text-zinc-500 text-xs font-medium">Order/Closing Hari Ini</p>
-                <h3 class="text-3xl font-bold text-zinc-900 mt-2">0</h3>
+                <h3 class="text-3xl font-bold text-zinc-900 mt-2">{{ number_format($closingHariIni, 0, ',', '.') }}</h3>
             </div>
             <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-inner">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -34,11 +48,11 @@
             </div>
         </div>
 
-        <!-- Kartu 2: Total Penjualan (September 2026) -->
+        <!-- Kartu 2: Total Penjualan Bulan Ini -->
         <div class="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex justify-between items-center">
             <div>
-                <p class="text-zinc-500 text-xs font-medium">Total Penjualan (September 2026)</p>
-                <h3 class="text-2xl font-bold text-emerald-600 mt-2">Rp 1.590.000</h3>
+                <p class="text-zinc-500 text-xs font-medium">Total Penjualan ({{ $labelBulanIni }})</p>
+                <h3 class="text-2xl font-bold text-emerald-600 mt-2">{{ $rupiah($totalBulanIni) }}</h3>
             </div>
             <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shadow-inner">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -47,11 +61,11 @@
             </div>
         </div>
 
-        <!-- Kartu 3: Total Penjualan (August 2026) -->
+        <!-- Kartu 3: Total Penjualan Bulan Lalu -->
         <div class="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm flex justify-between items-center">
             <div>
-                <p class="text-zinc-500 text-xs font-medium">Total Penjualan (August 2026)</p>
-                <h3 class="text-2xl font-bold text-zinc-900 mt-2">Rp 0</h3>
+                <p class="text-zinc-500 text-xs font-medium">Total Penjualan ({{ $labelBulanLalu }})</p>
+                <h3 class="text-2xl font-bold text-zinc-900 mt-2">{{ $rupiah($totalBulanLalu) }}</h3>
             </div>
             <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shadow-inner">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -63,73 +77,87 @@
     </div>
 
     <!-- Kotak Filter Form -->
-    <div class="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm space-y-4">
+    <form method="GET" action="{{ route('admin.laporan') }}" id="filter-form"
+          class="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
+
             <!-- Filter Brand -->
             <div>
                 <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Brand</label>
-                <select class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
-                    <option>Semua Brand</option>
+                <select name="brand_id" onchange="this.form.submit()"
+                        class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
+                    <option value="">Semua Brand</option>
+                    @foreach ($brands as $brand)
+                        <option value="{{ $brand->id }}" @selected((string) $brandId === (string) $brand->id)>{{ $brand->name }}</option>
+                    @endforeach
                 </select>
             </div>
 
             <!-- Filter ID Seller -->
             <div>
                 <label class="block text-xs font-semibold text-zinc-600 mb-1.5">ID Seller</label>
-                <input type="text" placeholder="Cari berdasarkan ID seller" class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-zinc-400">
+                <input type="text" name="seller_id" value="{{ $sellerId }}" placeholder="Cari berdasarkan ID seller"
+                       class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-zinc-400">
             </div>
 
             <!-- Filter Periode -->
             <div>
                 <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Periode</label>
-                <select class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
-                    <option>Per Bulan</option>
-                    <option>Per Tahun</option>
+                <select name="periode" id="periode" onchange="this.form.submit()"
+                        class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
+                    <option value="bulan" @selected($periode === 'bulan')>Per Bulan</option>
+                    <option value="tahun" @selected($periode === 'tahun')>Per Tahun</option>
                 </select>
             </div>
 
             <!-- Filter Tahun -->
             <div>
                 <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Tahun</label>
-                <select class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
-                    <option>2026</option>
-                    <option>2025</option>
+                <select name="tahun" onchange="this.form.submit()"
+                        class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
+                    @foreach ($daftarTahun as $th)
+                        <option value="{{ $th }}" @selected($tahun === $th)>{{ $th }}</option>
+                    @endforeach
                 </select>
             </div>
 
         </div>
 
-        <!-- Filter Bulan (Baris Kedua) -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
+        <!-- Filter Bulan (Baris Kedua, hanya tampil saat Per Bulan) -->
+        <div id="filter-bulan" class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2 {{ $periode === 'tahun' ? 'hidden' : '' }}">
             <div>
                 <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Bulan</label>
-                <select class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
-                    <option>September</option>
-                    <option>August</option>
-                    <option>July</option>
+                <select name="bulan" onchange="this.form.submit()"
+                        class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 focus:outline-none focus:border-zinc-400">
+                    @foreach ($daftarBulan as $num => $nama)
+                        <option value="{{ $num }}" @selected($bulan === $num)>{{ $nama }}</option>
+                    @endforeach
                 </select>
             </div>
         </div>
-    </div>
+
+        <!-- Submit tersembunyi supaya tekan Enter di kolom ID Seller langsung mencari -->
+        <button type="submit" class="hidden">Cari</button>
+    </form>
 
     <!-- Tabel Detail Closing -->
     <div class="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-        
+
         <!-- Header Tabel & Tombol Export -->
         <div class="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-100">
             <div>
                 <h3 class="font-bold text-zinc-900 text-base">Detail Closing</h3>
                 <p class="text-xs text-zinc-500 mt-0.5">Filter per brand, ID seller, dan periode (bulanan/tahunan)</p>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="#" class="px-4 py-2 bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-semibold rounded-xl transition shadow-sm">
-                    Export Excel
-                </a>
-                <span class="px-3 py-1.5 bg-zinc-100 text-zinc-600 text-xs font-medium rounded-lg">
-                    6 data
-                </span>
-            </div>
+<div class="flex flex-wrap items-center gap-3">
+    <a href="{{ route('admin.laporan.export', request()->except('page')) }}"
+       class="px-4 py-2 bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-semibold rounded-xl transition shadow-sm">
+        Export Excel
+    </a>
+    <span class="px-3 py-1.5 bg-zinc-100 text-zinc-600 text-xs font-medium rounded-lg">
+        {{ number_format($closings->total(), 0, ',', '.') }} data
+    </span>
+</div>
         </div>
 
         <!-- Tabel Data -->
@@ -147,94 +175,43 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-100 text-zinc-700">
-                    
-                    <!-- Baris 1 -->
-                    <tr>
-                        <td class="py-4 px-6 font-medium text-zinc-800">24 Sep 2026</td>
-                        <td class="py-4 px-6 font-semibold">ZAKIRA</td>
-                        <td class="py-4 px-6 text-zinc-400">-</td>
-                        <td class="py-4 px-6">Baju Koko</td>
-                        <td class="py-4 px-6 text-right">1</td>
-                        <td class="py-4 px-6 text-right font-bold text-zinc-900">Rp 100.000</td>
-                        <td class="py-4 px-6 text-center space-x-1">
-                            <span class="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md font-medium text-[10px]">Pending</span>
-                            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-medium text-[10px]">Paid</span>
-                        </td>
-                    </tr>
-
-                    <!-- Baris 2 -->
-                    <tr>
-                        <td class="py-4 px-6 font-medium text-zinc-800">22 Sep 2026</td>
-                        <td class="py-4 px-6 font-semibold">ZAKIRA</td>
-                        <td class="py-4 px-6 text-zinc-600 font-mono">asdk123</td>
-                        <td class="py-4 px-6">Baju Koko</td>
-                        <td class="py-4 px-6 text-right">3</td>
-                        <td class="py-4 px-6 text-right font-bold text-zinc-900">Rp 500.000</td>
-                        <td class="py-4 px-6 text-center space-x-1">
-                            <span class="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md font-medium text-[10px]">Pending</span>
-                            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-medium text-[10px]">Paid</span>
-                        </td>
-                    </tr>
-
-                    <!-- Baris 3 -->
-                    <tr>
-                        <td class="py-4 px-6 font-medium text-zinc-800">22 Sep 2026</td>
-                        <td class="py-4 px-6 font-semibold">ZAKIRA</td>
-                        <td class="py-4 px-6 text-zinc-400">-</td>
-                        <td class="py-4 px-6">Baju Koko</td>
-                        <td class="py-4 px-6 text-right">1</td>
-                        <td class="py-4 px-6 text-right font-bold text-zinc-900">Rp 100.000</td>
-                        <td class="py-4 px-6 text-center space-x-1">
-                            <span class="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md font-medium text-[10px]">Pending</span>
-                            <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md font-medium text-[10px]">Pending</span>
-                        </td>
-                    </tr>
-
-                    <!-- Baris 4 -->
-                    <tr>
-                        <td class="py-4 px-6 font-medium text-zinc-800">18 Sep 2026</td>
-                        <td class="py-4 px-6 font-semibold">ZAKIRA</td>
-                        <td class="py-4 px-6 text-zinc-600 font-mono">asdk123</td>
-                        <td class="py-4 px-6">Baju Koko</td>
-                        <td class="py-4 px-6 text-right">1</td>
-                        <td class="py-4 px-6 text-right font-bold text-zinc-900">Rp 100.000</td>
-                        <td class="py-4 px-6 text-center space-x-1">
-                            <span class="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md font-medium text-[10px]">Pending</span>
-                            <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md font-medium text-[10px]">Pending</span>
-                        </td>
-                    </tr>
-
-                    <!-- Baris 5 -->
-                    <tr>
-                        <td class="py-4 px-6 font-medium text-zinc-800">18 Sep 2026</td>
-                        <td class="py-4 px-6 font-semibold">ZAKIRA</td>
-                        <td class="py-4 px-6 text-zinc-400">-</td>
-                        <td class="py-4 px-6">Baju Koko</td>
-                        <td class="py-4 px-6 text-right">1</td>
-                        <td class="py-4 px-6 text-right font-bold text-zinc-900">Rp 300.000</td>
-                        <td class="py-4 px-6 text-center space-x-1">
-                            <span class="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md font-medium text-[10px]">Pending</span>
-                            <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md font-medium text-[10px]">Pending</span>
-                        </td>
-                    </tr>
-
-                    <!-- Baris 6 -->
-                    <tr>
-                        <td class="py-4 px-6 font-medium text-zinc-800">17 Sep 2026</td>
-                        <td class="py-4 px-6 font-semibold">ZAKIRA</td>
-                        <td class="py-4 px-6 text-zinc-600 font-mono">asdk123</td>
-                        <td class="py-4 px-6">Baju Koko</td>
-                        <td class="py-4 px-6 text-right">5</td>
-                        <td class="py-4 px-6 text-right font-bold text-zinc-900">Rp 990.000</td>
-                        <td class="py-4 px-6 text-center space-x-1">
-                            <span class="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md font-medium text-[10px]">Processing</span>
-                            <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-medium text-[10px]">Paid</span>
-                        </td>
-                    </tr>
-
+                    @forelse ($closings as $row)
+                        <tr>
+                            <td class="py-4 px-6 font-medium text-zinc-800 whitespace-nowrap">
+                                {{ \Carbon\Carbon::parse($row->tanggal)->format('d M Y') }}
+                            </td>
+                            <td class="py-4 px-6 font-semibold uppercase">{{ $row->brand_name }}</td>
+                            <td class="py-4 px-6 {{ $row->seller_id ? 'text-zinc-600 font-mono' : 'text-zinc-400' }}">
+                                {{ $row->seller_id ?: '-' }}
+                            </td>
+                            <td class="py-4 px-6">{{ $row->produk ?: '-' }}</td>
+                            <td class="py-4 px-6 text-right">{{ number_format((int) $row->total_qty, 0, ',', '.') }}</td>
+                            <td class="py-4 px-6 text-right font-bold text-zinc-900 whitespace-nowrap">{{ $rupiah($row->total) }}</td>
+                            <td class="py-4 px-6 text-center space-x-1 whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-md font-medium text-[10px] {{ $statusClass($row->status) }}">
+                                    {{ ucfirst($row->status) }}
+                                </span>
+                                <span class="px-2.5 py-1 rounded-md font-medium text-[10px] {{ $paymentClass($row->payment_status) }}">
+                                    {{ ucfirst($row->payment_status) }}
+                                </span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="py-10 px-6 text-center text-zinc-400">
+                                Belum ada closing pada periode ini.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
+
+        @if ($closings->hasPages())
+            <div class="px-6 py-4 border-t border-zinc-100">
+                {{ $closings->links() }}
+            </div>
+        @endif
 
     </div>
 
