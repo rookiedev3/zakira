@@ -223,57 +223,53 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
     </div>
 </div>
 
-{{-- ========== Toast Notifikasi Keranjang ========== --}}
-<div id="cartToastContainer" class="fixed top-20 right-4 z-50 space-y-2" style="display: none;">
-    <div id="cartToastMessage"
-        class="px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 bg-green-600 text-white translate-x-full opacity-0">
-        <div class="flex items-center">
-            <i id="cartToastIcon" class="fas fa-check-circle mr-3"></i>
-            <div>
-                <div class="font-medium" id="cartToastTitle">Berhasil!</div>
-                <div class="text-sm opacity-90" id="cartToastContent">Produk berhasil ditambahkan ke keranjang</div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-    // ---------- Toast notifikasi keranjang ----------
-    let cartToastTimer, cartToastHideTimer;
+    // ---------- Notifikasi (hijau = sukses, merah = gagal) ----------
+    function zkToast(title, message, type) {
+        const ok = type !== 'error';
+        let wrap = document.getElementById('zk-toast-wrap');
+        if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.id = 'zk-toast-wrap';
+            wrap.style.cssText = 'position:fixed;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+            document.body.appendChild(wrap);
+        }
+        // Muncul tepat di bawah navbar (navbar menempel di atas saat scroll)
+        const nav = document.querySelector('.zk-navbar');
+        wrap.style.top = (nav ? Math.max(nav.getBoundingClientRect().bottom, 0) + 8 : 16) + 'px';
 
-    function showCartToast(title, message, type = 'success') {
-        const container = document.getElementById('cartToastContainer');
-        const toast = document.getElementById('cartToastMessage');
-        const icon = document.getElementById('cartToastIcon');
+        const t = document.createElement('div');
+        t.setAttribute('role', 'status');
+        t.style.cssText = 'display:flex;align-items:center;gap:12px;min-width:20rem;max-width:26rem;padding:14px 16px;border-radius:8px;color:#fff;box-shadow:0 10px 25px rgba(0,0,0,.18);opacity:0;transform:translateX(24px);transition:opacity .25s,transform .25s;background:' + (ok ? '#16a34a' : '#dc2626');
 
-        document.getElementById('cartToastTitle').textContent = title;
-        document.getElementById('cartToastContent').textContent = message;
+        const icon = document.createElement('i');
+        icon.className = 'fas ' + (ok ? 'fa-circle-check' : 'fa-circle-exclamation');
+        icon.style.fontSize = '1.35rem';
 
-        // Warna & ikon sesuai tipe
-        toast.className = 'px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0 ' +
-            (type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white');
-        icon.className = 'fas mr-3 ' + (type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle');
+        const body = document.createElement('div');
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-weight:600;font-size:1rem;line-height:1.3';
+        titleEl.textContent = title;
+        const msgEl = document.createElement('div');
+        msgEl.style.cssText = 'font-size:.9rem;line-height:1.35';
+        msgEl.textContent = message;
+        body.append(titleEl, msgEl);
 
-        // Reset timer kalau diklik berulang
-        clearTimeout(cartToastTimer);
-        clearTimeout(cartToastHideTimer);
+        t.append(icon, body);
+        wrap.appendChild(t);
 
-        container.style.display = 'block';
-
-        // Animasi masuk
+        requestAnimationFrame(() => { t.style.opacity = 1; t.style.transform = 'translateX(0)'; });
         setTimeout(() => {
-            toast.classList.remove('translate-x-full', 'opacity-0');
-            toast.classList.add('translate-x-0', 'opacity-100');
-        }, 10);
+            t.style.opacity = 0;
+            t.style.transform = 'translateX(24px)';
+            setTimeout(() => t.remove(), 300);
+        }, 3500);
+    }
 
-        // Hilang otomatis setelah 3 detik
-        cartToastTimer = setTimeout(() => {
-            toast.classList.add('translate-x-full', 'opacity-0');
-            toast.classList.remove('translate-x-0', 'opacity-100');
-            cartToastHideTimer = setTimeout(() => {
-                container.style.display = 'none';
-            }, 300);
-        }, 3000);
+    // Pakai toast global jika ada, kalau tidak pakai zkToast
+    function notify(title, message, type) {
+        if (window.showToast) window.showToast(title, message, type);
+        else zkToast(title, message, type);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -351,20 +347,25 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
                     },
                     body: new FormData(form),
                 });
-                const data = await res.json();
+                let data = {};
+                try { data = await res.json(); } catch (_) {}
 
                 if (!res.ok) {
                     const msg = data.errors ?
                         Object.values(data.errors).flat().join(' ') :
                         (data.message || 'Gagal menambahkan ke keranjang.');
-                    showCartToast('Gagal', msg, 'error');
+                    notify('Gagal', msg, 'error');
                     return;
                 }
 
-                window.Cart?.render(data);
-                showCartToast('Berhasil!', data.message || 'Produk berhasil ditambahkan ke keranjang', 'success');
+                // 1) Notifikasi dulu, supaya tetap muncul walau render keranjang bermasalah
+                notify('Berhasil!', data.message || 'Produk berhasil ditambahkan ke keranjang', 'success');
+
+                // 2) Perbarui keranjang (error di sini hanya dicatat, tidak menghalangi)
+                try { window.Cart?.render(data); } catch (err) { console.error('Cart.render error:', err); }
             } catch (err) {
-                showCartToast('Gagal', 'Terjadi kesalahan jaringan.', 'error');
+                console.error(err);
+                notify('Gagal', 'Terjadi kesalahan jaringan.', 'error');
             } finally {
                 btn.disabled = false;
             }
@@ -416,7 +417,7 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
             renderWishlist(data.liked);
 
         } catch (err) {
-            window.showToast?.('Gagal', 'Terjadi kesalahan, coba lagi.', 'error');
+            notify('Gagal', 'Terjadi kesalahan, coba lagi.', 'error');
         } finally {
             wBtn.disabled = false;
             wSpinner.classList.add('hidden');

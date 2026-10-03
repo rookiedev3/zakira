@@ -70,17 +70,16 @@ $req = '<span class="text-red-500">*</span>';
                             @error('seller_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
 
-                        {{-- Admin Handle (muncul setelah ID Seller valid) --}}
-                        <div id="adminHandleWrap" class="{{ (old('seller_id', $prefill['seller_id']) || $errors->has('admin_handle')) ? '' : 'hidden' }}">
-                            <label for="admin_handle" class="{{ $lbl }}">Admin Handle {!! $req !!}</label>
-                            <select id="admin_handle" name="admin_handle" class="{{ $in }}">
-                                <option value="">Pilih admin</option>
-                                @foreach (($admins ?? []) as $a)
-                                <option value="{{ $a }}" @selected(old('admin_handle', $prefill['admin_handle'] ?? '')===$a)>{{ $a }}</option>
+                        {{-- Admin Handle (muncul setelah ID Seller ditemukan) --}}
+                        <div id="adminHandleWrap" class="hidden">
+                            <label for="admin_handle_id" class="{{ $lbl }}">Admin Handle {!! $req !!}</label>
+                            <select id="admin_handle_id" name="admin_handle_id" class="{{ $in }}">
+                                <option value="">Pilih admin handle</option>
+                                @foreach ($adminHandles as $ah)
+                                <option value="{{ $ah->id }}" @selected((string) old('admin_handle_id', $prefill['admin_handle_id'] ?? '')===(string) $ah->id)>{{ $ah->name }}</option>
                                 @endforeach
                             </select>
-                            <p class="text-xs text-gray-500 mt-1">Pilih admin yang menangani pesanan Anda.</p>
-                            @error('admin_handle')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                            @error('admin_handle_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
 
                         <div>
@@ -426,7 +425,7 @@ $req = '<span class="text-red-500">*</span>';
         // Isian formulir dijaga lewat sessionStorage agar tidak hilang saat reload.
         const form = document.getElementById('checkoutForm');
         const KEY = 'zk_checkout_draft';
-        const fields = ['seller_id', 'whatsapp_number', 'admin_handle', 'shipping_method', 'first_name', 'last_name', 'address', 'city', 'province', 'postal_code', 'notes', 'ship_recipient', 'ship_phone', 'ship_address', 'ship_city', 'ship_province', 'ship_postal_code'];
+        const fields = ['seller_id', 'admin_handle_id', 'whatsapp_number', 'shipping_method', 'first_name', 'last_name', 'address', 'city', 'province', 'postal_code', 'notes', 'ship_recipient', 'ship_phone', 'ship_address', 'ship_city', 'ship_province', 'ship_postal_code'];
         const save = () => sessionStorage.setItem(KEY, JSON.stringify({
             ...Object.fromEntries(fields.map((f) => [f, form.elements[f]?.value ?? ''])),
             ship_different: form.elements.ship_different.checked,
@@ -470,15 +469,21 @@ $req = '<span class="text-red-500">*</span>';
         const sellerMsg = document.getElementById('sellerMsg');
         const sellerBtn = document.getElementById('sellerCheck');
         const adminWrap = document.getElementById('adminHandleWrap');
-        const toggleAdmin = (show) => adminWrap.classList.toggle('hidden', !show);
+        const adminSelect = document.getElementById('admin_handle_id');
         let sellerTimer;
+
+        // Admin Handle hanya tampil bila ID Seller ditemukan
+        function toggleAdminHandle(show) {
+            adminWrap.classList.toggle('hidden', !show);
+            if (!show) adminSelect.value = '';
+        }
 
         async function lookupSeller() {
             const id = sellerId.value.trim();
             if (!id) {
                 sellerName.value = '';
                 sellerMsg.innerHTML = '';
-                toggleAdmin(false);
+                toggleAdminHandle(false);
                 return;
             }
 
@@ -496,12 +501,12 @@ $req = '<span class="text-red-500">*</span>';
 
                 if (res.ok && data.found) {
                     sellerName.value = data.name;
-                    toggleAdmin(true);
                     sellerMsg.innerHTML = `<p class="text-green-600 text-sm">✓ Seller ditemukan: <strong>${esc(data.name)}</strong></p>`;
+                    toggleAdminHandle(true);
                 } else {
                     sellerName.value = '';
-                    toggleAdmin(false);
                     sellerMsg.innerHTML = `<p class="text-red-500 text-sm">ID Seller tidak ditemukan.</p>`;
+                    toggleAdminHandle(false);
                 }
             } finally {
                 sellerBtn.disabled = false;
@@ -514,8 +519,8 @@ $req = '<span class="text-red-500">*</span>';
         sellerId.addEventListener('input', () => {
             clearTimeout(sellerTimer);
             sellerName.value = '';
-            toggleAdmin(false);
             sellerMsg.innerHTML = '';
+            toggleAdminHandle(false);
             sellerTimer = setTimeout(lookupSeller, 350);
         });
         sellerId.addEventListener('keydown', (e) => {
@@ -525,7 +530,7 @@ $req = '<span class="text-red-500">*</span>';
             }
         });
 
-        // Isi nama seller saat halaman dimuat ulang (old input / draf)
+        // Isi nama seller & tampilkan Admin Handle saat halaman dimuat ulang (old input / draf)
         if (sellerId.value.trim()) lookupSeller();
 
         async function applyCode(code) {

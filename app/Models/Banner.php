@@ -20,8 +20,18 @@ class Banner extends Model
         'status',
     ];
 
-    public function getImageUrlAttribute(): string
+    public function getImageUrlAttribute(): ?string
     {
-        return Storage::url($this->image_path);
+        if (! $this->image_path) {
+            return null;
+        }
+
+        // File statis di public/ (contoh: images/meme.jpeg)
+        if (file_exists(public_path($this->image_path))) {
+            return asset($this->image_path);
+        }
+
+        // File upload lewat storage:link (contoh: banners/xxx.jpg)
+        return asset('storage/' . $this->image_path);
     }
 }

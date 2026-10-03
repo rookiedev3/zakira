@@ -7,6 +7,7 @@ use App\Models\BankAccount;
 use App\Models\Coupon;
 use App\Models\CustomerOrder;
 use App\Models\Seller;
+use App\Models\AdminHandle;
 use App\Models\UserDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -86,6 +87,8 @@ class CheckoutController extends Controller
             'banks'     => $this->banks(),
             'admins'    => $this->admins(),
             'prefill'   => $this->prefill(),
+            'adminHandles' => AdminHandle::orderBy('name')->get(['id', 'name']),
+
         ]);
     }
 

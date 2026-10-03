@@ -24,6 +24,7 @@ class ManageOrderController extends Controller
         if ($s = trim((string) $request->input('search'))) {
             $q->where(function ($w) use ($s) {
                 $w->where('order_number', 'like', "%{$s}%")
+                  ->orWhere('email', 'like', "%{$s}%")
                   ->orWhere('whatsapp_number', 'like', "%{$s}%")
                   ->orWhere('first_name', 'like', "%{$s}%")
                   ->orWhere('last_name', 'like', "%{$s}%")

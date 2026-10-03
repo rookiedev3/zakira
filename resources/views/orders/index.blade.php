@@ -69,7 +69,7 @@
             <div>
                 <label for="search" class="{{ $labelClass }}">Cari Pesanan</label>
                 <input type="text" id="search" name="search" value="{{ request('search') }}"
-                    placeholder="Order ID, nama, WhatsApp..." class="{{ $inputClass }}">
+                    placeholder="Order ID, nama, email, WhatsApp..." class="{{ $inputClass }}">
             </div>
 
             <div>
