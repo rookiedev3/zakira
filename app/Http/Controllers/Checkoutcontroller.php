@@ -11,10 +11,10 @@ use App\Models\UserDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\URL;
 
 class CheckoutController extends Controller
 {
@@ -80,22 +80,13 @@ class CheckoutController extends Controller
         }
 
         return view('checkout.index', [
-            'cart'      => $cart,
-            'shipping'  => self::SHIPPING,
-            'provinces' => self::PROVINCES,
-            'banks'     => $this->banks(),
-            'admins'    => $this->admins(),
-            'prefill'   => $this->prefill(),
+            'cart'         => $cart,
+            'shipping'     => self::SHIPPING,
+            'provinces'    => self::PROVINCES,
+            'banks'        => $this->banks(),
+            'prefill'      => $this->prefill(),
+            'adminHandles' => AdminHandle::orderBy('name')->get(['id', 'name']),
         ]);
-    }
-
-    /** Daftar nama Admin Handle dari database (untuk dropdown di halaman checkout). */
-    private function admins(): array
-    {
-        return AdminHandle::query()
-            ->orderBy('name')
-            ->pluck('name')
-            ->all();
     }
 
     /**
@@ -107,7 +98,7 @@ class CheckoutController extends Controller
     {
         $empty = [
             'seller_id'       => '',
-            'admin_handle'    => '',
+            'admin_handle_id' => '',
             'whatsapp_number' => '',
             'shipping_method' => '',
             'first_name'      => '',
@@ -130,7 +121,7 @@ class CheckoutController extends Controller
 
         return [
             'seller_id'       => (string) ($detail->seller_id ?? ''),
-            'admin_handle'    => '', // dipilih manual oleh pembeli di halaman checkout
+            'admin_handle_id' => '', // dipilih manual oleh pembeli di halaman checkout
             'whatsapp_number' => (string) ($detail->phone ?? ''),
             'shipping_method' => $this->matchOption($detail->shipping_expedition ?? null, self::SHIPPING),
             'first_name'      => $parts[0] ?? '',
@@ -178,7 +169,7 @@ class CheckoutController extends Controller
     {
         $data = $request->validate([
             'seller_id'       => ['required', 'string', 'max:50', Rule::exists('sellers', 'seller_id')],
-            'admin_handle'    => ['required', 'string', 'max:255', Rule::exists('admin_handles', 'name')],
+            'admin_handle_id' => ['required', 'integer', Rule::exists('admin_handles', 'id')],
             'whatsapp_number' => ['required', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
             'shipping_method' => ['required', Rule::in(self::SHIPPING)],
             'first_name'      => 'required|string|max:100',
@@ -198,26 +189,26 @@ class CheckoutController extends Controller
             'ship_province'    => ['required_if:ship_different,1', 'nullable', Rule::in(self::PROVINCES)],
             'ship_postal_code' => ['required_if:ship_different,1', 'nullable', 'digits:5'],
         ], [
-            'seller_id.required'    => 'ID Seller wajib diisi.',
-            'seller_id.exists'      => 'ID Seller tidak ditemukan.',
-            'admin_handle.required' => 'Admin Handle wajib dipilih.',
-            'admin_handle.exists'   => 'Admin Handle tidak valid.',
-            'whatsapp_number.regex' => 'Format nomor WhatsApp tidak valid. Contoh: 081234567890.',
-            'postal_code.digits'    => 'Kode pos harus 5 digit angka.',
-            'ship_phone.regex'      => 'Format nomor WhatsApp penerima tidak valid. Contoh: 081234567890.',
-            'ship_postal_code.digits' => 'Kode pos penerima harus 5 digit angka.',
-            'required_if'           => ':attribute wajib diisi.',
+            'seller_id.required'        => 'ID Seller wajib diisi.',
+            'seller_id.exists'          => 'ID Seller tidak ditemukan.',
+            'admin_handle_id.required'  => 'Admin Handle wajib dipilih.',
+            'admin_handle_id.exists'    => 'Admin Handle tidak valid.',
+            'whatsapp_number.regex'     => 'Format nomor WhatsApp tidak valid. Contoh: 081234567890.',
+            'postal_code.digits'        => 'Kode pos harus 5 digit angka.',
+            'ship_phone.regex'          => 'Format nomor WhatsApp penerima tidak valid. Contoh: 081234567890.',
+            'ship_postal_code.digits'   => 'Kode pos penerima harus 5 digit angka.',
+            'required_if'               => ':attribute wajib diisi.',
         ], [
-            'seller_id'       => 'ID Seller',
-            'admin_handle'    => 'Admin Handle',
-            'whatsapp_number' => 'No WhatsApp',
-            'shipping_method' => 'Ekspedisi',
-            'first_name'      => 'Nama depan',
-            'last_name'       => 'Nama belakang',
-            'address'         => 'Alamat',
-            'city'            => 'Kota',
-            'province'        => 'Provinsi',
-            'postal_code'     => 'Kode pos',
+            'seller_id'        => 'ID Seller',
+            'admin_handle_id'  => 'Admin Handle',
+            'whatsapp_number'  => 'No WhatsApp',
+            'shipping_method'  => 'Ekspedisi',
+            'first_name'       => 'Nama depan',
+            'last_name'        => 'Nama belakang',
+            'address'          => 'Alamat',
+            'city'             => 'Kota',
+            'province'         => 'Provinsi',
+            'postal_code'      => 'Kode pos',
             'ship_recipient'   => 'Nama penerima',
             'ship_phone'       => 'No WhatsApp penerima',
             'ship_address'     => 'Alamat penerima',
@@ -228,11 +219,14 @@ class CheckoutController extends Controller
 
         $shipDifferent = $request->boolean('ship_different');
 
-        // Ambil seller dari database — nama seller tidak dipercaya dari browser
-        $seller = Seller::where('seller_id', $data['seller_id'])->firstOrFail();
+        // Email diambil dari akun yang login; null jika pembeli adalah tamu
+        $email = Auth::user()?->email;
 
-        // Ambil admin handle dari database berdasarkan nama yang dipilih
-        $admin = AdminHandle::where('name', $data['admin_handle'])->firstOrFail();
+        // Ambil seller dari database (case-insensitive, sama seperti lookupSeller)
+        $seller = Seller::whereRaw('LOWER(seller_id) = ?', [mb_strtolower($data['seller_id'])])->firstOrFail();
+
+        // Ambil admin handle dari database berdasarkan ID yang dipilih
+        $admin = AdminHandle::findOrFail($data['admin_handle_id']);
 
         // Hitung ulang dari server (harga, kupon, total) — jangan percaya data dari browser
         $cart = $this->cart->payload();
@@ -241,7 +235,7 @@ class CheckoutController extends Controller
             return redirect(url('/cart'))->with('error', 'Keranjang masih kosong.');
         }
 
-        $order = DB::transaction(function () use ($data, $cart, $seller, $admin, $shipDifferent) {
+        $order = DB::transaction(function () use ($data, $cart, $seller, $admin, $shipDifferent, $email) {
             $couponCode = null;
 
             if ($cart['coupon']) {
@@ -262,19 +256,20 @@ class CheckoutController extends Controller
             $isDp = $cart['payment_method'] === 'dp';
 
             $order = CustomerOrder::create([
-                'order_number'    => $this->newOrderNumber(),
-                'seller_id'       => $seller->seller_id,
-                // 'seller_name'  => $seller->name, // aktifkan jika tabel customer_orders punya kolom seller_name
-                'admin_handle_id' => $admin->id,
-                'whatsapp_number' => $data['whatsapp_number'],
-                'shipping_method' => $data['shipping_method'],
-                'first_name'      => $data['first_name'],
-                'last_name'       => $data['last_name'],
-                'address'         => $data['address'],
-                'city'            => $data['city'],
-                'province'        => $data['province'],
-                'postal_code'     => $data['postal_code'],
-                'notes'           => $data['notes'] ?? null,
+                'order_number'     => $this->newOrderNumber(),
+                'seller_id'        => $seller->seller_id,
+                // 'seller_name'   => $seller->name, // aktifkan jika tabel customer_orders punya kolom seller_name
+                'admin_handle_id'  => $admin->id,
+                'email'            => $email,
+                'whatsapp_number'  => $data['whatsapp_number'],
+                'shipping_method'  => $data['shipping_method'],
+                'first_name'       => $data['first_name'],
+                'last_name'        => $data['last_name'],
+                'address'          => $data['address'],
+                'city'             => $data['city'],
+                'province'         => $data['province'],
+                'postal_code'      => $data['postal_code'],
+                'notes'            => $data['notes'] ?? null,
                 'ship_different'   => $shipDifferent,
                 'ship_recipient'   => $shipDifferent ? $data['ship_recipient'] : null,
                 'ship_phone'       => $shipDifferent ? $data['ship_phone'] : null,
@@ -282,14 +277,14 @@ class CheckoutController extends Controller
                 'ship_city'        => $shipDifferent ? $data['ship_city'] : null,
                 'ship_province'    => $shipDifferent ? $data['ship_province'] : null,
                 'ship_postal_code' => $shipDifferent ? $data['ship_postal_code'] : null,
-                'subtotal'        => $cart['subtotal'],
-                'discount'        => $cart['discount'],
-                'coupon_code'     => $couponCode,
-                'total'           => $cart['total'],
-                'payment_method'  => $cart['payment_method'],
-                'dp_percent'      => $isDp ? $cart['dp_percent'] : null,
-                'amount_due'      => $isDp ? $cart['dp_amount'] : $cart['total'],
-                'status'          => 'pending',
+                'subtotal'         => $cart['subtotal'],
+                'discount'         => $cart['discount'],
+                'coupon_code'      => $couponCode,
+                'total'            => $cart['total'],
+                'payment_method'   => $cart['payment_method'],
+                'dp_percent'       => $isDp ? $cart['dp_percent'] : null,
+                'amount_due'       => $isDp ? $cart['dp_amount'] : $cart['total'],
+                'status'           => 'pending',
             ]);
 
             foreach ($cart['items'] as $it) {
@@ -320,8 +315,8 @@ class CheckoutController extends Controller
         abort_unless(session('last_order') === $order->order_number, 404);
 
         return view('checkout.success', [
-            'order' => $order->load('items'),
-            'banks' => $this->banks(),
+            'order'             => $order->load('items'),
+            'banks'             => $this->banks(),
             'paymentConfirmUrl' => URL::signedRoute('payment.confirmation', ['order' => $order->order_number]),
         ]);
     }
