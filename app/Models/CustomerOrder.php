@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -35,5 +36,34 @@ class CustomerOrder extends Model
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class, 'customer_order_id')->latestOfMany();
+    }
+
+    /* ---------- Riwayat pesanan di halaman Akun Saya ---------- */
+
+    // Pesanan milik user = email sama ATAU nomor WhatsApp sama dengan telepon di profilnya
+    public function scopeOwnedBy(Builder $query, $user): Builder
+    {
+        $phones = self::phoneVariants($user->detail?->phone);
+
+        return $query->where(function (Builder $w) use ($user, $phones) {
+            $w->where('email', $user->email);
+
+            if ($phones) {
+                $w->orWhereIn('whatsapp_number', $phones);
+            }
+        });
+    }
+
+    // Variasi penulisan nomor: 0812..., 62812..., +62812...
+    public static function phoneVariants(?string $phone): array
+    {
+        $digits = preg_replace('/\D/', '', (string) $phone);
+        if ($digits === '') {
+            return [];
+        }
+
+        $core = preg_replace('/^(62|0)/', '', $digits);
+
+        return ['0' . $core, '62' . $core, '+62' . $core];
     }
 }

@@ -3,13 +3,35 @@
 @section('title', 'Akun Saya — Zakira Moslem Hijab Identity')
 
 @section('content')
+@php
+    use Illuminate\Support\Facades\Storage;
+
+    $statusLabels  = ['pending' => 'Menunggu', 'processing' => 'Diproses', 'shipped' => 'Dikirim', 'delivered' => 'Terkirim', 'cancelled' => 'Dibatalkan'];
+    $statusClasses = [
+        'pending'    => 'bg-[#fef9c2] text-[#894b00]',
+        'processing' => 'bg-[#dbeafe] text-[#193cb8]',
+        'shipped'    => 'bg-purple-100 text-purple-800',
+        'delivered'  => 'bg-[#dcfce7] text-[#016630]',
+        'cancelled'  => 'bg-red-100 text-red-800',
+    ];
+    $paymentLabels  = ['pending' => 'Menunggu', 'paid' => 'Lunas', 'failed' => 'Gagal', 'refunded' => 'Dikembalikan'];
+    $paymentClasses = [
+        'pending'  => 'bg-[#fef9c2] text-[#894b00]',
+        'paid'     => 'bg-[#dcfce7] text-[#016630]',
+        'failed'   => 'bg-red-100 text-red-800',
+        'refunded' => 'bg-gray-100 text-gray-800',
+    ];
+    $rp  = fn ($n) => 'Rp ' . number_format((int) $n, 0, ',', '.');
+    $wib = fn ($date, $format = 'd M Y') => $date ? \Illuminate\Support\Carbon::parse($date)->timezone('Asia/Jakarta')->format($format) : '-';
+@endphp
+
 <div class="zakira-container">
-<!-- Wrapper x-data: kontrol semua modal. Modal otomatis terbuka lagi kalau validasi gagal -->
+<!-- Wrapper x-data: kontrol semua modal. openDetail menyimpan ID pesanan yang sedang dibuka (null = tertutup) -->
 <div class="px-4 py-12 w-full"
      x-data="{
         openEdit: {{ $errors->hasAny(['name','email','phone','address','city','province','postal_code','seller_id','shipping_expedition']) ? 'true' : 'false' }},
         openPass: {{ $errors->hasAny(['current_password','password']) ? 'true' : 'false' }},
-        openDetail: false
+        openDetail: null
      }">
 
     <!-- Judul Halaman -->
@@ -113,104 +135,172 @@
                 </div>
             </div>
 
-            <!-- Card Statistik Pesanan (masih contoh statis) -->
+            <!-- Card Statistik Pesanan -->
             <div class="bg-white p-7 rounded-2xl border border-gray-100 shadow-sm text-base">
                 <h3 class="text-[1.35rem] font-semibold text-gray-900 mb-4">Statistik Pesanan</h3>
                 <div class="flex justify-between py-3">
                     <span class="text-gray-600">Total Pesanan:</span>
-                    <span class="text-gray-900 font-medium">1</span>
+                    <span class="text-gray-900 font-medium">{{ $stats['total'] }}</span>
                 </div>
                 <div class="flex justify-between py-3">
                     <span class="text-gray-600">Pesanan Aktif:</span>
-                    <span class="text-gray-900 font-medium">1</span>
+                    <span class="text-gray-900 font-medium">{{ $stats['active'] }}</span>
                 </div>
                 <div class="flex justify-between py-3">
                     <span class="text-gray-600">Pesanan Selesai:</span>
-                    <span class="text-gray-900 font-medium">0</span>
+                    <span class="text-gray-900 font-medium">{{ $stats['done'] }}</span>
                 </div>
                 <div class="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
                     <span class="text-gray-600">Total Belanja:</span>
-                    <span class="font-medium text-[#00a63e] text-lg">Rp 500.000</span>
+                    <span class="font-medium text-[#00a63e] text-lg">{{ $rp($stats['spent']) }}</span>
                 </div>
             </div>
 
         </div>
 
-        <!-- KOLOM KANAN: RIWAYAT PESANAN (masih contoh statis) -->
+        <!-- KOLOM KANAN: RIWAYAT PESANAN -->
         <div class="lg:col-span-2">
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <h3 class="text-[1.35rem] font-semibold text-gray-900 px-7 py-5 border-b border-gray-200">Riwayat Pesanan</h3>
 
-                <div class="bg-gray-50 px-7 py-6 space-y-5">
+                <div class="divide-y divide-gray-200">
+                    @forelse ($orders as $order)
+                        @php
+                            $isFull    = $order->payment_method === 'full';
+                            $dpPaid    = (bool) $order->dp_paid_at;
+                            $remPaid   = (bool) $order->remaining_paid_at;
+                            $payKey    = $order->payment_status ?? 'pending';
+                            $invoice    = $order->invoice;
+                            $hasInvoice = (bool) $invoice;
+                            $isExcel    = $invoice?->format === 'excel';
+                        @endphp
 
-                    <!-- Header Pesanan -->
-                    <div class="flex justify-between items-center gap-3">
-                        <span class="text-xl font-medium text-gray-900">Order #ORD260922170018I42</span>
-                        <span class="bg-[#fef9c2] text-[#894b00] text-base font-medium px-4 py-1.5 rounded-full">Menunggu</span>
-                    </div>
+                        <div class="bg-gray-50 px-7 py-6 space-y-5">
 
-                    <!-- Baris 1: Tanggal, Items, Total, Pembayaran -->
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 text-base">
-                        <div>
-                            <span class="text-gray-600 block">Tanggal:</span>
-                            <span class="text-gray-500">22 Sep 2026</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600 block">Items:</span>
-                            <span class="text-gray-500">2 item(s)</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600 block">Total:</span>
-                            <span class="font-semibold text-gray-900">Rp 500.000</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600 block">Pembayaran:</span>
-                            <span class="inline-block mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-0.5 rounded-full">Lunas</span>
-                        </div>
-                    </div>
+                            <!-- Header Pesanan -->
+                            <div class="flex justify-between items-center gap-3">
+                                <span class="text-xl font-medium text-gray-900">Order #{{ $order->order_number }}</span>
+                                <span class="{{ $statusClasses[$order->status] ?? 'bg-gray-100 text-gray-800' }} text-base font-medium px-4 py-1.5 rounded-full">
+                                    {{ $statusLabels[$order->status] ?? ucfirst($order->status) }}
+                                </span>
+                            </div>
 
-                    <!-- Baris 2: Metode Bayar, DP Status, Sisa Bayar, Faktur -->
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 text-base">
-                        <div>
-                            <span class="text-gray-600 block">Metode Bayar:</span>
-                            <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dbeafe] text-[#193cb8] text-sm font-medium px-3 py-1 rounded-full">
-                                <i class="fas fa-credit-card text-xs"></i> Down Payment
-                            </span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600 block">DP Status:</span>
-                            <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-1 rounded-full">
-                                <i class="fas fa-circle-check text-[#008236]"></i> DP Lunas
-                            </span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600 block">Sisa Bayar:</span>
-                            <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-1 rounded-full">
-                                <i class="fas fa-circle-check text-[#008236]"></i> Lunas
-                            </span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600 block">Faktur:</span>
-                            <a href="#" class="inline-flex items-center gap-2 mt-1 bg-[#dbeafe] text-[#1447e6] text-sm px-3 py-1.5 rounded-2xl hover:underline">
-                                <i class="fas fa-file-pdf"></i> FKT-20260924-0001 (PDF)
-                            </a>
-                            <span class="text-sm text-gray-500 block mt-1">24 Sep 2026 10:18</span>
-                        </div>
-                    </div>
+                            <!-- Baris 1: Tanggal, Items, Total, Pembayaran -->
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 text-base">
+                                <div>
+                                    <span class="text-gray-600 block">Tanggal:</span>
+                                    <span class="text-gray-500">{{ $wib($order->created_at) }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 block">Items:</span>
+                                    <span class="text-gray-500">{{ $order->items_count }} item(s)</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 block">Total:</span>
+                                    <span class="font-semibold text-gray-900">{{ $rp($order->total) }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 block">Pembayaran:</span>
+                                    <span class="inline-block mt-1 {{ $paymentClasses[$payKey] ?? 'bg-gray-100 text-gray-800' }} text-sm font-medium px-3 py-0.5 rounded-full">
+                                        {{ $paymentLabels[$payKey] ?? ucfirst($payKey) }}
+                                    </span>
+                                </div>
+                            </div>
 
-                    <!-- Tombol Aksi -->
-                    <div class="flex flex-wrap items-center gap-3 pt-1">
-                        <button type="button" @click="openDetail = true" class="bg-[#8C6239] hover:bg-[#724e2c] text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
-                            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" /></svg>
-                            Lihat Detail
-                        </button>
-                        <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
-                            Download PDF
-                        </button>
-                    </div>
+                            <!-- Baris 2: Metode Bayar, DP Status, Sisa Bayar, Faktur -->
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 text-base">
+                                <div>
+                                    <span class="text-gray-600 block">Metode Bayar:</span>
+                                    @if ($isFull)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-money-bill text-xs"></i> Bayar Penuh
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dbeafe] text-[#193cb8] text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-credit-card text-xs"></i> Down Payment
+                                        </span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 block">DP Status:</span>
+                                    @if ($isFull)
+                                        <span class="text-gray-500">-</span>
+                                    @elseif ($dpPaid)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-circle-check text-[#008236]"></i> DP Lunas
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#fef9c2] text-[#894b00] text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-clock"></i> DP Pending
+                                        </span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 block">Sisa Bayar:</span>
+                                    @if ($isFull)
+                                        <span class="text-gray-500">-</span>
+                                    @elseif ($remPaid)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-circle-check text-[#008236]"></i> Lunas
+                                        </span>
+                                    @elseif ($dpPaid)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-hourglass-half"></i> Belum Lunas
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-gray-100 text-gray-600 text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-minus"></i> Menunggu DP
+                                        </span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <span class="text-gray-600 block">Faktur:</span>
+                                    @if ($hasInvoice)
+                                        <a href="{{ route('member.orders.invoice', $order->order_number) }}" download
+                                           class="inline-flex items-center gap-2 mt-1 bg-[#dbeafe] text-[#1447e6] text-sm px-3 py-1.5 rounded-2xl hover:underline">
+                                            <i class="fas {{ $isExcel ? 'fa-file-excel' : 'fa-file-pdf' }}"></i> {{ $invoice->invoice_number }} ({{ $isExcel ? 'Excel' : 'PDF' }})
+                                        </a>
+                                        <span class="text-sm text-gray-500 block mt-1">{{ $wib($invoice->invoice_date ?? $invoice->created_at, 'd M Y H:i') }}</span>
+                                    @else
+                                        <span class="text-sm text-gray-500 block mt-1">Belum tersedia</span>
+                                    @endif
+                                </div>
+                            </div>
 
+                            <!-- Tombol Aksi -->
+                            <div class="flex flex-wrap items-center gap-3 pt-1">
+                                <button type="button" @click="openDetail = {{ $order->id }}" class="bg-[#8C6239] hover:bg-[#724e2c] text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
+                                    <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" /></svg>
+                                    Lihat Detail
+                                </button>
+
+                                @if ($hasInvoice)
+                                    <a href="{{ route('member.orders.invoice', $order->order_number) }}" download
+                                       class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
+                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                                        Download {{ $isExcel ? 'Excel' : 'PDF' }}
+                                    </a>
+                                @else
+                                    <span class="bg-gray-100 text-gray-400 text-base font-medium px-6 py-2.5 rounded-md flex items-center gap-2 cursor-not-allowed" title="Faktur belum dibuat oleh admin">
+                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                                        Download {{ $isExcel ? 'Excel' : 'PDF' }}
+                                    </span>
+                                @endif
+                            </div>
+
+                        </div>
+                    @empty
+                        <div class="bg-gray-50 px-7 py-14 text-center text-gray-500 text-base">
+                            Belum ada pesanan.
+                        </div>
+                    @endforelse
                 </div>
+
+                @if ($orders->hasPages())
+                    <div class="px-7 py-4 border-t border-gray-200">
+                        {{ $orders->links() }}
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -372,71 +462,130 @@
         </div>
     </div>
 
-    <!-- ================= MODAL DETAIL PESANAN ================= -->
-    <div x-show="openDetail" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4" style="display: none;" x-transition.opacity>
-        <div @click.outside="openDetail = false" class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+    <!-- ================= MODAL DETAIL PESANAN (satu per pesanan) ================= -->
+    @foreach ($orders as $order)
+        @php
+            $isFull    = $order->payment_method === 'full';
+            $dpPaid    = (bool) $order->dp_paid_at;
+            $remPaid   = (bool) $order->remaining_paid_at;
+            $payKey    = $order->payment_status ?? 'pending';
+            $remaining = max(0, (int) $order->total - (int) $order->amount_due);
+            $discount  = (int) $order->discount;
+        @endphp
 
-            <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
-                <h3 class="font-bold text-lg text-gray-900">Detail Pesanan #ORD260922170018I42</h3>
-                <button type="button" @click="openDetail = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+        <div x-show="openDetail === {{ $order->id }}" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4" style="display: none;" x-transition.opacity>
+            <div @click.outside="openDetail = null" class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
 
-            <div class="p-6 space-y-6 text-xs">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                    <div class="space-y-2">
-                        <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pesanan</h4>
-                        <div class="flex justify-between"><span class="text-gray-500">Order ID:</span> <span class="font-medium text-gray-800">ORD260922170018I42</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span> <span class="font-medium text-gray-800">22 Sep 2026 17:00</span></div>
-                        <div class="flex justify-between items-center"><span class="text-gray-500">Status:</span> <span class="bg-amber-100 text-amber-800 font-semibold px-2.5 py-0.5 rounded-full text-[10px]">Menunggu</span></div>
-                        <div class="flex justify-between items-center"><span class="text-gray-500">Pembayaran:</span> <span class="bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded text-[10px]">Lunas</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">Total:</span> <span class="font-bold text-emerald-700 text-sm">Rp 500.000</span></div>
-                    </div>
-
-                    <!-- Informasi pengiriman: diambil dari data user -->
-                    <div class="space-y-2">
-                        <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pengiriman</h4>
-                        <div class="flex justify-between"><span class="text-gray-500">Nama:</span> <span class="font-medium text-gray-800">{{ $user->name }}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-medium text-gray-800">{{ $user->email }}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">WhatsApp:</span> <span class="font-medium text-gray-800">{{ $user->detail?->phone ?? '-' }}</span></div>
-                        <div>
-                            <span class="text-gray-500 block mb-1">Alamat:</span>
-                            <p class="font-medium text-gray-800 leading-relaxed">
-                                {{ $user->detail?->address ?? '-' }}<br>
-                                {{ $user->detail?->city ?? '-' }}, {{ $user->detail?->province ?? '-' }} {{ $user->detail?->postal_code }}<br>
-                                Indonesia
-                            </p>
-                        </div>
-                    </div>
+                <div class="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+                    <h3 class="font-bold text-lg text-gray-900">Detail Pesanan #{{ $order->order_number }}</h3>
+                    <button type="button" @click="openDetail = null" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="space-y-3">
-                    <h4 class="font-bold text-gray-800 text-sm">Item Pesanan</h4>
-                    <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 shrink-0">📷</div>
-                            <div>
-                                <h5 class="font-semibold text-gray-800">Baju Koko</h5>
-                                <p class="text-[11px] text-gray-500">Model: Pro | Warna: Hitam | Ukuran: df</p>
-                                <p class="text-[11px] text-gray-500">Rp 100.000 × 1</p>
+                <div class="p-6 space-y-6 text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pesanan</h4>
+                            <div class="flex justify-between"><span class="text-gray-500">Order ID:</span> <span class="font-medium text-gray-800">{{ $order->order_number }}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span> <span class="font-medium text-gray-800">{{ $wib($order->created_at, 'd M Y H:i') }}</span></div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500">Status:</span>
+                                <span class="{{ $statusClasses[$order->status] ?? 'bg-gray-100 text-gray-800' }} font-semibold px-2.5 py-0.5 rounded-full text-[10px]">{{ $statusLabels[$order->status] ?? ucfirst($order->status) }}</span>
                             </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500">Pembayaran:</span>
+                                <span class="{{ $paymentClasses[$payKey] ?? 'bg-gray-100 text-gray-800' }} font-semibold px-2 py-0.5 rounded text-[10px]">{{ $paymentLabels[$payKey] ?? ucfirst($payKey) }}</span>
+                            </div>
+                            <div class="flex justify-between"><span class="text-gray-500">Metode Bayar:</span> <span class="font-medium text-gray-800">{{ $isFull ? 'Bayar Penuh' : 'Down Payment' }}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Subtotal:</span> <span class="font-medium text-gray-800">{{ $rp($order->subtotal) }}</span></div>
+                            @if ($discount > 0)
+                                <div class="flex justify-between text-emerald-700">
+                                    <span>Diskon{{ $order->coupon_code ? ' (' . $order->coupon_code . ')' : '' }}:</span>
+                                    <span class="font-medium">-{{ $rp($discount) }}</span>
+                                </div>
+                            @endif
+                            <div class="flex justify-between border-t pt-2 mt-2"><span class="text-gray-500">Total:</span> <span class="font-bold text-emerald-700 text-sm">{{ $rp($order->total) }}</span></div>
+                            @unless ($isFull)
+                                <div class="flex justify-between"><span class="text-gray-500">DP:</span> <span class="font-medium text-gray-800">{{ $rp($order->amount_due) }} {{ $dpPaid ? '(Lunas)' : '(Pending)' }}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Sisa:</span> <span class="font-medium text-gray-800">{{ $rp($remaining) }} {{ $remPaid ? '(Lunas)' : '(Belum)' }}</span></div>
+                            @endunless
                         </div>
-                        <span class="font-bold text-gray-800 text-sm">Rp 100.000</span>
+
+                        <!-- Informasi pengiriman: diambil dari data pesanan -->
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-gray-800 text-sm mb-3">Informasi Pengiriman</h4>
+                            <div class="flex justify-between"><span class="text-gray-500">Nama:</span> <span class="font-medium text-gray-800">{{ trim($order->first_name . ' ' . $order->last_name) }}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-medium text-gray-800">{{ $order->email ?: '-' }}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">WhatsApp:</span> <span class="font-medium text-gray-800">{{ $order->whatsapp_number ?: '-' }}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Ekspedisi:</span> <span class="font-medium text-gray-800">{{ $order->shipping_method ?: '-' }}</span></div>
+                            <div>
+                                <span class="text-gray-500 block mb-1">Alamat:</span>
+                                <p class="font-medium text-gray-800 leading-relaxed">
+                                    {{ $order->address }}<br>
+                                    {{ $order->city }}, {{ $order->province }} {{ $order->postal_code }}<br>
+                                    Indonesia
+                                </p>
+                            </div>
+                            @if ($order->notes)
+                                <div>
+                                    <span class="text-gray-500 block mb-1">Catatan:</span>
+                                    <p class="font-medium text-gray-800 leading-relaxed">{{ $order->notes }}</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-gray-800 text-sm">Item Pesanan</h4>
+                        @forelse ($order->items as $item)
+                            @php
+                                $name  = $item->product_name ?? $item->product->name ?? '-';
+                                $image = $item->product_image ?? $item->product->image ?? null;
+                                $price = (int) $item->price;
+                                $qty   = (int) $item->quantity;
+                                $attrs = array_filter([
+                                    ! empty($item->model) ? 'Model: '  . $item->model : null,
+                                    ! empty($item->color) ? 'Warna: '  . $item->color : null,
+                                    ! empty($item->size)  ? 'Ukuran: ' . $item->size  : null,
+                                ]);
+                            @endphp
+                            <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center text-gray-400 shrink-0">
+                                        @if ($image)
+                                            <img src="{{ Storage::disk('public')->url($image) }}" alt="{{ $name }}" class="w-full h-full object-cover">
+                                        @else
+                                            📷
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-gray-800">{{ $name }}</h5>
+                                        @if ($attrs)
+                                            <p class="text-[11px] text-gray-500">{{ implode(' | ', $attrs) }}</p>
+                                        @endif
+                                        <p class="text-[11px] text-gray-500">{{ $rp($price) }} × {{ $qty }}</p>
+                                    </div>
+                                </div>
+                                <span class="font-bold text-gray-800 text-sm">{{ $rp($price * $qty) }}</span>
+                            </div>
+                        @empty
+                            <p class="text-gray-500">Tidak ada item.</p>
+                        @endforelse
                     </div>
                 </div>
-            </div>
 
-            <div class="p-4 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
-                <button type="button" @click="openDetail = false" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold px-5 py-2 rounded-lg transition cursor-pointer">
-                    Tutup
-                </button>
-            </div>
+                <div class="p-4 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
+                    <button type="button" @click="openDetail = null" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold px-5 py-2 rounded-lg transition cursor-pointer">
+                        Tutup
+                    </button>
+                </div>
 
+            </div>
         </div>
-    </div>
+    @endforeach
 
 </div>
 </div>

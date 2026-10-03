@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomerOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,7 +15,23 @@ class ProfileController extends Controller
     {
         $user = Auth::user()->load('detail');
 
-        return view('member.profile', compact('user'));
+        // Riwayat pesanan milik user ini, dicocokkan lewat email atau no telp (5 per halaman)
+        $orders = CustomerOrder::ownedBy($user)
+            ->withCount('items')
+            ->with(['items', 'invoice'])
+            ->latest()
+            ->paginate(5, ['*'], 'pesanan');
+
+        // Statistik pesanan
+        $base = CustomerOrder::ownedBy($user);
+        $stats = [
+            'total'  => (clone $base)->count(),
+            'active' => (clone $base)->whereNotIn('status', ['delivered', 'cancelled'])->count(),
+            'done'   => (clone $base)->where('status', 'delivered')->count(),
+            'spent'  => (clone $base)->where('status', '!=', 'cancelled')->sum('total'),
+        ];
+
+        return view('member.profile', compact('user', 'orders', 'stats'));
     }
 
     public function update(Request $request)
@@ -58,5 +75,22 @@ class ProfileController extends Controller
         ]);
 
         return back()->with('success', 'Password berhasil diubah.');
+    }
+
+    /**
+     * Unduh faktur milik user. Faktur dibuat admin (model Invoice);
+     * di sini hanya dicek kepemilikannya, lalu file dikirim lewat logika
+     * download admin supaya PDF/Excel-nya persis sama.
+     */
+    public function invoice(string $orderNumber)
+    {
+        $order = CustomerOrder::with('invoice')
+            ->where('order_number', $orderNumber)
+            ->ownedBy(Auth::user()->load('detail'))
+            ->firstOrFail();
+
+        abort_unless($order->invoice, 404, 'Faktur belum dibuat.');
+
+        return app(\App\Http\Controllers\Admin\InvoiceController::class)->download($order->invoice);
     }
 }
