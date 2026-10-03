@@ -6,6 +6,7 @@ use App\Models\AdminHandle;
 use App\Models\BankAccount;
 use App\Models\Coupon;
 use App\Models\CustomerOrder;
+use App\Models\Seller;
 use App\Models\UserDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -84,10 +85,6 @@ class CheckoutController extends Controller
             'provinces' => self::PROVINCES,
             'banks'     => $this->banks(),
             'admins'    => $this->admins(),
-            'prefill'   => $this->prefill(),
-            'adminHandles' => AdminHandle::orderBy('name')->get(['id', 'name']),
-
-         'admins'    => $this->admins(),
             'prefill'   => $this->prefill(),
         ]);
     }
@@ -231,9 +228,6 @@ class CheckoutController extends Controller
 
         $shipDifferent = $request->boolean('ship_different');
 
-        // Email diambil dari akun yang login; null jika pembeli adalah tamu
-        $email = Auth::user()?->email;
-
         // Ambil seller dari database — nama seller tidak dipercaya dari browser
         $seller = Seller::where('seller_id', $data['seller_id'])->firstOrFail();
 
@@ -247,7 +241,7 @@ class CheckoutController extends Controller
             return redirect(url('/cart'))->with('error', 'Keranjang masih kosong.');
         }
 
-        $order = DB::transaction(function () use ($data, $cart, $seller, $admin, $shipDifferent, $email) {
+        $order = DB::transaction(function () use ($data, $cart, $seller, $admin, $shipDifferent) {
             $couponCode = null;
 
             if ($cart['coupon']) {
@@ -272,7 +266,6 @@ class CheckoutController extends Controller
                 'seller_id'       => $seller->seller_id,
                 // 'seller_name'  => $seller->name, // aktifkan jika tabel customer_orders punya kolom seller_name
                 'admin_handle_id' => $admin->id,
-                'email'           => $email,
                 'whatsapp_number' => $data['whatsapp_number'],
                 'shipping_method' => $data['shipping_method'],
                 'first_name'      => $data['first_name'],
