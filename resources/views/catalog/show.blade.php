@@ -224,6 +224,36 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
 </div>
 
 <script>
+    // ---------- Notifikasi (hijau = sukses, merah = gagal) ----------
+    function zkToast(title, message, type) {
+        const ok = type !== 'error';
+        let wrap = document.getElementById('zk-toast-wrap');
+        if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.id = 'zk-toast-wrap';
+            wrap.style.cssText = 'position:fixed;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+            document.body.appendChild(wrap);
+        }
+        // Muncul tepat di bawah navbar (navbar menempel di atas saat scroll)
+        const nav = document.querySelector('.zk-navbar');
+        wrap.style.top = (nav ? Math.max(nav.getBoundingClientRect().bottom, 0) + 8 : 16) + 'px';
+
+        const t = document.createElement('div');
+        t.setAttribute('role', 'status');
+        t.style.cssText = 'display:flex;align-items:center;gap:12px;min-width:20rem;max-width:26rem;padding:14px 16px;border-radius:8px;color:#fff;box-shadow:0 10px 25px rgba(0,0,0,.18);opacity:0;transform:translateX(24px);transition:opacity .25s,transform .25s;background:' + (ok ? '#16a34a' : '#dc2626');
+        t.innerHTML = '<i class="fas ' + (ok ? 'fa-circle-check' : 'fa-circle-exclamation') + '" style="font-size:1.35rem"></i>' +
+            '<div><div style="font-weight:600;font-size:1rem;line-height:1.3">' + title + '</div>' +
+            '<div style="font-size:.9rem;line-height:1.35">' + message + '</div></div>';
+        wrap.appendChild(t);
+
+        requestAnimationFrame(() => { t.style.opacity = 1; t.style.transform = 'translateX(0)'; });
+        setTimeout(() => {
+            t.style.opacity = 0;
+            t.style.transform = 'translateX(24px)';
+            setTimeout(() => t.remove(), 300);
+        }, 3500);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // ---------- Zoom gambar ----------
         const box = document.getElementById('imageContainer');
@@ -299,19 +329,26 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
                     },
                     body: new FormData(form),
                 });
-                const data = await res.json();
+                let data = {};
+                try { data = await res.json(); } catch (_) {}
 
                 if (!res.ok) {
                     const msg = data.errors ?
                         Object.values(data.errors).flat().join(' ') :
                         (data.message || 'Gagal menambahkan ke keranjang.');
-                    window.showToast?.('Gagal', msg, 'error');
+                    window.showToast ? window.showToast('Gagal', msg, 'error') : zkToast('Gagal', msg, 'error');
                     return;
                 }
 
-                window.Cart?.render(data);
+                // 1) Notifikasi dulu, supaya tetap muncul walau render keranjang bermasalah
+                zkToast('Berhasil!', 'Produk berhasil ditambahkan ke keranjang');
+
+                // 2) Perbarui keranjang (error di sini hanya dicatat, tidak menghalangi)
+                try { window.Cart?.render(data); } catch (err) { console.error('Cart.render error:', err); }
             } catch (err) {
-                window.showToast?.('Gagal', 'Terjadi kesalahan jaringan.', 'error');
+                console.error(err);
+                const m = 'Terjadi kesalahan jaringan.';
+                window.showToast ? window.showToast('Gagal', m, 'error') : zkToast('Gagal', m, 'error');
             } finally {
                 btn.disabled = false;
             }
