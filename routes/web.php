@@ -25,6 +25,7 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\PaymentConfirmationController;
 use App\Http\Controllers\Admin\ManageOrderController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\Admin\InvoiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -168,6 +169,10 @@ Route::patch('orders/{order}/payment', [ManageOrderController::class, 'updatePay
 Route::patch('orders/{order}/dp-paid', [ManageOrderController::class, 'markDpPaid'])->name('admin.orders.dp-paid');
 Route::patch('orders/{order}/remaining-paid', [ManageOrderController::class, 'markRemainingPaid'])->name('admin.orders.remaining-paid');
 Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
+
+Route::post('orders/{order}/invoice', [InvoiceController::class, 'store'])->name('admin.orders.invoice.store');
+Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('admin.invoices.download');
+Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('admin.invoices.destroy');
 
 // Route untuk Halaman Pre Order Member
 Route::middleware(['auth'])->group(function () {

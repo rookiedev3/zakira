@@ -41,12 +41,16 @@
 
     $sel = fn (string $key, string $value) => (string) request($key) === $value ? 'selected' : '';
     $rp  = fn ($n) => 'Rp ' . number_format((int) $n, 0, ',', '.');
+
+    // Nilai awal form Buat Faktur
+    $nextInvoiceNumber = \App\Models\Invoice::nextNumber();
+    $nowLocal          = now('Asia/Jakarta')->format('Y-m-d\TH:i');
 @endphp
 
 <div class="space-y-6">
 
     @if (session('success'))
-        <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+        <div id="flash-toast" class="fixed top-4 right-4 z-[60] rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-lg transition-opacity duration-500">
             <i class="fas fa-check-circle mr-1"></i> {{ session('success') }}
         </div>
     @endif
@@ -140,6 +144,7 @@
                         <th class="{{ $thClass }}">Status DP</th>
                         <th class="{{ $thClass }}">Pembayaran</th>
                         <th class="{{ $thClass }}">Bukti Bayar</th>
+                        <th class="{{ $thClass }}">Faktur</th>
                         <th class="{{ $thClass }}">Tanggal</th>
                         <th class="{{ $thClass }} text-right">Aksi</th>
                     </tr>
@@ -160,6 +165,7 @@
                             };
                             $payKey    = $order->payment_status ?? 'pending';
                             $proof     = $order->paymentConfirmations->first();
+                            $invoice   = $order->invoice;
                             $remaining = max(0, (int) $order->total - (int) $order->amount_due);
                             $param     = ['order' => $order->order_number];
                         @endphp
@@ -172,8 +178,8 @@
 
                             <!-- Pelanggan -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ trim($order->first_name . ' ' . $order->last_name) }}</div>
-                                <div class="text-sm text-gray-500">{{ $order->whatsapp_number }}</div>
+                                <div class="text-sm font-medium text-gray-900">{{ $order->seller_name ?? 'Pembelian Website' }}</div>
+                                <div class="text-sm text-gray-500">{{ $order->email ?: $order->whatsapp_number }}</div>
                             </td>
 
                             <!-- Total & Metode -->
@@ -246,6 +252,45 @@
                                         <i class="fas fa-times mr-1"></i>
                                         Belum
                                     </span>
+                                @endif
+                            </td>
+
+                            <!-- Faktur -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if ($invoice)
+                                    <div class="flex items-center space-x-2">
+                                        <div class="space-y-1">
+                                            @if ($invoice->format === 'excel')
+                                                <a href="{{ route('admin.invoices.download', $invoice) }}" download
+                                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200">
+                                                    <i class="fas fa-file-excel mr-1"></i>{{ $invoice->invoice_number }} (Excel)
+                                                </a>
+                                            @else
+                                                <a href="{{ route('admin.invoices.download', $invoice) }}" download
+                                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">
+                                                    <i class="fas fa-file-pdf mr-1"></i>{{ $invoice->invoice_number }} (PDF)
+                                                </a>
+                                            @endif
+                                            <div class="text-xs text-gray-500">
+                                                {{ ($invoice->invoice_date ?? $invoice->created_at)->timezone('Asia/Jakarta')->format('d M Y H:i') }}
+                                            </div>
+                                        </div>
+
+                                        <form method="POST" action="{{ route('admin.invoices.destroy', $invoice) }}" data-keep-scroll
+                                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus faktur ini?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" title="Hapus Faktur"
+                                                    class="inline-flex items-center justify-center h-8 w-8 rounded-md bg-red-500 hover:bg-red-600 text-white">
+                                                <i class="fas fa-trash text-xs"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @else
+                                    <button type="button" class="{{ $btnView }}" data-invoice-open
+                                            data-action="{{ route('admin.orders.invoice.store', $param) }}"
+                                            data-order="{{ $order->order_number }}">
+                                        <i class="fas fa-plus text-xs"></i> <span>Buat Faktur</span>
+                                    </button>
                                 @endif
                             </td>
 
@@ -327,7 +372,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-6 py-10 text-center text-sm text-gray-500">
+                            <td colspan="10" class="px-6 py-10 text-center text-sm text-gray-500">
                                 Belum ada pesanan{{ request()->query() ? ' yang cocok dengan filter' : '' }}.
                             </td>
                         </tr>
@@ -718,14 +763,133 @@
     </dialog>
 @endforeach
 
+{{-- ============ Modal Buat Faktur (satu dialog dipakai semua baris) ============ --}}
+<dialog id="invoice-dialog" data-default-number="{{ $nextInvoiceNumber }}" data-default-date="{{ $nowLocal }}"
+        class="m-auto p-0 bg-transparent w-[calc(100%-2rem)] max-w-md overflow-hidden backdrop:bg-black/30">
+    <form method="POST" action="#" id="invoice-form" data-keep-scroll class="bg-white rounded-lg w-full">
+        @csrf
+        <input type="hidden" name="_invoice_order" id="invoice-order" value="{{ old('_invoice_order') }}">
+
+        <div class="flex items-center justify-between p-6 border-b">
+            <h3 class="text-xl font-semibold text-gray-900">Buat Faktur</h3>
+            <button type="button" class="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-800 hover:bg-zinc-800/5"
+                    onclick="this.closest('dialog').close()" aria-label="Tutup">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div>
+                <label for="invoice_number" class="{{ $labelClass }}">Nomor Faktur</label>
+                <input type="text" id="invoice_number" name="invoice_number" required
+                       value="{{ old('invoice_number', $nextInvoiceNumber) }}"
+                       placeholder="FKT-20240101-0001" class="{{ $inputClass }}">
+                @error('invoice_number') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label for="invoice_date" class="{{ $labelClass }}">Tanggal Faktur</label>
+                <input type="datetime-local" id="invoice_date" name="invoice_date" required
+                       value="{{ old('invoice_date', $nowLocal) }}" class="{{ $inputClass }}">
+                @error('invoice_date') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label for="invoice_notes" class="{{ $labelClass }}">Catatan Faktur (Opsional)</label>
+                <textarea id="invoice_notes" name="invoice_notes" rows="3"
+                          placeholder="Catatan tambahan untuk faktur..." class="{{ $inputClass }}">{{ old('invoice_notes') }}</textarea>
+                @error('invoice_notes') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 p-6 border-t bg-gray-50">
+            <button type="button" onclick="this.closest('dialog').close()"
+                    class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg text-zinc-800 hover:bg-zinc-800/5 transition-colors">
+                <span>Batal</span>
+            </button>
+            <button type="submit" name="format" value="pdf" data-submit-btn
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 transition-colors disabled:opacity-60 disabled:cursor-wait">
+                <i class="fas fa-file-pdf"></i> <span>Buat Faktur PDF</span>
+            </button>
+            <button type="submit" name="format" value="excel" data-submit-btn
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 transition-colors disabled:opacity-60 disabled:cursor-wait">
+                <i class="fas fa-file-excel"></i> <span>Buat Faktur Excel</span>
+            </button>
+        </div>
+    </form>
+</dialog>
+
 <style>
     /* Kunci scroll halaman di belakang modal */
     html:has(dialog[data-order-dialog][open]),
-    body:has(dialog[data-order-dialog][open]) { overflow: hidden; }
+    body:has(dialog[data-order-dialog][open]),
+    html:has(#invoice-dialog[open]),
+    body:has(#invoice-dialog[open]) { overflow: hidden; }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Pertahankan posisi scroll setelah buat / hapus faktur (halaman dimuat ulang)
+    const scrollParents = () => {
+        const list = [];
+        for (let el = document.getElementById('filterForm'); el; el = el.parentElement) list.push(el);
+        return list;
+    };
+    document.addEventListener('submit', (e) => {
+        if (e.defaultPrevented || !e.target.matches('[data-keep-scroll]')) return;
+        sessionStorage.setItem('keepScroll', JSON.stringify({
+            win: window.scrollY,
+            els: scrollParents().map((el) => el.scrollTop),
+        }));
+    });
+    const restoreScroll = () => {
+        const raw = sessionStorage.getItem('keepScroll');
+        if (!raw) return;
+        sessionStorage.removeItem('keepScroll');
+        const { win, els } = JSON.parse(raw);
+        scrollParents().forEach((el, i) => { if (els[i]) el.scrollTop = els[i]; });
+        window.scrollTo(0, win);
+    };
+    restoreScroll();
+    window.addEventListener('load', restoreScroll);
+
+    // Notifikasi sukses hilang otomatis
+    const toast = document.getElementById('flash-toast');
+    if (toast) setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3000);
+
+    // Modal Buat Faktur
+    const invDlg  = document.getElementById('invoice-dialog');
+    const invForm = document.getElementById('invoice-form');
+
+    document.querySelectorAll('[data-invoice-open]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+            invForm.action = btn.dataset.action;
+            document.getElementById('invoice-order').value = btn.dataset.order;
+            invForm.querySelector('#invoice_number').value = invDlg.dataset.defaultNumber;
+            invForm.querySelector('#invoice_date').value   = invDlg.dataset.defaultDate;
+            invForm.querySelector('#invoice_notes').value  = '';
+            invDlg.showModal();
+        })
+    );
+    invDlg.addEventListener('click', (e) => { if (e.target === invDlg) invDlg.close(); });
+
+    // Loading: tombol dinonaktifkan setelah submit; format dikirim lewat input hidden
+    invForm.addEventListener('submit', (e) => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden'; hidden.name = 'format'; hidden.value = e.submitter ? e.submitter.value : 'pdf';
+        invForm.appendChild(hidden);
+        invForm.querySelectorAll('[data-submit-btn]').forEach((b) => {
+            b.disabled = true;
+            if (b === e.submitter) b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Memproses...</span>';
+        });
+    });
+
+    @if ($errors->hasAny(['invoice_number', 'invoice_date', 'invoice_notes']) && old('_invoice_order'))
+        // Validasi gagal: buka lagi form dengan pesan error
+        invForm.action = @json(route('admin.orders.invoice.store', ['order' => old('_invoice_order')]));
+        invDlg.showModal();
+    @endif
+
     // Filter dropdown langsung diterapkan; kolom cari lewat Enter
     document.querySelectorAll('#filterForm [data-autosubmit]').forEach((el) =>
         el.addEventListener('change', () => el.form.submit())

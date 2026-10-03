@@ -223,7 +223,59 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
     </div>
 </div>
 
+{{-- ========== Toast Notifikasi Keranjang ========== --}}
+<div id="cartToastContainer" class="fixed top-20 right-4 z-50 space-y-2" style="display: none;">
+    <div id="cartToastMessage"
+        class="px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 bg-green-600 text-white translate-x-full opacity-0">
+        <div class="flex items-center">
+            <i id="cartToastIcon" class="fas fa-check-circle mr-3"></i>
+            <div>
+                <div class="font-medium" id="cartToastTitle">Berhasil!</div>
+                <div class="text-sm opacity-90" id="cartToastContent">Produk berhasil ditambahkan ke keranjang</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    // ---------- Toast notifikasi keranjang ----------
+    let cartToastTimer, cartToastHideTimer;
+
+    function showCartToast(title, message, type = 'success') {
+        const container = document.getElementById('cartToastContainer');
+        const toast = document.getElementById('cartToastMessage');
+        const icon = document.getElementById('cartToastIcon');
+
+        document.getElementById('cartToastTitle').textContent = title;
+        document.getElementById('cartToastContent').textContent = message;
+
+        // Warna & ikon sesuai tipe
+        toast.className = 'px-6 py-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0 ' +
+            (type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white');
+        icon.className = 'fas mr-3 ' + (type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle');
+
+        // Reset timer kalau diklik berulang
+        clearTimeout(cartToastTimer);
+        clearTimeout(cartToastHideTimer);
+
+        container.style.display = 'block';
+
+        // Animasi masuk
+        setTimeout(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+        }, 10);
+
+        // Hilang otomatis setelah 3 detik
+        cartToastTimer = setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            toast.classList.remove('translate-x-0', 'opacity-100');
+            cartToastHideTimer = setTimeout(() => {
+                container.style.display = 'none';
+            }, 300);
+        }, 3000);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         // ---------- Zoom gambar ----------
         const box = document.getElementById('imageContainer');
@@ -305,13 +357,14 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
                     const msg = data.errors ?
                         Object.values(data.errors).flat().join(' ') :
                         (data.message || 'Gagal menambahkan ke keranjang.');
-                    window.showToast?.('Gagal', msg, 'error');
+                    showCartToast('Gagal', msg, 'error');
                     return;
                 }
 
                 window.Cart?.render(data);
+                showCartToast('Berhasil!', data.message || 'Produk berhasil ditambahkan ke keranjang', 'success');
             } catch (err) {
-                window.showToast?.('Gagal', 'Terjadi kesalahan jaringan.', 'error');
+                showCartToast('Gagal', 'Terjadi kesalahan jaringan.', 'error');
             } finally {
                 btn.disabled = false;
             }

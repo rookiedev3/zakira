@@ -70,6 +70,19 @@ $req = '<span class="text-red-500">*</span>';
                             @error('seller_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
 
+                        {{-- Admin Handle (muncul setelah ID Seller valid) --}}
+                        <div id="adminHandleWrap" class="{{ (old('seller_id', $prefill['seller_id']) || $errors->has('admin_handle')) ? '' : 'hidden' }}">
+                            <label for="admin_handle" class="{{ $lbl }}">Admin Handle {!! $req !!}</label>
+                            <select id="admin_handle" name="admin_handle" class="{{ $in }}">
+                                <option value="">Pilih admin</option>
+                                @foreach (($admins ?? []) as $a)
+                                <option value="{{ $a }}" @selected(old('admin_handle', $prefill['admin_handle'] ?? '')===$a)>{{ $a }}</option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Pilih admin yang menangani pesanan Anda.</p>
+                            @error('admin_handle')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+
                         <div>
                             <label for="whatsapp_number" class="{{ $lbl }}">No WhatsApp {!! $req !!}</label>
                             <input type="text" id="whatsapp_number" name="whatsapp_number" value="{{ old('whatsapp_number', $prefill['whatsapp_number']) }}"
@@ -94,6 +107,13 @@ $req = '<span class="text-red-500">*</span>';
                             <p class="text-xs text-gray-500 mt-1">Pilih ekspedisi yang digunakan. Biaya ongkir tidak dihitung otomatis di website.</p>
                             @error('shipping_method')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
+
+                        {{-- Kirim ke alamat yang berbeda --}}
+                        <label for="ship_different" class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="ship_different" name="ship_different" value="1" @checked(old('ship_different'))
+                                class="rounded border-gray-300 text-[#B4775E] focus:ring-[#B4775E]">
+                            <span class="text-sm text-gray-700">Kirim ke alamat yang berbeda</span>
+                        </label>
                     </div>
                 </div>
 
@@ -149,6 +169,56 @@ $req = '<span class="text-red-500">*</span>';
                             <label for="notes" class="{{ $lbl }}">Catatan (Opsional)</label>
                             <textarea id="notes" name="notes" rows="3" class="{{ $in }}" placeholder="Catatan tambahan untuk pesanan Anda">{{ old('notes') }}</textarea>
                             @error('notes')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Alamat Pengiriman Berbeda (muncul bila checkbox dicentang) --}}
+                <div id="shipDifferentCard" class="bg-white rounded-lg shadow-sm border p-6 {{ old('ship_different') ? '' : 'hidden' }}">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Alamat Pengiriman Berbeda</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="ship_recipient" class="{{ $lbl }}">Nama Penerima {!! $req !!}</label>
+                            <input type="text" id="ship_recipient" name="ship_recipient" value="{{ old('ship_recipient') }}" class="{{ $in }}" placeholder="Nama penerima">
+                            @error('ship_recipient')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="ship_phone" class="{{ $lbl }}">No WhatsApp Penerima {!! $req !!}</label>
+                            <input type="text" id="ship_phone" name="ship_phone" value="{{ old('ship_phone') }}" inputmode="tel" class="{{ $in }}" placeholder="Contoh: 081234567890">
+                            @error('ship_phone')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div>
+                            <label for="ship_address" class="{{ $lbl }}">Alamat {!! $req !!}</label>
+                            <textarea id="ship_address" name="ship_address" rows="3" class="{{ $in }}" placeholder="Alamat lengkap penerima">{{ old('ship_address') }}</textarea>
+                            @error('ship_address')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="ship_city" class="{{ $lbl }}">Kota {!! $req !!}</label>
+                                <input type="text" id="ship_city" name="ship_city" value="{{ old('ship_city') }}" class="{{ $in }}" placeholder="Kota">
+                                @error('ship_city')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label for="ship_province" class="{{ $lbl }}">Provinsi {!! $req !!}</label>
+                                <select id="ship_province" name="ship_province" class="{{ $in }}">
+                                    <option value="">Pilih provinsi</option>
+                                    @foreach ($provinces as $p)
+                                    <option value="{{ $p }}" @selected(old('ship_province')===$p)>{{ $p }}</option>
+                                    @endforeach
+                                </select>
+                                @error('ship_province')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="ship_postal_code" class="{{ $lbl }}">Kode Pos {!! $req !!}</label>
+                            <input type="text" id="ship_postal_code" name="ship_postal_code" value="{{ old('ship_postal_code') }}" inputmode="numeric" maxlength="5"
+                                class="{{ $in }}" placeholder="12345">
+                            @error('ship_postal_code')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
                     </div>
                 </div>
@@ -254,6 +324,12 @@ $req = '<span class="text-red-500">*</span>';
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Total Pembayaran</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>{{ $cart['subtotal_formatted'] }}</span></div>
+                        <div id="shippingSummaryRow" class="{{ old('shipping_method', $prefill['shipping_method']) ? '' : 'hidden' }}">
+                            <div class="flex justify-between text-gray-600">
+                                <span>Pengiriman</span>
+                                <span id="shippingSummary">{{ old('shipping_method', $prefill['shipping_method']) }}</span>
+                            </div>
+                        </div>
                         @if ($cart['coupon'])
                         <div class="flex justify-between text-green-600">
                             <span>Diskon ({{ $cart['coupon']['code'] }})</span><span>- {{ $cart['discount_formatted'] }}</span>
@@ -350,8 +426,11 @@ $req = '<span class="text-red-500">*</span>';
         // Isian formulir dijaga lewat sessionStorage agar tidak hilang saat reload.
         const form = document.getElementById('checkoutForm');
         const KEY = 'zk_checkout_draft';
-        const fields = ['seller_id', 'whatsapp_number', 'shipping_method', 'first_name', 'last_name', 'address', 'city', 'province', 'postal_code', 'notes'];
-        const save = () => sessionStorage.setItem(KEY, JSON.stringify(Object.fromEntries(fields.map((f) => [f, form.elements[f]?.value ?? '']))));
+        const fields = ['seller_id', 'whatsapp_number', 'admin_handle', 'shipping_method', 'first_name', 'last_name', 'address', 'city', 'province', 'postal_code', 'notes', 'ship_recipient', 'ship_phone', 'ship_address', 'ship_city', 'ship_province', 'ship_postal_code'];
+        const save = () => sessionStorage.setItem(KEY, JSON.stringify({
+            ...Object.fromEntries(fields.map((f) => [f, form.elements[f]?.value ?? ''])),
+            ship_different: form.elements.ship_different.checked,
+        }));
         const reload = () => {
             save();
             location.reload();
@@ -362,13 +441,36 @@ $req = '<span class="text-red-500">*</span>';
             if (draft) fields.forEach((f) => {
                 if (form.elements[f]) form.elements[f].value = draft[f] ?? '';
             });
+            if (draft) form.elements.ship_different.checked = !!draft.ship_different;
         } catch (e) {}
+
+        // ===== Kirim ke alamat yang berbeda =====
+        const shipChk = form.elements.ship_different;
+        const shipCard = document.getElementById('shipDifferentCard');
+        const toggleShip = () => {
+            shipCard.classList.toggle('hidden', !shipChk.checked);
+        };
+        shipChk.addEventListener('change', toggleShip);
+        toggleShip();
+
+        // ===== Ringkasan pengiriman di Total Pembayaran =====
+        const shipMethod = form.elements.shipping_method;
+        const shipSummary = document.getElementById('shippingSummary');
+        const shipSummaryRow = document.getElementById('shippingSummaryRow');
+        const updateShipSummary = () => {
+            shipSummary.textContent = shipMethod.value;
+            shipSummaryRow.classList.toggle('hidden', !shipMethod.value);
+        };
+        shipMethod.addEventListener('change', updateShipSummary);
+        updateShipSummary();
 
         // ===== Cek ID Seller =====
         const sellerId = document.getElementById('seller_id');
         const sellerName = document.getElementById('seller_name');
         const sellerMsg = document.getElementById('sellerMsg');
         const sellerBtn = document.getElementById('sellerCheck');
+        const adminWrap = document.getElementById('adminHandleWrap');
+        const toggleAdmin = (show) => adminWrap.classList.toggle('hidden', !show);
         let sellerTimer;
 
         async function lookupSeller() {
@@ -376,6 +478,7 @@ $req = '<span class="text-red-500">*</span>';
             if (!id) {
                 sellerName.value = '';
                 sellerMsg.innerHTML = '';
+                toggleAdmin(false);
                 return;
             }
 
@@ -393,9 +496,11 @@ $req = '<span class="text-red-500">*</span>';
 
                 if (res.ok && data.found) {
                     sellerName.value = data.name;
+                    toggleAdmin(true);
                     sellerMsg.innerHTML = `<p class="text-green-600 text-sm">✓ Seller ditemukan: <strong>${esc(data.name)}</strong></p>`;
                 } else {
                     sellerName.value = '';
+                    toggleAdmin(false);
                     sellerMsg.innerHTML = `<p class="text-red-500 text-sm">ID Seller tidak ditemukan.</p>`;
                 }
             } finally {
@@ -409,6 +514,7 @@ $req = '<span class="text-red-500">*</span>';
         sellerId.addEventListener('input', () => {
             clearTimeout(sellerTimer);
             sellerName.value = '';
+            toggleAdmin(false);
             sellerMsg.innerHTML = '';
             sellerTimer = setTimeout(lookupSeller, 350);
         });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminHandle;
 use App\Models\BankAccount;
 use App\Models\Coupon;
 use App\Models\CustomerOrder;
@@ -83,8 +84,18 @@ class CheckoutController extends Controller
             'shipping'  => self::SHIPPING,
             'provinces' => self::PROVINCES,
             'banks'     => $this->banks(),
+            'admins'    => $this->admins(),
             'prefill'   => $this->prefill(),
         ]);
+    }
+
+    /** Daftar nama Admin Handle dari database (untuk dropdown di halaman checkout). */
+    private function admins(): array
+    {
+        return AdminHandle::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
     }
 
     /**
@@ -96,6 +107,7 @@ class CheckoutController extends Controller
     {
         $empty = [
             'seller_id'       => '',
+            'admin_handle'    => '',
             'whatsapp_number' => '',
             'shipping_method' => '',
             'first_name'      => '',
@@ -118,6 +130,7 @@ class CheckoutController extends Controller
 
         return [
             'seller_id'       => (string) ($detail->seller_id ?? ''),
+            'admin_handle'    => '', // dipilih manual oleh pembeli di halaman checkout
             'whatsapp_number' => (string) ($detail->phone ?? ''),
             'shipping_method' => $this->matchOption($detail->shipping_expedition ?? null, self::SHIPPING),
             'first_name'      => $parts[0] ?? '',
@@ -165,6 +178,7 @@ class CheckoutController extends Controller
     {
         $data = $request->validate([
             'seller_id'       => ['required', 'string', 'max:50', Rule::exists('sellers', 'seller_id')],
+            'admin_handle'    => ['required', 'string', 'max:255', Rule::exists('admin_handles', 'name')],
             'whatsapp_number' => ['required', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
             'shipping_method' => ['required', Rule::in(self::SHIPPING)],
             'first_name'      => 'required|string|max:100',
@@ -174,13 +188,28 @@ class CheckoutController extends Controller
             'province'        => ['required', Rule::in(self::PROVINCES)],
             'postal_code'     => ['required', 'digits:5'],
             'notes'           => 'nullable|string|max:1000',
+
+            // Alamat pengiriman berbeda (wajib hanya bila checkbox dicentang)
+            'ship_different'   => ['nullable', 'boolean'],
+            'ship_recipient'   => ['required_if:ship_different,1', 'nullable', 'string', 'max:100'],
+            'ship_phone'       => ['required_if:ship_different,1', 'nullable', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
+            'ship_address'     => ['required_if:ship_different,1', 'nullable', 'string', 'max:500'],
+            'ship_city'        => ['required_if:ship_different,1', 'nullable', 'string', 'max:100'],
+            'ship_province'    => ['required_if:ship_different,1', 'nullable', Rule::in(self::PROVINCES)],
+            'ship_postal_code' => ['required_if:ship_different,1', 'nullable', 'digits:5'],
         ], [
             'seller_id.required'    => 'ID Seller wajib diisi.',
             'seller_id.exists'      => 'ID Seller tidak ditemukan.',
+            'admin_handle.required' => 'Admin Handle wajib dipilih.',
+            'admin_handle.exists'   => 'Admin Handle tidak valid.',
             'whatsapp_number.regex' => 'Format nomor WhatsApp tidak valid. Contoh: 081234567890.',
             'postal_code.digits'    => 'Kode pos harus 5 digit angka.',
+            'ship_phone.regex'      => 'Format nomor WhatsApp penerima tidak valid. Contoh: 081234567890.',
+            'ship_postal_code.digits' => 'Kode pos penerima harus 5 digit angka.',
+            'required_if'           => ':attribute wajib diisi.',
         ], [
             'seller_id'       => 'ID Seller',
+            'admin_handle'    => 'Admin Handle',
             'whatsapp_number' => 'No WhatsApp',
             'shipping_method' => 'Ekspedisi',
             'first_name'      => 'Nama depan',
@@ -189,10 +218,24 @@ class CheckoutController extends Controller
             'city'            => 'Kota',
             'province'        => 'Provinsi',
             'postal_code'     => 'Kode pos',
+            'ship_recipient'   => 'Nama penerima',
+            'ship_phone'       => 'No WhatsApp penerima',
+            'ship_address'     => 'Alamat penerima',
+            'ship_city'        => 'Kota penerima',
+            'ship_province'    => 'Provinsi penerima',
+            'ship_postal_code' => 'Kode pos penerima',
         ]);
+
+        $shipDifferent = $request->boolean('ship_different');
+
+        // Email diambil dari akun yang login; null jika pembeli adalah tamu
+        $email = Auth::user()?->email;
 
         // Ambil seller dari database — nama seller tidak dipercaya dari browser
         $seller = Seller::where('seller_id', $data['seller_id'])->firstOrFail();
+
+        // Ambil admin handle dari database berdasarkan nama yang dipilih
+        $admin = AdminHandle::where('name', $data['admin_handle'])->firstOrFail();
 
         // Hitung ulang dari server (harga, kupon, total) — jangan percaya data dari browser
         $cart = $this->cart->payload();
@@ -201,7 +244,7 @@ class CheckoutController extends Controller
             return redirect(url('/cart'))->with('error', 'Keranjang masih kosong.');
         }
 
-        $order = DB::transaction(function () use ($data, $cart, $seller) {
+        $order = DB::transaction(function () use ($data, $cart, $seller, $admin, $shipDifferent, $email) {
             $couponCode = null;
 
             if ($cart['coupon']) {
@@ -225,6 +268,8 @@ class CheckoutController extends Controller
                 'order_number'    => $this->newOrderNumber(),
                 'seller_id'       => $seller->seller_id,
                 // 'seller_name'  => $seller->name, // aktifkan jika tabel customer_orders punya kolom seller_name
+                'admin_handle_id' => $admin->id,
+                'email'           => $email,
                 'whatsapp_number' => $data['whatsapp_number'],
                 'shipping_method' => $data['shipping_method'],
                 'first_name'      => $data['first_name'],
@@ -234,6 +279,13 @@ class CheckoutController extends Controller
                 'province'        => $data['province'],
                 'postal_code'     => $data['postal_code'],
                 'notes'           => $data['notes'] ?? null,
+                'ship_different'   => $shipDifferent,
+                'ship_recipient'   => $shipDifferent ? $data['ship_recipient'] : null,
+                'ship_phone'       => $shipDifferent ? $data['ship_phone'] : null,
+                'ship_address'     => $shipDifferent ? $data['ship_address'] : null,
+                'ship_city'        => $shipDifferent ? $data['ship_city'] : null,
+                'ship_province'    => $shipDifferent ? $data['ship_province'] : null,
+                'ship_postal_code' => $shipDifferent ? $data['ship_postal_code'] : null,
                 'subtotal'        => $cart['subtotal'],
                 'discount'        => $cart['discount'],
                 'coupon_code'     => $couponCode,

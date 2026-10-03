@@ -166,8 +166,7 @@
 
                     <a href="{{ $detailUrl }}"
                        class="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-center inline-flex items-center justify-center">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Kembali ke Detail Order
+                        Batal Ganti Bukti
                     </a>
                 </div>
             </form>
