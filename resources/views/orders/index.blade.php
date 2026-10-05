@@ -32,11 +32,12 @@
 
     // Tombol aksi
     $btnBase   = 'inline-flex items-center justify-center gap-1 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md border cursor-pointer list-none transition-colors [&::-webkit-details-marker]:hidden';
-    $btnView   = $btnBase . ' bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200';
-    $btnEdit   = $btnBase . ' bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100';
-    $btnStatus = $btnBase . ' bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100';
-    $btnPay    = $btnBase . ' bg-green-50 border-green-200 text-green-700 hover:bg-green-100';
-    $btnDelete = $btnBase . ' bg-red-50 border-red-200 text-red-700 hover:bg-red-100';
+    $btnPlain  = $btnBase . ' bg-transparent border-transparent text-zinc-800 hover:bg-zinc-800/5';
+    $btnView   = $btnPlain;
+    $btnEdit   = $btnPlain;
+    $btnStatus = $btnPlain;
+    $btnPay    = $btnPlain;
+    $btnDelete = $btnPlain;
 
     // Baris produk di modal Edit
     $btnVariant = 'inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer';
@@ -328,7 +329,7 @@
                                     {{-- Edit: buka modal Edit Pesanan --}}
                                     <button type="button" class="{{ $btnEdit }}"
                                             onclick="document.getElementById('order-edit-{{ $order->id }}').showModal()">
-                                        <i class="fas fa-pen text-xs"></i> <span>Edit</span>
+                                        <span>Edit</span>
                                     </button>
 
                                     <!-- Dropdown Status Pesanan -->
