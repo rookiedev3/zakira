@@ -164,10 +164,14 @@
                         <span id="submitBusy" class="hidden"><i class="fas fa-spinner fa-spin mr-2"></i>Mengirim...</span>
                     </button>
 
-                    <a href="{{ $detailUrl }}"
-                       class="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-center inline-flex items-center justify-center">
-                        Batal Ganti Bukti
-                    </a>
+                   <a href="{{ $detailUrl }}"
+   class="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-center inline-flex items-center justify-center gap-2">
+    <!-- Ikon Panah Kiri -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+    Kembali ke Detail Order 
+</a>
                 </div>
             </form>
 
