@@ -53,6 +53,9 @@
     // Daftar kupon untuk dropdown modal Edit (dikirim dari controller)
     $coupons = $coupons ?? collect();
 
+    // Varian & harga tiap produk untuk dialog "Tambah Produk" (dikirim dari controller)
+    $productMeta = $productMeta ?? [];
+
     // Nilai awal form Buat Faktur
     $nextInvoiceNumber = \App\Models\Invoice::nextNumber();
     $nowLocal          = now('Asia/Jakarta')->format('Y-m-d\TH:i');
@@ -905,16 +908,14 @@
                                     ! empty($item->size)  ? 'Ukuran: ' . $item->size  : null,
                                 ]);
                             @endphp
-                            <div class="border border-gray-200 rounded-lg p-4" data-item-row data-price="{{ (int) $item->price }}">
+                            <div class="border border-gray-200 rounded-lg p-4" data-item-row data-product-id="{{ $item->product_id }}" data-price="{{ (int) $item->price }}">
                                 <input type="hidden" name="items[{{ $item->id }}][id]" value="{{ $item->id }}">
                                 <input type="hidden" name="items[{{ $item->id }}][delete]" value="0" data-delete-input>
 
                                 <div class="flex items-center justify-between gap-4">
                                     <div class="flex-1 min-w-0" data-item-info>
-                                        <h5 class="font-medium text-gray-900">{{ $iName }}</h5>
-                                        @if ($iAttrs)
-                                            <div class="text-sm text-gray-500 mt-1">{{ implode(' | ', $iAttrs) }}</div>
-                                        @endif
+                                        <h5 class="font-medium text-gray-900" data-item-name>{{ $iName }}</h5>
+                                        <div class="text-sm text-gray-500 mt-1" data-item-attrs>{{ implode(' | ', $iAttrs) }}</div>
                                     </div>
 
                                     <div class="flex items-center space-x-3 shrink-0">
@@ -923,7 +924,7 @@
                                             <input type="number" min="1" data-qty name="items[{{ $item->id }}][quantity]"
                                                    value="{{ (int) $item->quantity }}" class="{{ $qtyInput }}">
                                         </div>
-                                        <div class="text-sm font-medium text-gray-900">{{ $rp($item->price) }}</div>
+                                        <div class="text-sm font-medium text-gray-900" data-item-price>{{ $rp($item->price) }}</div>
                                         <button type="button" data-toggle-variant class="{{ $btnVariant }}">
                                             {!! $iconPencil !!} Edit Varian
                                         </button>
@@ -933,20 +934,10 @@
                                     </div>
                                 </div>
 
-                                <div class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-3" data-variant-panel>
-                                    <div>
-                                        <label class="text-xs text-gray-600 mb-1 block">Model</label>
-                                        <input type="text" name="items[{{ $item->id }}][model]" value="{{ $item->model }}" class="{{ $inputClass }}">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray-600 mb-1 block">Warna</label>
-                                        <input type="text" name="items[{{ $item->id }}][color]" value="{{ $item->color }}" class="{{ $inputClass }}">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray-600 mb-1 block">Ukuran</label>
-                                        <input type="text" name="items[{{ $item->id }}][size]" value="{{ $item->size }}" class="{{ $inputClass }}">
-                                    </div>
-                                </div>
+                                {{-- Varian diubah lewat dialog "Edit Varian Produk"; nilainya disimpan di input hidden --}}
+                                <input type="hidden" name="items[{{ $item->id }}][model]" value="{{ $item->model }}" data-v-model>
+                                <input type="hidden" name="items[{{ $item->id }}][color]" value="{{ $item->color }}" data-v-color>
+                                <input type="hidden" name="items[{{ $item->id }}][size]"  value="{{ $item->size }}"  data-v-size>
                             </div>
                         @endforeach
 
@@ -998,7 +989,7 @@
                             <span class="font-semibold text-gray-900">Total:</span>
                             <span class="font-bold text-lg" data-sum-total>-</span>
                         </div>
-                        <p class="text-xs text-gray-500">Harga produk baru ditampilkan sebagai perkiraan; server menghitung ulang sesuai model dan ukuran saat disimpan.</p>
+                        <p class="text-xs text-gray-500">Harga produk baru ditampilkan sebagai perkiraan; server menghitung ulang sesuai model, warna, dan ukuran saat disimpan.</p>
                     </div>
                 </div>
 
@@ -1097,20 +1088,46 @@
             </button>
         </div>
 
-        <div class="p-6 space-y-4">
+        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div>
                 <label for="add-item-product" class="{{ $labelClass }}">Pilih Produk</label>
                 <select id="add-item-product" class="{{ $inputClass }}">
                     <option value="">-- Pilih Produk --</option>
                     @foreach ($products as $pid => $pname)
-                        <option value="{{ $pid }}">{{ $pname }}</option>
+                        @php $pm = $productMeta[$pid] ?? null; @endphp
+                        <option value="{{ $pid }}">
+                            {{ $pname }}@if ($pm && $pm['max'] > 0) - {{ $rp($pm['min']) }}@if ($pm['max'] !== $pm['min']) - {{ $rp($pm['max']) }}@endif @endif
+                        </option>
                     @endforeach
                 </select>
             </div>
-            <div>
-                <label for="add-item-qty" class="{{ $labelClass }}">Kuantitas</label>
-                <input type="number" id="add-item-qty" min="1" max="9999" value="1" class="{{ $inputClass }}">
+
+            {{-- Detail produk: muncul hanya setelah produk dipilih --}}
+            <div id="add-item-details" class="hidden space-y-4">
+                <div>
+                    <label for="add-item-qty" class="{{ $labelClass }}">Kuantitas</label>
+                    <input type="number" id="add-item-qty" min="1" max="9999" value="1" class="{{ $inputClass }}">
+                </div>
+
+                <div data-variant-wrap="color" class="hidden">
+                    <label for="add-item-color" class="{{ $labelClass }}">Warna</label>
+                    <select id="add-item-color" class="{{ $inputClass }}"></select>
+                </div>
+                <div data-variant-wrap="model" class="hidden">
+                    <label for="add-item-model" class="{{ $labelClass }}">Model</label>
+                    <select id="add-item-model" class="{{ $inputClass }}"></select>
+                </div>
+                <div data-variant-wrap="size" class="hidden">
+                    <label for="add-item-size" class="{{ $labelClass }}">Ukuran</label>
+                    <select id="add-item-size" class="{{ $inputClass }}"></select>
+                </div>
+
+                <div class="flex justify-between items-center rounded-lg bg-gray-50 px-4 py-3 text-sm">
+                    <span class="text-gray-600">Harga satuan</span>
+                    <span id="add-item-price" class="font-semibold text-gray-900">-</span>
+                </div>
             </div>
+
             <p id="add-item-error" class="hidden text-xs text-red-600">Pilih produk terlebih dahulu.</p>
         </div>
 
@@ -1119,9 +1136,53 @@
                     class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg text-zinc-800 hover:bg-zinc-800/5 transition-colors">
                 <span>Batal</span>
             </button>
-            <button type="button" id="add-item-confirm"
-                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 transition-colors">
+            <button type="button" id="add-item-confirm" disabled
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="fas fa-plus text-xs"></i> <span>Tambah ke Pesanan</span>
+            </button>
+        </div>
+    </div>
+</dialog>
+
+{{-- ============ Modal Edit Varian Produk (satu dialog dipakai semua baris produk; di luar <form>) ============ --}}
+<dialog id="edit-variant-dialog"
+        class="m-auto p-0 bg-transparent w-[calc(100%-2rem)] max-w-md overflow-hidden backdrop:bg-black/30">
+    <div class="bg-white rounded-lg w-full">
+        <div class="flex items-center justify-between p-6 border-b">
+            <h3 class="text-xl font-semibold text-gray-900">Edit Varian Produk</h3>
+            <button type="button" class="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-800 hover:bg-zinc-800/5"
+                    onclick="this.closest('dialog').close()" aria-label="Tutup">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div id="ev-name" class="rounded-lg bg-gray-50 px-4 py-3 font-medium text-gray-900"></div>
+
+            <div data-ev-wrap="model" class="hidden">
+                <label for="ev-model" class="{{ $labelClass }}">Model</label>
+                <select id="ev-model" class="{{ $inputClass }}"></select>
+            </div>
+            <div data-ev-wrap="color" class="hidden">
+                <label for="ev-color" class="{{ $labelClass }}">Warna</label>
+                <select id="ev-color" class="{{ $inputClass }}"></select>
+            </div>
+            <div data-ev-wrap="size" class="hidden">
+                <label for="ev-size" class="{{ $labelClass }}">Ukuran</label>
+                <select id="ev-size" class="{{ $inputClass }}"></select>
+            </div>
+
+            <p id="ev-error" class="hidden text-xs text-red-600"></p>
+        </div>
+
+        <div class="flex justify-end gap-3 p-6 border-t bg-gray-50">
+            <button type="button" onclick="this.closest('dialog').close()"
+                    class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg text-zinc-800 hover:bg-zinc-800/5 transition-colors">
+                <span>Batal</span>
+            </button>
+            <button type="button" id="ev-save"
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-check text-xs"></i> <span>Simpan Varian</span>
             </button>
         </div>
     </div>
@@ -1190,7 +1251,9 @@
     html:has(#invoice-dialog[open]),
     body:has(#invoice-dialog[open]),
     html:has(#add-item-dialog[open]),
-    body:has(#add-item-dialog[open]) { overflow: hidden; }
+    body:has(#add-item-dialog[open]),
+    html:has(#edit-variant-dialog[open]),
+    body:has(#edit-variant-dialog[open]) { overflow: hidden; }
 </style>
 
 <script>
@@ -1266,7 +1329,9 @@ document.addEventListener('DOMContentLoaded', () => {
         dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); })
     );
 
+    // ------------------------------------------------------------------
     // Dialog "Tambah Produk ke Pesanan" (dipakai bersama oleh semua modal Edit)
+    // ------------------------------------------------------------------
     const addDlg = document.getElementById('add-item-dialog');
     const addSel = document.getElementById('add-item-product');
     const addQty = document.getElementById('add-item-qty');
@@ -1281,66 +1346,228 @@ document.addEventListener('DOMContentLoaded', () => {
     const QTY_INPUT   = @json($qtyInput);
     const ICON_PENCIL = @json($iconPencil);
     const ICON_TRASH  = @json($iconTrash);
-    const TEXT_INPUT = @json($inputClass);
+    const TEXT_INPUT  = @json($inputClass);
     const rpFmt = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
-
     const attrText = (m, c, z) => [m && 'Model: ' + m, c && 'Warna: ' + c, z && 'Ukuran: ' + z].filter(Boolean).join(' | ');
 
-    document.getElementById('add-item-confirm').addEventListener('click', () => {
-        if (!addSel.value) { addErr.classList.remove('hidden'); return; }
+    const addDetails = document.getElementById('add-item-details');
+    const addConfirm = document.getElementById('add-item-confirm');
+    const addPrice   = document.getElementById('add-item-price');
+    const VARIANTS = {
+        color: { sel: document.getElementById('add-item-color'), label: 'Warna',  list: 'colors' },
+        model: { sel: document.getElementById('add-item-model'), label: 'Model',  list: 'models' },
+        size:  { sel: document.getElementById('add-item-size'),  label: 'Ukuran', list: 'sizes'  },
+    };
 
-        const meta = PRODUCT_META[addSel.value] || {};
-        const n    = (parseInt(addTarget.dataset.newIdx, 10) || 0) + 1;
+    const currentPrice = () => {
+        const meta = PRODUCT_META[addSel.value];
+        if (!meta) return 0;
+        const key = ['model', 'color', 'size'].map((k) => VARIANTS[k].sel.value).join('|');
+        return meta.prices[key] ?? meta.min ?? 0;
+    };
+    const selectedName = (k) => {
+        const o = VARIANTS[k].sel.selectedOptions[0];
+        return o && o.value ? o.textContent : '';
+    };
+    const refreshPrice = () => { addPrice.textContent = rpFmt(currentPrice()); };
+
+    // Reset form tiap kali dialog dibuka: hanya "Pilih Produk" yang terlihat
+    const resetAddForm = () => {
+        addSel.value = '';
+        addQty.value = 1;
+        addErr.classList.add('hidden');
+        addDetails.classList.add('hidden');
+        addConfirm.disabled = true;
+    };
+
+    // Form detail muncul ketika produk dipilih
+    addSel.addEventListener('change', () => {
+        addErr.classList.add('hidden');
+        const meta = PRODUCT_META[addSel.value];
+        if (!meta) { addDetails.classList.add('hidden'); addConfirm.disabled = true; return; }
+
+        addQty.value = 1;
+        Object.entries(VARIANTS).forEach(([key, v]) => {
+            const wrap  = addDlg.querySelector(`[data-variant-wrap="${key}"]`);
+            const items = meta[v.list] || [];
+            wrap.classList.toggle('hidden', items.length === 0);
+            v.sel.innerHTML = `<option value="">-- Pilih ${v.label} --</option>` +
+                items.map((i) => `<option value="${i.id}"></option>`).join('');
+            // isi teks lewat textContent agar aman dari karakter khusus
+            [...v.sel.options].slice(1).forEach((o, idx) => { o.textContent = items[idx].name; });
+        });
+
+        addDetails.classList.remove('hidden');
+        addConfirm.disabled = false;
+        refreshPrice();
+    });
+
+    Object.values(VARIANTS).forEach((v) => v.sel.addEventListener('change', refreshPrice));
+
+    addConfirm.addEventListener('click', () => {
+        const meta = PRODUCT_META[addSel.value];
+        if (!meta) { addErr.textContent = 'Pilih produk terlebih dahulu.'; addErr.classList.remove('hidden'); return; }
+
+        // Varian wajib dipilih bila produk memilikinya
+        for (const v of Object.values(VARIANTS)) {
+            if ((meta[v.list] || []).length && !v.sel.value) {
+                addErr.textContent = `Pilih ${v.label.toLowerCase()} terlebih dahulu.`;
+                addErr.classList.remove('hidden');
+                return;
+            }
+        }
+
+        const model = selectedName('model'), color = selectedName('color'), size = selectedName('size');
+        const price = currentPrice();
+        const n     = (parseInt(addTarget.dataset.newIdx, 10) || 0) + 1;
         addTarget.dataset.newIdx = n;
-        const qty  = Math.max(1, parseInt(addQty.value, 10) || 1);
+        const qty   = Math.max(1, parseInt(addQty.value, 10) || 1);
 
         // Baris dibuat sama dengan item lama: nama, varian, Qty, harga, Edit Varian, hapus
         const row = document.createElement('div');
-        row.dataset.itemRow = '';
-        row.dataset.newRow  = '';
-        row.dataset.price   = meta.price || 0;
+        row.dataset.itemRow   = '';
+        row.dataset.newRow    = '';
+        row.dataset.productId = addSel.value;
+        row.dataset.price     = price;
         row.className = 'border border-gray-200 rounded-lg p-4';
         row.innerHTML = `
             <input type="hidden" name="new_items[${n}][product_id]" value="${addSel.value}">
+            <input type="hidden" name="new_items[${n}][model]" data-v-model>
+            <input type="hidden" name="new_items[${n}][color]" data-v-color>
+            <input type="hidden" name="new_items[${n}][size]"  data-v-size>
             <div class="flex items-center justify-between gap-4">
                 <div class="flex-1 min-w-0">
-                    <h5 class="font-medium text-gray-900" data-new-name></h5>
-                    <div class="text-sm text-gray-500 mt-1" data-new-attrs></div>
+                    <h5 class="font-medium text-gray-900" data-item-name></h5>
+                    <div class="text-sm text-gray-500 mt-1" data-item-attrs></div>
                 </div>
                 <div class="flex items-center space-x-3 shrink-0">
                     <div class="flex items-center space-x-2">
                         <label class="text-sm text-gray-600">Qty:</label>
                         <input type="number" min="1" max="9999" data-qty name="new_items[${n}][quantity]" class="${QTY_INPUT}">
                     </div>
-                    <div class="text-sm font-medium text-gray-900" data-new-price></div>
+                    <div class="text-sm font-medium text-gray-900" data-item-price></div>
                     <button type="button" data-toggle-variant class="${BTN_VARIANT}">${ICON_PENCIL} Edit Varian</button>
                     <button type="button" data-remove-new class="${BTN_TRASH}" title="Hapus produk">${ICON_TRASH}</button>
                 </div>
-            </div>
-            <div class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-3" data-variant-panel>
-                <div><label class="text-xs text-gray-600 mb-1 block">Model</label>
-                    <input type="text" data-variant-field name="new_items[${n}][model]" class="${TEXT_INPUT}"></div>
-                <div><label class="text-xs text-gray-600 mb-1 block">Warna</label>
-                    <input type="text" data-variant-field name="new_items[${n}][color]" class="${TEXT_INPUT}"></div>
-                <div><label class="text-xs text-gray-600 mb-1 block">Ukuran</label>
-                    <input type="text" data-variant-field name="new_items[${n}][size]" class="${TEXT_INPUT}"></div>
             </div>`;
 
-        row.querySelector('[data-new-name]').textContent  = meta.name || addSel.selectedOptions[0].text;
-        row.querySelector('[data-new-price]').textContent = rpFmt(meta.price || 0);
+        row.querySelector('[data-item-name]').textContent  = meta.name;
+        row.querySelector('[data-item-price]').textContent = rpFmt(price);
         row.querySelector('[data-qty]').value = qty;
-        row.querySelector(`[name="new_items[${n}][model]"]`).value = meta.model || '';
-        row.querySelector(`[name="new_items[${n}][color]"]`).value = meta.color || '';
-        row.querySelector(`[name="new_items[${n}][size]"]`).value  = meta.size  || '';
-        row.querySelector('[data-new-attrs]').textContent = attrText(meta.model, meta.color, meta.size);
+        row.querySelector('[data-v-model]').value = model;
+        row.querySelector('[data-v-color]').value = color;
+        row.querySelector('[data-v-size]').value  = size;
+        row.querySelector('[data-item-attrs]').textContent = attrText(model, color, size);
 
         addTarget.querySelector('[data-new-items]').appendChild(row);
         addTarget.dispatchEvent(new Event('input')); // hitung ulang Ringkasan Harga
         addDlg.close();
     });
 
-    // Modal Edit Pesanan
+    // ------------------------------------------------------------------
+    // Dialog "Edit Varian Produk" (dipakai bersama oleh semua baris produk)
+    // ------------------------------------------------------------------
+    const evDlg  = document.getElementById('edit-variant-dialog');
+    const evName = document.getElementById('ev-name');
+    const evErr  = document.getElementById('ev-error');
+    const evSave = document.getElementById('ev-save');
+    const EV = {
+        model: { sel: document.getElementById('ev-model'), wrap: evDlg.querySelector('[data-ev-wrap="model"]'), label: 'Model',  list: 'models' },
+        color: { sel: document.getElementById('ev-color'), wrap: evDlg.querySelector('[data-ev-wrap="color"]'), label: 'Warna',  list: 'colors' },
+        size:  { sel: document.getElementById('ev-size'),  wrap: evDlg.querySelector('[data-ev-wrap="size"]'),  label: 'Ukuran', list: 'sizes'  },
+    };
+    let evRow = null, evMeta = null;
 
+    evDlg.addEventListener('click', (e) => { if (e.target === evDlg) evDlg.close(); });
+
+    // Harga untuk ukuran tertentu berdasarkan model & warna yang sedang dipilih
+    const evPrice = (sizeId) => {
+        if (!evMeta) return null;
+        const p = evMeta.prices[[EV.model.sel.value, EV.color.sel.value, sizeId].join('|')];
+        return p > 0 ? p : null;
+    };
+    // Opsi ukuran menampilkan harga: "M (Rp 100.000)"
+    const refreshSizeLabels = () => {
+        [...EV.size.sel.options].forEach((o) => {
+            if (!o.value) return;
+            const p = evPrice(o.value);
+            o.textContent = o.dataset.name + (p ? ' (' + rpFmt(p) + ')' : '');
+        });
+    };
+    EV.model.sel.addEventListener('change', refreshSizeLabels);
+    EV.color.sel.addEventListener('change', refreshSizeLabels);
+
+    const openVariantDialog = (row) => {
+        evRow  = row;
+        evMeta = PRODUCT_META[row.dataset.productId] || null;
+        evErr.classList.add('hidden');
+        evName.textContent = row.querySelector('[data-item-name]').textContent.trim();
+
+        Object.entries(EV).forEach(([key, v]) => {
+            const items   = evMeta ? (evMeta[v.list] || []) : [];
+            const current = row.querySelector(`[data-v-${key}]`).value;
+            v.wrap.classList.toggle('hidden', items.length === 0);
+            v.sel.innerHTML = '';
+
+            const ph = document.createElement('option');
+            ph.value = ''; ph.textContent = `-- Pilih ${v.label} --`;
+            v.sel.appendChild(ph);
+
+            items.forEach((i) => {
+                const o = document.createElement('option');
+                o.value = i.id; o.dataset.name = i.name; o.textContent = i.name;
+                if (i.name === current) o.selected = true;
+                v.sel.appendChild(o);
+            });
+        });
+        refreshSizeLabels();
+
+        evSave.disabled = !evMeta;
+        if (!evMeta) {
+            evErr.textContent = 'Data varian untuk produk ini tidak ditemukan.';
+            evErr.classList.remove('hidden');
+        }
+        evDlg.showModal();
+    };
+
+    evSave.addEventListener('click', () => {
+        if (!evMeta || !evRow) return;
+
+        // Varian wajib dipilih bila produk memilikinya
+        for (const v of Object.values(EV)) {
+            if ((evMeta[v.list] || []).length && !v.sel.value) {
+                evErr.textContent = `Pilih ${v.label.toLowerCase()} terlebih dahulu.`;
+                evErr.classList.remove('hidden');
+                return;
+            }
+        }
+
+        const nameOf = (k) => { const o = EV[k].sel.selectedOptions[0]; return o && o.value ? o.dataset.name : ''; };
+        const model = nameOf('model'), color = nameOf('color'), size = nameOf('size');
+        const old   = ['model', 'color', 'size'].map((k) => evRow.querySelector(`[data-v-${k}]`).value);
+        const changed = old[0] !== model || old[1] !== color || old[2] !== size;
+
+        evRow.querySelector('[data-v-model]').value = model;
+        evRow.querySelector('[data-v-color]').value = color;
+        evRow.querySelector('[data-v-size]').value  = size;
+        evRow.querySelector('[data-item-attrs]').textContent = attrText(model, color, size);
+
+        // Harga mengikuti varian baru (hanya bila varian berubah dan harganya diketahui)
+        if (changed) {
+            const p = evMeta.prices[[EV.model.sel.value, EV.color.sel.value, EV.size.sel.value].join('|')];
+            if (p > 0) {
+                evRow.dataset.price = p;
+                evRow.querySelector('[data-item-price]').textContent = rpFmt(p);
+            }
+        }
+
+        evRow.closest('dialog').dispatchEvent(new Event('input')); // hitung ulang Ringkasan Harga
+        evDlg.close();
+    });
+
+    // ------------------------------------------------------------------
+    // Modal Edit Pesanan
+    // ------------------------------------------------------------------
     document.querySelectorAll('dialog[data-edit-dialog]').forEach((dlg) => {
         const couponSel = dlg.querySelector('[data-coupon-select]');
         const discInput = dlg.querySelector('[data-discount-input]');
@@ -1382,13 +1609,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         dlg.addEventListener('input', (e) => {
-            if (e.target.matches('[data-variant-field]')) {
-                const row = e.target.closest('[data-new-row]');
-                if (row) {
-                    const f = (k) => row.querySelector(`[name$="[${k}]"]`).value.trim();
-                    row.querySelector('[data-new-attrs]').textContent = attrText(f('model'), f('color'), f('size'));
-                }
-            }
             recalc();
         });
 
@@ -1397,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!btn) return;
 
             if (btn.matches('[data-toggle-variant]')) {
-                btn.closest('[data-item-row]').querySelector('[data-variant-panel]').classList.toggle('hidden');
+                openVariantDialog(btn.closest('[data-item-row]'));
             } else if (btn.matches('[data-delete-item]')) {
                 const row = btn.closest('[data-item-row]');
                 const del = row.dataset.deleted !== '1';
@@ -1408,9 +1628,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 recalc();
             } else if (btn.matches('[data-add-item]')) {
                 addTarget = dlg;
-                addSel.value = '';
-                addQty.value = 1;
-                addErr.classList.add('hidden');
+                resetAddForm();
                 addDlg.showModal();
             } else if (btn.matches('[data-remove-new]')) {
                 btn.closest('[data-new-row]').remove();

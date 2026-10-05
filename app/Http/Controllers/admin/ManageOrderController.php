@@ -73,7 +73,7 @@ class ManageOrderController extends Controller
             'brands'   => DB::table('brands')->orderBy('name')->pluck('name', 'id'),
             'products' => DB::table('products')->orderBy('name')->pluck('name', 'id'),
             'coupons'  => Coupon::orderBy('code')->get(),
-            // Dipakai dialog "Tambah Produk": harga & varian default tiap produk
+            // Dipakai dialog "Tambah Produk": varian & matriks harga tiap produk
             'productMeta' => $this->productMeta(),
         ]);
     }
@@ -85,28 +85,58 @@ class ManageOrderController extends Controller
             return null;
         }
 
-        return $variant->name ?? $variant->label ?? $variant->value ?? null;
+        // product_colors/product_models memakai `name`, product_sizes memakai `size`
+        return $variant->name ?? $variant->size ?? $variant->label ?? $variant->value ?? null;
     }
 
-    /** [product_id => [name, price, model, color, size]] dengan varian pertama sebagai default */
+    /**
+     * [product_id => [name, min, max, models, colors, sizes, prices]]
+     * prices: kunci "modelId|colorId|sizeId" => harga (id kosong bila produk tak punya varian itu)
+     */
     private function productMeta(): array
     {
         return Product::with(['prices', 'models', 'colors', 'sizes'])
             ->get()
             ->mapWithKeys(function (Product $p) {
-                $model = $p->models->first();
-                $color = $p->colors->first();
-                $size  = $p->sizes->first();
+                $toList = fn ($col) => $col->map(fn ($v) => [
+                    'id'   => $v->id,
+                    'name' => $this->variantName($v),
+                ])->values()->all();
+
+                // Ukuran yang ditandai tidak tersedia (is_available = false) tidak ditawarkan
+                $sizes = $p->sizes->where('is_available', true)->values();
+
+                $prices = [];
+                foreach ($p->models->isEmpty() ? [null] : $p->models as $m) {
+                    foreach ($p->colors->isEmpty() ? [null] : $p->colors as $c) {
+                        foreach ($sizes->isEmpty() ? [null] : $sizes as $s) {
+                            $key          = ($m?->id) . '|' . ($c?->id) . '|' . ($s?->id);
+                            $prices[$key] = (int) $p->priceFor($m?->id, $c?->id, $s?->id);
+                        }
+                    }
+                }
 
                 return [$p->id => [
-                    'name'  => $p->name,
-                    'price' => $p->priceFor($model?->id, null, $size?->id),
-                    'model' => $this->variantName($model),
-                    'color' => $this->variantName($color),
-                    'size'  => $this->variantName($size),
+                    'name'   => $p->name,
+                    'min'    => $prices ? min($prices) : 0,
+                    'max'    => $prices ? max($prices) : 0,
+                    'models' => $toList($p->models),
+                    'colors' => $toList($p->colors),
+                    'sizes'  => $toList($sizes),
+                    'prices' => $prices,
                 ]];
             })
             ->all();
+    }
+
+    /** Cocokkan teks varian dengan data produk, lalu cari harga yang tepat */
+    private function resolvePrice(Product $product, ?string $model, ?string $color, ?string $size): int
+    {
+        $modelId = $product->models->first(fn ($m) => $this->variantName($m) === $model)?->id;
+        $colorId = $product->colors->first(fn ($c) => $this->variantName($c) === $color)?->id;
+        $sizeId  = $product->sizes->first(fn ($s) => $this->variantName($s) === $size)?->id;
+
+        return (int) $product->priceFor($modelId, $colorId, $sizeId);
     }
 
     /** Simpan perubahan dari modal Edit Pesanan */
@@ -166,20 +196,37 @@ class ManageOrderController extends Controller
                     continue;
                 }
 
-                $qty = (int) $row['quantity'];
+                $qty   = (int) $row['quantity'];
+                $model = ($row['model'] ?? null) ?: null;
+                $color = ($row['color'] ?? null) ?: null;
+                $size  = ($row['size'] ?? null) ?: null;
+                $price = (int) $item->price;
+
+                // Varian berubah -> harga ikut dihitung ulang (bila harga varian baru diketahui)
+                $variantChanged = ($item->model ?: null) !== $model
+                    || ($item->color ?: null) !== $color
+                    || ($item->size ?: null) !== $size;
+
+                if ($variantChanged && $item->product_id && ($product = Product::with(['prices', 'models', 'colors', 'sizes'])->find($item->product_id))) {
+                    $newPrice = $this->resolvePrice($product, $model, $color, $size);
+                    if ($newPrice > 0) {
+                        $price = $newPrice;
+                    }
+                }
 
                 $item->forceFill([
                     'quantity' => $qty,
-                    'subtotal' => (int) $item->price * $qty,
-                    'model'    => $row['model'] ?? null,
-                    'color'    => $row['color'] ?? null,
-                    'size'     => $row['size'] ?? null,
+                    'price'    => $price,
+                    'subtotal' => $price * $qty,
+                    'model'    => $model,
+                    'color'    => $color,
+                    'size'     => $size,
                 ])->save();
             }
 
-            // ---- 2. Produk baru (harga dari product_prices sesuai model & ukuran) ----
+            // ---- 2. Produk baru (harga dari product_prices sesuai model, warna & ukuran) ----
             foreach ($data['new_items'] ?? [] as $row) {
-                $product = Product::with(['prices', 'models', 'sizes'])->find($row['product_id']);
+                $product = Product::with(['prices', 'models', 'colors', 'sizes'])->find($row['product_id']);
                 if (! $product) {
                     continue;
                 }
@@ -189,10 +236,7 @@ class ManageOrderController extends Controller
                 $color = $row['color'] ?? null;
                 $size  = $row['size'] ?? null;
 
-                // Cocokkan teks varian dengan data produk untuk mencari harga yang tepat
-                $modelId = $product->models->first(fn ($m) => $this->variantName($m) === $model)?->id;
-                $sizeId  = $product->sizes->first(fn ($s) => $this->variantName($s) === $size)?->id;
-                $price   = $product->priceFor($modelId, null, $sizeId);
+                $price = $this->resolvePrice($product, $model, $color, $size);
 
                 $order->items()->forceCreate([
                     'product_id'   => $product->id,
