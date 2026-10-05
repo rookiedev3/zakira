@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Coupon;
 use App\Models\CustomerOrder;
 use App\Models\PaymentConfirmation;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ManageOrderController extends Controller
 {
@@ -19,7 +22,11 @@ class ManageOrderController extends Controller
     {
         $q = CustomerOrder::query()
             ->withCount('items')
-            ->with(['paymentConfirmations' => fn ($c) => $c->latest('id')])
+            ->with([
+                'items',
+                'coupon', // relasi lewat kolom coupon_code
+                'paymentConfirmations' => fn ($c) => $c->latest('id'),
+            ])
             ->latest('id');
 
         if ($s = trim((string) $request->input('search'))) {
@@ -65,7 +72,237 @@ class ManageOrderController extends Controller
             'orders'   => $q->paginate(15)->withQueryString(),
             'brands'   => DB::table('brands')->orderBy('name')->pluck('name', 'id'),
             'products' => DB::table('products')->orderBy('name')->pluck('name', 'id'),
+            'coupons'  => Coupon::orderBy('code')->get(),
+            // Dipakai dialog "Tambah Produk": harga & varian default tiap produk
+            'productMeta' => $this->productMeta(),
         ]);
+    }
+
+    /** Nama varian (kolom nama bisa berbeda di tiap tabel varian) */
+    private function variantName($variant): ?string
+    {
+        if (! $variant) {
+            return null;
+        }
+
+        return $variant->name ?? $variant->label ?? $variant->value ?? null;
+    }
+
+    /** [product_id => [name, price, model, color, size]] dengan varian pertama sebagai default */
+    private function productMeta(): array
+    {
+        return Product::with(['prices', 'models', 'colors', 'sizes'])
+            ->get()
+            ->mapWithKeys(function (Product $p) {
+                $model = $p->models->first();
+                $color = $p->colors->first();
+                $size  = $p->sizes->first();
+
+                return [$p->id => [
+                    'name'  => $p->name,
+                    'price' => $p->priceFor($model?->id, null, $size?->id),
+                    'model' => $this->variantName($model),
+                    'color' => $this->variantName($color),
+                    'size'  => $this->variantName($size),
+                ]];
+            })
+            ->all();
+    }
+
+    /** Simpan perubahan dari modal Edit Pesanan */
+    public function update(Request $request, CustomerOrder $order)
+    {
+        $data = $request->validate([
+            'status'                 => 'required|in:' . implode(',', self::STATUSES),
+            'payment_status'         => 'required|in:' . implode(',', self::PAYMENT),
+            'coupon_code'            => 'nullable|string|max:50|exists:coupons,code',
+            'discount'               => 'nullable|numeric|min:0',
+
+            // Informasi pelanggan, alamat, catatan
+            'full_name'              => 'required|string|max:200',
+            'seller_id'              => 'nullable|string|max:50',
+            'email'                  => 'nullable|email|max:255',
+            'whatsapp_number'        => 'required|string|max:20',
+            'address'                => 'required|string|max:1000',
+            'city'                   => 'required|string|max:100',
+            'province'               => 'required|string|max:100',
+            'postal_code'            => 'required|string|max:10',
+            'notes'                  => 'nullable|string|max:2000',
+
+            'items'                  => 'nullable|array',
+            'items.*.id'             => 'required|integer',
+            'items.*.quantity'       => 'required|integer|min:1|max:9999',
+            'items.*.delete'         => 'nullable|boolean',
+            'items.*.model'          => 'nullable|string|max:255',
+            'items.*.color'          => 'nullable|string|max:255',
+            'items.*.size'           => 'nullable|string|max:255',
+
+            'new_items'              => 'nullable|array',
+            'new_items.*.product_id' => 'required|exists:products,id',
+            'new_items.*.quantity'   => 'required|integer|min:1|max:9999',
+            'new_items.*.model'      => 'nullable|string|max:255',
+            'new_items.*.color'      => 'nullable|string|max:255',
+            'new_items.*.size'       => 'nullable|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($order, $data) {
+            $order = CustomerOrder::whereKey($order->getKey())->lockForUpdate()->first();
+
+            $oldTotal   = (int) $order->total;
+            $oldCoupon  = $order->coupon_code;
+            $oldPayment = $order->payment_status;
+
+            // ---- 1. Item yang sudah ada: ubah qty/varian atau hapus ----
+            $existing = $order->items()->get()->keyBy('id');
+
+            foreach ($data['items'] ?? [] as $row) {
+                $item = $existing->get((int) $row['id']);
+                if (! $item) {
+                    continue; // id bukan milik pesanan ini -> abaikan
+                }
+
+                if (! empty($row['delete'])) {
+                    $item->delete();
+                    continue;
+                }
+
+                $qty = (int) $row['quantity'];
+
+                $item->forceFill([
+                    'quantity' => $qty,
+                    'subtotal' => (int) $item->price * $qty,
+                    'model'    => $row['model'] ?? null,
+                    'color'    => $row['color'] ?? null,
+                    'size'     => $row['size'] ?? null,
+                ])->save();
+            }
+
+            // ---- 2. Produk baru (harga dari product_prices sesuai model & ukuran) ----
+            foreach ($data['new_items'] ?? [] as $row) {
+                $product = Product::with(['prices', 'models', 'sizes'])->find($row['product_id']);
+                if (! $product) {
+                    continue;
+                }
+
+                $qty   = (int) $row['quantity'];
+                $model = $row['model'] ?? null;
+                $color = $row['color'] ?? null;
+                $size  = $row['size'] ?? null;
+
+                // Cocokkan teks varian dengan data produk untuk mencari harga yang tepat
+                $modelId = $product->models->first(fn ($m) => $this->variantName($m) === $model)?->id;
+                $sizeId  = $product->sizes->first(fn ($s) => $this->variantName($s) === $size)?->id;
+                $price   = $product->priceFor($modelId, null, $sizeId);
+
+                $order->items()->forceCreate([
+                    'product_id'   => $product->id,
+                    'product_name' => $product->name,
+                    'model'        => $model ?: null,
+                    'color'        => $color ?: null,
+                    'size'         => $size ?: null,
+                    'price'        => $price,
+                    'quantity'     => $qty,
+                    'subtotal'     => $price * $qty,
+                ]);
+            }
+
+            // Pesanan wajib punya minimal 1 item
+            $items = $order->items()->get();
+            if ($items->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => 'Pesanan harus memiliki minimal 1 produk.',
+                ]);
+            }
+
+            // ---- 3. Hitung ulang subtotal, diskon, total ----
+            $subtotal   = (int) $items->sum(fn ($i) => (int) $i->price * (int) $i->quantity);
+            $couponCode = $data['coupon_code'] ?? null;
+            $coupon     = $couponCode ? Coupon::where('code', $couponCode)->first() : null;
+
+            // Kupon baru yang batas pemakaiannya sudah habis ditolak
+            if ($coupon && $oldCoupon !== $couponCode
+                && $coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
+                throw ValidationException::withMessages([
+                    'coupon_code' => "Kupon {$coupon->code} sudah mencapai batas pemakaian.",
+                ]);
+            }
+
+            // Diskon: nilai dari input admin; bila kosong/0 dihitung dari aturan kupon.
+            // Tanpa kupon -> diskon selalu 0.
+            $discountInput = (float) ($data['discount'] ?? 0);
+            if ($coupon && $discountInput <= 0) {
+                $discountInput = $coupon->type === 'percentage'
+                    ? $subtotal * (float) $coupon->value / 100
+                    : (float) $coupon->value;
+
+                if ($coupon->type === 'percentage' && (float) $coupon->max_discount_amount > 0) {
+                    $discountInput = min($discountInput, (float) $coupon->max_discount_amount);
+                }
+            }
+            $discount = $coupon ? (int) min($subtotal, round($discountInput)) : 0;
+            $total    = max(0, $subtotal - $discount);
+
+            // ---- 4. Nominal DP ----
+            // DP sudah dibayar -> nominal DP tidak diubah (hanya dibatasi maksimal total).
+            // DP belum dibayar  -> DP mengikuti dp_percent terhadap total baru.
+            $amountDue = (int) $order->amount_due;
+            if ($order->payment_method === 'dp') {
+                if ($order->dp_paid_at) {
+                    $amountDue = min($amountDue, $total);
+                } else {
+                    $percent   = $order->dp_percent
+                        ?: ($oldTotal > 0 ? round($amountDue / $oldTotal * 100) : 50);
+                    $amountDue = (int) round($total * $percent / 100);
+                }
+            } else {
+                $amountDue = $total;
+            }
+
+            // ---- 5. Simpan pesanan ----
+            $nameParts = preg_split('/\s+/', trim($data['full_name']), 2);
+            $firstName = $nameParts[0];
+            $lastName  = $nameParts[1] ?? '';
+
+            $order->forceFill([
+                'status'         => $data['status'],
+                'payment_status' => $data['payment_status'],
+                'coupon_code'    => $couponCode,
+                'discount'       => $discount,
+                'subtotal'       => $subtotal,
+                'total'          => $total,
+                'amount_due'     => $amountDue,
+
+                // Nama lengkap dipecah: kata pertama = first_name, sisanya = last_name
+                'first_name'      => $firstName,
+                'last_name'       => $lastName,
+                'seller_id'       => $data['seller_id'] ?? null,
+                'email'           => $data['email'] ?? null,
+                'whatsapp_number' => $data['whatsapp_number'],
+                'address'         => $data['address'],
+                'city'            => $data['city'],
+                'province'        => $data['province'],
+                'postal_code'     => $data['postal_code'],
+                'notes'           => $data['notes'] ?? null,
+            ])->save();
+
+            // ---- 6. Sesuaikan counter pemakaian kupon bila kupon berganti ----
+            if ($oldCoupon !== $couponCode) {
+                if ($oldCoupon) {
+                    Coupon::where('code', $oldCoupon)->where('used_count', '>', 0)->decrement('used_count');
+                }
+                if ($couponCode) {
+                    Coupon::where('code', $couponCode)->increment('used_count');
+                }
+            }
+
+            // ---- 7. Sinkronkan bukti transfer (pesanan Bayar Penuh) bila status bayar berubah ----
+            if ($order->payment_method === 'full' && $oldPayment !== $data['payment_status']) {
+                if ($data['payment_status'] === 'paid')   $this->reviewLatestProof($order, 'verified');
+                if ($data['payment_status'] === 'failed') $this->reviewLatestProof($order, 'rejected');
+            }
+        });
+
+        return back()->with('success', "Pesanan {$order->order_number} berhasil diperbarui.");
     }
 
     /** Ubah status pesanan */
@@ -87,7 +324,6 @@ class ManageOrderController extends Controller
 
         $order->forceFill(['payment_status' => $data['payment_status']])->save();
 
-        // Sinkronkan status bukti transfer yang dilihat pelanggan
         if ($data['payment_status'] === 'paid')   $this->reviewLatestProof($order, 'verified');
         if ($data['payment_status'] === 'failed') $this->reviewLatestProof($order, 'rejected');
 
@@ -129,7 +365,7 @@ class ManageOrderController extends Controller
         return back()->with('success', "Pesanan {$number} dihapus.");
     }
 
-    /** Tampilkan bukti di browser (dipakai modal preview) */
+    /** Tampilkan bukti di browser */
     public function showProof(PaymentConfirmation $confirmation)
     {
         abort_unless(Storage::disk('public')->exists($confirmation->proof_path), 404);

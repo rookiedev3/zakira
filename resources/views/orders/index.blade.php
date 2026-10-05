@@ -30,17 +30,28 @@
     $menuItemClass = 'flex items-center px-2 py-1.5 w-full rounded-md text-start text-sm font-medium text-zinc-800 hover:bg-zinc-100';
     $menuClass     = 'min-w-48 p-[.3125rem] rounded-lg shadow-lg border border-zinc-200 bg-white z-50';
 
-    // Tombol aksi (tiap warna punya variabel sendiri supaya tidak bentrok)
+    // Tombol aksi
     $btnBase   = 'inline-flex items-center justify-center gap-1 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md border cursor-pointer list-none transition-colors [&::-webkit-details-marker]:hidden';
     $btnView   = $btnBase . ' bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200';
+    $btnEdit   = $btnBase . ' bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100';
     $btnStatus = $btnBase . ' bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100';
     $btnPay    = $btnBase . ' bg-green-50 border-green-200 text-green-700 hover:bg-green-100';
     $btnDelete = $btnBase . ' bg-red-50 border-red-200 text-red-700 hover:bg-red-100';
+
+    // Baris produk di modal Edit
+    $btnVariant = 'inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer';
+    $btnTrash   = 'inline-flex items-center justify-center h-8 w-8 rounded-md bg-[#ff000f] hover:bg-[#e6000d] text-white shrink-0 cursor-pointer';
+    $qtyInput   = 'w-16 border border-gray-300 rounded px-2 py-1 text-center focus:outline-none focus:ring-1 focus:ring-primary-500';
+    $iconPencil = '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>';
+    $iconTrash  = '<svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clip-rule="evenodd"/></svg>';
 
     $chevron       = '<svg class="shrink-0 ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>';
 
     $sel = fn (string $key, string $value) => (string) request($key) === $value ? 'selected' : '';
     $rp  = fn ($n) => 'Rp ' . number_format((int) $n, 0, ',', '.');
+
+    // Daftar kupon untuk dropdown modal Edit (dikirim dari controller)
+    $coupons = $coupons ?? collect();
 
     // Nilai awal form Buat Faktur
     $nextInvoiceNumber = \App\Models\Invoice::nextNumber();
@@ -168,6 +179,10 @@
                             $invoice   = $order->invoice;
                             $remaining = max(0, (int) $order->total - (int) $order->amount_due);
                             $param     = ['order' => $order->order_number];
+                            // Bukti pelunasan (sisa): bertipe 'remaining'; bila tabel tanpa kolom type, bukti terbaru setelah DP lunas dianggap bukti sisa
+                            $allProofs = $order->paymentConfirmations;
+                            $remProof  = $allProofs->first(fn ($p) => ($p->type ?? null) === 'remaining')
+                                ?? ($dpPaid && ! $isFull && $allProofs->count() > 1 && $allProofs->whereNotNull('type')->isEmpty() ? $allProofs->first() : null);
                         @endphp
                         <tr class="hover:bg-gray-50">
                             <!-- Order ID -->
@@ -307,6 +322,12 @@
                                         <span>Lihat</span>
                                     </button>
 
+                                    {{-- Edit: buka modal Edit Pesanan --}}
+                                    <button type="button" class="{{ $btnEdit }}"
+                                            onclick="document.getElementById('order-edit-{{ $order->id }}').showModal()">
+                                        <i class="fas fa-pen text-xs"></i> <span>Edit</span>
+                                    </button>
+
                                     <!-- Dropdown Status Pesanan -->
                                     <details class="relative" data-dd>
                                         <summary class="{{ $btnStatus }}">Status {!! $chevron !!}</summary>
@@ -344,15 +365,26 @@
                                                     <form method="POST" action="{{ route('admin.orders.dp-paid', $param) }}"
                                                           onsubmit="return confirm('Tandai DP sebagai lunas?')">
                                                         @csrf @method('PATCH')
-                                                        <button type="submit" class="{{ $menuItemClass }}">Tandai DP Lunas</button>
+                                                        <button type="submit" class="{{ $menuItemClass }}">
+                                                            <i class="fas fa-check text-green-600 mr-2"></i> Tandai DP Lunas
+                                                        </button>
                                                     </form>
                                                 @elseif (! $remPaid)
                                                     <form method="POST" action="{{ route('admin.orders.remaining-paid', $param) }}"
                                                           onsubmit="return confirm('Tandai sisa pembayaran sebagai lunas?')">
                                                         @csrf @method('PATCH')
-                                                        <button type="submit" class="{{ $menuItemClass }}">Tandai Sisa Lunas</button>
+                                                        <button type="submit" class="{{ $menuItemClass }}">
+                                                            <i class="fas fa-check-double text-green-600 mr-2"></i> Tandai Sisa Lunas
+                                                        </button>
                                                     </form>
-                                                @else
+                                                @endif
+
+                                                @if ($remProof)
+                                                    <a href="{{ asset('storage/' . ltrim($remProof->proof_path, '/')) }}" target="_blank" rel="noopener"
+                                                       class="{{ $menuItemClass }}">
+                                                        <i class="fas fa-file-invoice text-purple-600 mr-2"></i> Lihat Bukti Sisa
+                                                    </a>
+                                                @elseif ($dpPaid && $remPaid)
                                                     <div class="px-2 py-1.5 text-sm text-zinc-500">Tidak ada aksi</div>
                                                 @endif
                                             </div>
@@ -401,7 +433,7 @@
         $dpPercent  = (int) $order->total > 0 ? round($order->amount_due / $order->total * 100, 1) : 0;
         $remPercent = round(100 - $dpPercent, 1);
         $coupon     = $order->coupon ?? null;
-        $discount   = (int) ($order->discount_amount ?? 0);
+        $discount   = (int) ($order->discount ?? 0);
         $wib        = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->timezone('Asia/Jakarta')->format('d M Y H:i') : '-';
 
         $dpLabel  = $dpPaid ? 'DP Lunas' : 'DP Pending';
@@ -421,7 +453,7 @@
                 ['Bukti Pelunasan', 'Bukti Pelunasan Terupload', $proofs->filter(fn ($p) => ($p->type ?? null) === 'remaining'), false, 'Lihat Bukti Pelunasan'],
             ];
 
-        $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors cursor-pointer';
+        $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors cursor-pointer';
         $btnGhost   = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-transparent text-zinc-800 hover:bg-zinc-800/5 transition-colors';
     @endphp
 
@@ -557,6 +589,9 @@
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     {{ $coupon->code }}
                                 </span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ $coupon->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' }}">
+                                    {{ $coupon->status_label }}
+                                </span>
                             </div>
 
                             @if (! empty($coupon->description))
@@ -569,8 +604,8 @@
                                     <div class="text-green-900">
                                         @if ($coupon->type === 'percentage')
                                             {{ number_format($coupon->value, 2, '.', ',') }}%
-                                            @if (! empty($coupon->max_discount))
-                                                (Max: {{ $rp($coupon->max_discount) }})
+                                            @if (! empty($coupon->max_discount_amount))
+                                                (Max: {{ $rp($coupon->max_discount_amount) }})
                                             @endif
                                         @else
                                             {{ $rp($coupon->value) }}
@@ -583,10 +618,29 @@
                                     <div class="text-green-900 font-semibold">{{ $rp($discount) }}</div>
                                 </div>
 
-                                @if (! empty($coupon->min_purchase))
+                                @if (! empty($coupon->minimum_amount))
                                     <div>
                                         <span class="text-green-700 font-medium">Min. Pembelian:</span>
-                                        <div class="text-green-900">{{ $rp($coupon->min_purchase) }}</div>
+                                        <div class="text-green-900">{{ $rp($coupon->minimum_amount) }}</div>
+                                    </div>
+                                @endif
+
+                                @if (! empty($coupon->minimum_quantity))
+                                    <div>
+                                        <span class="text-green-700 font-medium">Min. Kuantitas:</span>
+                                        <div class="text-green-900">{{ $coupon->minimum_quantity }} item</div>
+                                    </div>
+                                @endif
+
+                                <div>
+                                    <span class="text-green-700 font-medium">Berlaku Untuk:</span>
+                                    <div class="text-green-900">{{ $coupon->audience_label }}</div>
+                                </div>
+
+                                @if (! empty($coupon->starts_at))
+                                    <div>
+                                        <span class="text-green-700 font-medium">Mulai Berlaku:</span>
+                                        <div class="text-green-900">{{ $wib($coupon->starts_at) }}</div>
                                     </div>
                                 @endif
 
@@ -671,7 +725,7 @@
                             <h4 class="font-semibold text-gray-900 mb-3">{{ $proofTitle }}</h4>
                             @forelse ($proofList as $p)
                                 @php
-                                    $proofUrl   = asset('storage/' . ltrim($p->proof_path, '/'));
+                                    $proofUrl = asset('storage/' . ltrim($p->proof_path, '/'));
                                 @endphp
                                 <div class="bg-gray-50 rounded-lg p-4 {{ ! $loop->last ? 'mb-3' : '' }}">
                                     <div class="flex items-center justify-between mb-3">
@@ -725,8 +779,8 @@
                     <div class="space-y-3">
                         @foreach ($order->items as $item)
                             @php
-                                $name  = $item->product_name ?? $item->product->name ?? '-';
-                                $image = $item->product_image ?? $item->product->image ?? null;
+                                $name  = $item->product_name ?? '-';
+                                $image = $item->product_image ?? $item->product?->image ?? null;
                                 $price = (int) $item->price;
                                 $qty   = (int) $item->quantity;
                                 $attrs = array_filter([
@@ -765,6 +819,313 @@
         </div>
     </dialog>
 @endforeach
+
+{{-- ============ Modal Edit Pesanan (satu <dialog> per pesanan) ============ --}}
+@foreach ($orders as $order)
+    @php
+        $isOld        = (string) old('_edit_order') === (string) $order->id;
+        $editStatus   = $isOld ? old('status') : $order->status;
+        $editPayment  = $isOld ? old('payment_status') : ($order->payment_status ?? 'pending');
+        $editCoupon   = $isOld ? old('coupon_code') : ($order->coupon_code ?? '');
+        $editDiscount = $isOld ? old('discount') : (int) ($order->discount ?? 0);
+        $ov           = fn (string $key, $default) => $isOld ? old($key, $default) : $default;
+        $custErr      = $isOld && $errors->hasAny(['full_name', 'seller_id', 'email', 'whatsapp_number']);
+        $addrErr      = $isOld && $errors->hasAny(['address', 'city', 'province', 'postal_code']);
+
+        $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors cursor-pointer';
+        $btnDanger  = 'inline-flex items-center justify-center h-8 w-8 rounded-md bg-red-500 hover:bg-red-600 text-white shrink-0 cursor-pointer';
+    @endphp
+
+    <dialog id="order-edit-{{ $order->id }}" data-order-dialog data-edit-dialog
+            class="m-auto p-0 bg-transparent w-[calc(100%-2rem)] max-w-4xl overflow-hidden backdrop:bg-black/30">
+        <form method="POST" action="{{ route('admin.orders.update', ['order' => $order->order_number]) }}" data-keep-scroll
+              class="bg-white rounded-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+            @csrf @method('PUT')
+            <input type="hidden" name="_edit_order" value="{{ $order->id }}">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b shrink-0">
+                <h3 class="text-xl font-semibold text-gray-900">Edit Pesanan #{{ $order->order_number }}</h3>
+                <button type="button" class="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-800 hover:bg-zinc-800/5"
+                        onclick="this.closest('dialog').close()" aria-label="Tutup">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 flex-1 min-h-0 overflow-y-auto space-y-6">
+
+                @if ($isOld && $errors->any())
+                    <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <ul class="list-disc pl-5">
+                            @foreach ($errors->all() as $err) <li>{{ $err }}</li> @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <!-- Detail Pesanan -->
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">Detail Pesanan</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-700 mb-1 block">Status Pesanan</label>
+                            <select name="status" class="{{ $inputClass }}">
+                                @foreach ($statusLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected($editStatus === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-700 mb-1 block">Status Pembayaran</label>
+                            <select name="payment_status" class="{{ $inputClass }}">
+                                @foreach ($paymentLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected($editPayment === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Produk Pesanan -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-semibold text-gray-900">Produk Pesanan</h4>
+                        <button type="button" data-add-item class="{{ $btnPrimary }}">
+                            <i class="fas fa-plus text-xs"></i> <span>Tambah Produk</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        @foreach ($order->items as $item)
+                            @php
+                                $iName  = $item->product_name ?? '-';
+                                $iAttrs = array_filter([
+                                    ! empty($item->model) ? 'Model: '  . $item->model : null,
+                                    ! empty($item->color) ? 'Warna: '  . $item->color : null,
+                                    ! empty($item->size)  ? 'Ukuran: ' . $item->size  : null,
+                                ]);
+                            @endphp
+                            <div class="border border-gray-200 rounded-lg p-4" data-item-row data-price="{{ (int) $item->price }}">
+                                <input type="hidden" name="items[{{ $item->id }}][id]" value="{{ $item->id }}">
+                                <input type="hidden" name="items[{{ $item->id }}][delete]" value="0" data-delete-input>
+
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="flex-1 min-w-0" data-item-info>
+                                        <h5 class="font-medium text-gray-900">{{ $iName }}</h5>
+                                        @if ($iAttrs)
+                                            <div class="text-sm text-gray-500 mt-1">{{ implode(' | ', $iAttrs) }}</div>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex items-center space-x-3 shrink-0">
+                                        <div class="flex items-center space-x-2">
+                                            <label class="text-sm text-gray-600">Qty:</label>
+                                            <input type="number" min="1" data-qty name="items[{{ $item->id }}][quantity]"
+                                                   value="{{ (int) $item->quantity }}" class="{{ $qtyInput }}">
+                                        </div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $rp($item->price) }}</div>
+                                        <button type="button" data-toggle-variant class="{{ $btnVariant }}">
+                                            {!! $iconPencil !!} Edit Varian
+                                        </button>
+                                        <button type="button" data-delete-item class="{{ $btnTrash }}" title="Hapus produk">
+                                            {!! $iconTrash !!}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-3" data-variant-panel>
+                                    <div>
+                                        <label class="text-xs text-gray-600 mb-1 block">Model</label>
+                                        <input type="text" name="items[{{ $item->id }}][model]" value="{{ $item->model }}" class="{{ $inputClass }}">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-600 mb-1 block">Warna</label>
+                                        <input type="text" name="items[{{ $item->id }}][color]" value="{{ $item->color }}" class="{{ $inputClass }}">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-600 mb-1 block">Ukuran</label>
+                                        <input type="text" name="items[{{ $item->id }}][size]" value="{{ $item->size }}" class="{{ $inputClass }}">
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+
+                        {{-- Baris produk baru disisipkan lewat JS dari dialog "Tambah Produk ke Pesanan" --}}
+                        <div class="space-y-3" data-new-items></div>
+                    </div>
+                </div>
+
+                <!-- Kupon Diskon -->
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">Kupon Diskon</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-700 mb-1 block">Pilih Kupon</label>
+                            <select name="coupon_code" data-coupon-select class="{{ $inputClass }}">
+                                <option value="">Tidak ada kupon</option>
+                                @foreach ($coupons as $c)
+                                    <option value="{{ $c->code }}"
+                                            data-type="{{ $c->type }}" data-value="{{ $c->value }}" data-max="{{ $c->max_discount_amount }}"
+                                            data-min="{{ $c->minimum_amount }}"
+                                            @selected((string) $editCoupon === (string) $c->code)>
+                                        {{ $c->code }} — {{ $c->name }} ({{ $c->discount_label }})@if ($c->status !== 'active') [{{ $c->status_label }}]@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-700 mb-1 block">Diskon Kupon</label>
+                            <input type="number" min="0" step="0.01" name="discount" data-discount-input
+                                   value="{{ number_format((float) $editDiscount, 2, '.', '') }}" class="{{ $inputClass }}">
+                        </div>
+                        <p class="md:col-span-2 -mt-2 text-xs text-amber-600" data-coupon-min-warning></p>
+                    </div>
+                </div>
+
+                <!-- Ringkasan Harga -->
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">Ringkasan Harga</h4>
+                    <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Subtotal:</span>
+                            <span class="font-medium" data-sum-subtotal>-</span>
+                        </div>
+                        <div class="flex justify-between text-green-600">
+                            <span>Diskon:</span>
+                            <span class="font-medium" data-sum-discount>-</span>
+                        </div>
+                        <div class="flex justify-between border-t pt-2">
+                            <span class="font-semibold text-gray-900">Total:</span>
+                            <span class="font-bold text-lg" data-sum-total>-</span>
+                        </div>
+                        <p class="text-xs text-gray-500">Harga produk baru ditampilkan sebagai perkiraan; server menghitung ulang sesuai model dan ukuran saat disimpan.</p>
+                    </div>
+                </div>
+
+                <!-- Informasi Pelanggan (accordion) -->
+                <details class="border border-gray-200 rounded-lg" @if ($custErr) open @endif>
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors [&::-webkit-details-marker]:hidden">
+                        <h4 class="font-semibold text-gray-900">Informasi Pelanggan</h4>
+                        <svg class="w-5 h-5 text-gray-500 transition-transform duration-200 [details[open]_&]:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </summary>
+                    <div class="p-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="{{ $labelClass }}">Nama Lengkap</label>
+                            <input type="text" name="full_name" value="{{ $ov('full_name', trim($order->first_name . ' ' . $order->last_name)) }}" class="{{ $inputClass }}">
+                            @if ($isOld) @error('full_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">ID Penjual</label>
+                            <input type="text" name="seller_id" value="{{ $ov('seller_id', $order->seller_id) }}" class="{{ $inputClass }}">
+                            @if ($isOld) @error('seller_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">Email</label>
+                            <input type="email" name="email" value="{{ $ov('email', $order->email) }}" class="{{ $inputClass }}">
+                            @if ($isOld) @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">WhatsApp</label>
+                            <input type="text" name="whatsapp_number" value="{{ $ov('whatsapp_number', $order->whatsapp_number) }}" class="{{ $inputClass }}">
+                            @if ($isOld) @error('whatsapp_number') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Alamat Pengiriman (accordion) -->
+                <details class="border border-gray-200 rounded-lg" @if ($addrErr) open @endif>
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors [&::-webkit-details-marker]:hidden">
+                        <h4 class="font-semibold text-gray-900">Alamat Pengiriman</h4>
+                        <svg class="w-5 h-5 text-gray-500 transition-transform duration-200 [details[open]_&]:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </summary>
+                    <div class="p-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="{{ $labelClass }}">Alamat Lengkap</label>
+                            <textarea name="address" rows="3" class="{{ $inputClass }}">{{ $ov('address', $order->address) }}</textarea>
+                            @if ($isOld) @error('address') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">Kota</label>
+                            <input type="text" name="city" value="{{ $ov('city', $order->city) }}" class="{{ $inputClass }}">
+                            @if ($isOld) @error('city') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">Provinsi</label>
+                            <input type="text" name="province" value="{{ $ov('province', $order->province) }}" class="{{ $inputClass }}">
+                            @if ($isOld) @error('province') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">Kode Pos</label>
+                            <input type="text" name="postal_code" value="{{ $ov('postal_code', $order->postal_code) }}" class="{{ $inputClass }}">
+                            @if ($isOld) @error('postal_code') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Catatan -->
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">Catatan</h4>
+                    <textarea name="notes" rows="3" placeholder="Catatan tambahan untuk pesanan..." class="{{ $inputClass }}">{{ $ov('notes', $order->notes) }}</textarea>
+                    @if ($isOld) @error('notes') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end gap-3 p-6 border-t bg-gray-50 shrink-0">
+                <button type="button" onclick="this.closest('dialog').close()"
+                        class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg text-zinc-800 hover:bg-zinc-800/5 transition-colors">
+                    <span>Batal</span>
+                </button>
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 transition-colors">
+                    <i class="fas fa-check text-xs"></i> <span>Simpan Perubahan</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+@endforeach
+
+{{-- ============ Modal Tambah Produk ke Pesanan (satu dialog dipakai semua modal Edit; di luar <form>) ============ --}}
+<dialog id="add-item-dialog"
+        class="m-auto p-0 bg-transparent w-[calc(100%-2rem)] max-w-xl overflow-hidden backdrop:bg-black/30">
+    <div class="bg-white rounded-lg w-full">
+        <div class="flex items-center justify-between p-6 border-b">
+            <h3 class="text-xl font-semibold text-gray-900">Tambah Produk ke Pesanan</h3>
+            <button type="button" class="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-800 hover:bg-zinc-800/5"
+                    onclick="this.closest('dialog').close()" aria-label="Tutup">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div>
+                <label for="add-item-product" class="{{ $labelClass }}">Pilih Produk</label>
+                <select id="add-item-product" class="{{ $inputClass }}">
+                    <option value="">-- Pilih Produk --</option>
+                    @foreach ($products as $pid => $pname)
+                        <option value="{{ $pid }}">{{ $pname }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label for="add-item-qty" class="{{ $labelClass }}">Kuantitas</label>
+                <input type="number" id="add-item-qty" min="1" max="9999" value="1" class="{{ $inputClass }}">
+            </div>
+            <p id="add-item-error" class="hidden text-xs text-red-600">Pilih produk terlebih dahulu.</p>
+        </div>
+
+        <div class="flex justify-end gap-3 p-6 border-t bg-gray-50">
+            <button type="button" onclick="this.closest('dialog').close()"
+                    class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg text-zinc-800 hover:bg-zinc-800/5 transition-colors">
+                <span>Batal</span>
+            </button>
+            <button type="button" id="add-item-confirm"
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 transition-colors">
+                <i class="fas fa-plus text-xs"></i> <span>Tambah ke Pesanan</span>
+            </button>
+        </div>
+    </div>
+</dialog>
 
 {{-- ============ Modal Buat Faktur (satu dialog dipakai semua baris) ============ --}}
 <dialog id="invoice-dialog" data-default-number="{{ $nextInvoiceNumber }}" data-default-date="{{ $nowLocal }}"
@@ -811,11 +1172,11 @@
                 <span>Batal</span>
             </button>
             <button type="submit" name="format" value="pdf" data-submit-btn
-                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 transition-colors disabled:opacity-60 disabled:cursor-wait">
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 transition-colors disabled:opacity-60 disabled:cursor-wait">
                 <i class="fas fa-file-pdf"></i> <span>Buat Faktur PDF</span>
             </button>
             <button type="submit" name="format" value="excel" data-submit-btn
-                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 transition-colors disabled:opacity-60 disabled:cursor-wait">
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 transition-colors disabled:opacity-60 disabled:cursor-wait">
                 <i class="fas fa-file-excel"></i> <span>Buat Faktur Excel</span>
             </button>
         </div>
@@ -827,7 +1188,9 @@
     html:has(dialog[data-order-dialog][open]),
     body:has(dialog[data-order-dialog][open]),
     html:has(#invoice-dialog[open]),
-    body:has(#invoice-dialog[open]) { overflow: hidden; }
+    body:has(#invoice-dialog[open]),
+    html:has(#add-item-dialog[open]),
+    body:has(#add-item-dialog[open]) { overflow: hidden; }
 </style>
 
 <script>
@@ -898,10 +1261,170 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('change', () => el.form.submit())
     );
 
-    // Modal detail: klik area gelap di luar kotak menutup modal
+    // Modal detail & edit: klik area gelap di luar kotak menutup modal
     document.querySelectorAll('dialog[data-order-dialog]').forEach((dlg) =>
         dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); })
     );
+
+    // Dialog "Tambah Produk ke Pesanan" (dipakai bersama oleh semua modal Edit)
+    const addDlg = document.getElementById('add-item-dialog');
+    const addSel = document.getElementById('add-item-product');
+    const addQty = document.getElementById('add-item-qty');
+    const addErr = document.getElementById('add-item-error');
+    let addTarget = null; // modal Edit yang sedang membuka dialog ini
+
+    addDlg.addEventListener('click', (e) => { if (e.target === addDlg) addDlg.close(); });
+
+    const PRODUCT_META = @json($productMeta ?? []);
+    const BTN_VARIANT = @json($btnVariant);
+    const BTN_TRASH   = @json($btnTrash);
+    const QTY_INPUT   = @json($qtyInput);
+    const ICON_PENCIL = @json($iconPencil);
+    const ICON_TRASH  = @json($iconTrash);
+    const TEXT_INPUT = @json($inputClass);
+    const rpFmt = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+
+    const attrText = (m, c, z) => [m && 'Model: ' + m, c && 'Warna: ' + c, z && 'Ukuran: ' + z].filter(Boolean).join(' | ');
+
+    document.getElementById('add-item-confirm').addEventListener('click', () => {
+        if (!addSel.value) { addErr.classList.remove('hidden'); return; }
+
+        const meta = PRODUCT_META[addSel.value] || {};
+        const n    = (parseInt(addTarget.dataset.newIdx, 10) || 0) + 1;
+        addTarget.dataset.newIdx = n;
+        const qty  = Math.max(1, parseInt(addQty.value, 10) || 1);
+
+        // Baris dibuat sama dengan item lama: nama, varian, Qty, harga, Edit Varian, hapus
+        const row = document.createElement('div');
+        row.dataset.itemRow = '';
+        row.dataset.newRow  = '';
+        row.dataset.price   = meta.price || 0;
+        row.className = 'border border-gray-200 rounded-lg p-4';
+        row.innerHTML = `
+            <input type="hidden" name="new_items[${n}][product_id]" value="${addSel.value}">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <h5 class="font-medium text-gray-900" data-new-name></h5>
+                    <div class="text-sm text-gray-500 mt-1" data-new-attrs></div>
+                </div>
+                <div class="flex items-center space-x-3 shrink-0">
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-gray-600">Qty:</label>
+                        <input type="number" min="1" max="9999" data-qty name="new_items[${n}][quantity]" class="${QTY_INPUT}">
+                    </div>
+                    <div class="text-sm font-medium text-gray-900" data-new-price></div>
+                    <button type="button" data-toggle-variant class="${BTN_VARIANT}">${ICON_PENCIL} Edit Varian</button>
+                    <button type="button" data-remove-new class="${BTN_TRASH}" title="Hapus produk">${ICON_TRASH}</button>
+                </div>
+            </div>
+            <div class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-3" data-variant-panel>
+                <div><label class="text-xs text-gray-600 mb-1 block">Model</label>
+                    <input type="text" data-variant-field name="new_items[${n}][model]" class="${TEXT_INPUT}"></div>
+                <div><label class="text-xs text-gray-600 mb-1 block">Warna</label>
+                    <input type="text" data-variant-field name="new_items[${n}][color]" class="${TEXT_INPUT}"></div>
+                <div><label class="text-xs text-gray-600 mb-1 block">Ukuran</label>
+                    <input type="text" data-variant-field name="new_items[${n}][size]" class="${TEXT_INPUT}"></div>
+            </div>`;
+
+        row.querySelector('[data-new-name]').textContent  = meta.name || addSel.selectedOptions[0].text;
+        row.querySelector('[data-new-price]').textContent = rpFmt(meta.price || 0);
+        row.querySelector('[data-qty]').value = qty;
+        row.querySelector(`[name="new_items[${n}][model]"]`).value = meta.model || '';
+        row.querySelector(`[name="new_items[${n}][color]"]`).value = meta.color || '';
+        row.querySelector(`[name="new_items[${n}][size]"]`).value  = meta.size  || '';
+        row.querySelector('[data-new-attrs]').textContent = attrText(meta.model, meta.color, meta.size);
+
+        addTarget.querySelector('[data-new-items]').appendChild(row);
+        addTarget.dispatchEvent(new Event('input')); // hitung ulang Ringkasan Harga
+        addDlg.close();
+    });
+
+    // Modal Edit Pesanan
+
+    document.querySelectorAll('dialog[data-edit-dialog]').forEach((dlg) => {
+        const couponSel = dlg.querySelector('[data-coupon-select]');
+        const discInput = dlg.querySelector('[data-discount-input]');
+        const minWarn   = dlg.querySelector('[data-coupon-min-warning]');
+
+        const subtotal = () => {
+            let sum = 0;
+            dlg.querySelectorAll('[data-item-row]').forEach((row) => {
+                if (row.dataset.deleted === '1') return;
+                const qty = Math.max(1, parseInt(row.querySelector('[data-qty]').value, 10) || 1);
+                sum += qty * Number(row.dataset.price);
+            });
+            return sum;
+        };
+
+        const recalc = () => {
+            const sub  = subtotal();
+            const disc = Math.min(sub, Math.max(0, parseFloat(discInput.value) || 0));
+            dlg.querySelector('[data-sum-subtotal]').textContent = rpFmt(sub);
+            dlg.querySelector('[data-sum-discount]').textContent = '-' + rpFmt(disc);
+            dlg.querySelector('[data-sum-total]').textContent    = rpFmt(sub - disc);
+        };
+
+        couponSel.addEventListener('change', () => {
+            const opt = couponSel.selectedOptions[0];
+            if (!opt.value) { discInput.value = '0.00'; return recalc(); }
+            const val = parseFloat(opt.dataset.value) || 0;
+            const max = parseFloat(opt.dataset.max) || 0;
+            const sub = subtotal();
+            let d = opt.dataset.type === 'percentage' ? sub * val / 100 : val;
+            if (opt.dataset.type === 'percentage' && max > 0) d = Math.min(d, max);
+            discInput.value = Math.min(d, sub).toFixed(2);
+            recalc();
+
+            const min = parseFloat(opt.dataset.min) || 0;
+            minWarn.textContent = (min > 0 && sub < min)
+                ? 'Subtotal belum memenuhi minimal pembelian kupon (' + rpFmt(min) + ').'
+                : '';
+        });
+
+        dlg.addEventListener('input', (e) => {
+            if (e.target.matches('[data-variant-field]')) {
+                const row = e.target.closest('[data-new-row]');
+                if (row) {
+                    const f = (k) => row.querySelector(`[name$="[${k}]"]`).value.trim();
+                    row.querySelector('[data-new-attrs]').textContent = attrText(f('model'), f('color'), f('size'));
+                }
+            }
+            recalc();
+        });
+
+        dlg.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            if (btn.matches('[data-toggle-variant]')) {
+                btn.closest('[data-item-row]').querySelector('[data-variant-panel]').classList.toggle('hidden');
+            } else if (btn.matches('[data-delete-item]')) {
+                const row = btn.closest('[data-item-row]');
+                const del = row.dataset.deleted !== '1';
+                row.dataset.deleted = del ? '1' : '0';
+                row.querySelector('[data-delete-input]').value = del ? '1' : '0';
+                row.querySelector('[data-item-info]').classList.toggle('line-through', del);
+                row.classList.toggle('opacity-50', del);
+                recalc();
+            } else if (btn.matches('[data-add-item]')) {
+                addTarget = dlg;
+                addSel.value = '';
+                addQty.value = 1;
+                addErr.classList.add('hidden');
+                addDlg.showModal();
+            } else if (btn.matches('[data-remove-new]')) {
+                btn.closest('[data-new-row]').remove();
+                recalc();
+            }
+        });
+
+        recalc();
+    });
+
+    @if ($errors->any() && old('_edit_order'))
+        // Validasi edit gagal: buka lagi modal edit pesanan terkait
+        document.querySelector('#order-edit-{{ (int) old('_edit_order') }}')?.showModal();
+    @endif
 
     // Dropdown aksi: menu memakai posisi fixed agar tidak terpotong oleh tabel
     const dds = document.querySelectorAll('details[data-dd]');

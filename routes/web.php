@@ -263,8 +263,13 @@ Route::patch('/products/{id}/toggle-status', [ProductController::class, 'toggleS
 
 // ==== Pesanan ====
 // Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
-Route::get('orders/index', [ManageOrderController::class, 'index'])->name('orders.index');
-
+Route::get('orders', [ManageOrderController::class, 'index'])->name('admin.orders.index');
+Route::put('orders/{order}', [ManageOrderController::class, 'update'])->name('admin.orders.update'); // BARU
+Route::patch('orders/{order}/status', [ManageOrderController::class, 'updateStatus'])->name('admin.orders.status');
+Route::patch('orders/{order}/payment', [ManageOrderController::class, 'updatePayment'])->name('admin.orders.payment');
+Route::patch('orders/{order}/dp-paid', [ManageOrderController::class, 'markDpPaid'])->name('admin.orders.dp-paid');
+Route::patch('orders/{order}/remaining-paid', [ManageOrderController::class, 'markRemainingPaid'])->name('admin.orders.remaining-paid');
+Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
 // ==== Laporan ====
 // Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
 // Route Laporan Penjualan Mitra (File: admin/reports/mitra.blade.php)

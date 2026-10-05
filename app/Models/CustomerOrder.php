@@ -66,4 +66,8 @@ class CustomerOrder extends Model
 
         return ['0' . $core, '62' . $core, '+62' . $core];
     }
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class, 'coupon_code', 'code');
+    }
 }
