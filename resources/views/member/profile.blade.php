@@ -40,10 +40,15 @@
         <p class="text-gray-600 text-lg mt-3">Kelola profil dan riwayat pesanan Anda</p>
     </div>
 
-    <!-- Flash message sukses (error validasi tampil di bawah masing-masing input) -->
+    <!-- Flash message (error validasi tampil di bawah masing-masing input) -->
     @if (session('success'))
         <div class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm p-3 rounded-lg">
             {{ session('success') }}
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="mb-6 bg-red-50 border border-red-200 text-red-800 text-sm p-3 rounded-lg">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -173,6 +178,10 @@
                             $invoice    = $order->invoice;
                             $hasInvoice = (bool) $invoice;
                             $isExcel    = $invoice?->format === 'excel';
+
+                            // Kondisi tombol bayar
+                            $canPayDp        = ! $isFull && ! $dpPaid && $order->status !== 'cancelled';
+                            $canPayRemaining = ! $isFull && $dpPaid && ! $remPaid && $order->status !== 'cancelled';
                         @endphp
 
                         <div class="bg-gray-50 px-7 py-6 space-y-5">
@@ -273,6 +282,24 @@
                                     <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clip-rule="evenodd" /></svg>
                                     Lihat Detail
                                 </button>
+
+                                {{-- Bayar DP: hanya jika metode DP & DP belum lunas --}}
+                                @if ($canPayDp)
+                                    <a href="{{ route('member.orders.pay-dp', $order->order_number) }}"
+                                       class="bg-blue-600 hover:bg-blue-700 text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
+                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
+                                        Bayar DP
+                                    </a>
+                                @endif
+
+                                {{-- Bayar Sisa: hanya jika DP sudah lunas & sisa belum lunas --}}
+                                @if ($canPayRemaining)
+                                    <a href="{{ route('member.orders.pay-remaining', $order->order_number) }}"
+                                       class="bg-green-600 hover:bg-green-700 text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
+                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
+                                        Bayar Sisa
+                                    </a>
+                                @endif
 
                                 @if ($hasInvoice)
                                     <a href="{{ route('member.orders.invoice', $order->order_number) }}" download
