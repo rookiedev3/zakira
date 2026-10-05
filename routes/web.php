@@ -26,6 +26,7 @@ use App\Http\Controllers\PaymentConfirmationController;
 use App\Http\Controllers\Admin\ManageOrderController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Member\InvoiceController as MemberInvoiceController; // BARU: download faktur member
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -61,6 +62,9 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+
+    // BARU: download faktur milik member sendiri (nama route: member.orders.invoice)
+    Route::get('/orders/{orderNumber}/invoice', [MemberInvoiceController::class, 'download'])->name('orders.invoice');
 });
 
 
