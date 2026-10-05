@@ -63,9 +63,60 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
 
+    
+
     // BARU: download faktur milik member sendiri (nama route: member.orders.invoice)
     Route::get('/orders/{orderNumber}/invoice', [MemberInvoiceController::class, 'download'])->name('orders.invoice');
+
+          // ================= DUMMY: PEMBAYARAN DP & SISA (sementara, pindahkan ke controller) =================
+    $dummyBanks = fn () => collect([
+        (object) ['bank_name' => 'BSI', 'account_number' => '824682748372', 'account_name' => 'ADN',   'is_active' => true],
+        (object) ['bank_name' => 'BSI', 'account_number' => '20920029020',  'account_name' => 'Zahwa', 'is_active' => true],
+    ]);
+
+    // Pesanan milik member yang login (logika kepemilikan sama dengan ProfileController@show)
+    $ownOrder = fn (string $orderNumber) => \App\Models\CustomerOrder::where('order_number', $orderNumber)
+        ->ownedBy(auth()->user()->load('detail'))
+        ->firstOrFail();
+
+    Route::get('/orders/{orderNumber}/pay-dp', function (string $orderNumber) use ($dummyBanks, $ownOrder) {
+        $order = $ownOrder($orderNumber);
+
+        if ($order->payment_method === 'full' || $order->dp_paid_at || $order->status === 'cancelled') {
+            return redirect()->route('member.profile')->with('error', 'Pesanan ini tidak memerlukan pembayaran DP.');
+        }
+
+        return view('member.orders.pay-dp', ['order' => $order, 'bankAccounts' => $dummyBanks()]);
+    })->name('orders.pay-dp');
+
+    Route::post('/orders/{orderNumber}/pay-dp', function (\Illuminate\Http\Request $request, string $orderNumber) use ($ownOrder) {
+        $ownOrder($orderNumber);
+        $request->validate(['payment_proof' => ['required', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048']]);
+        $request->file('payment_proof')->store('payment-proofs', 'public');
+        // TODO backend: simpan path & ubah status verifikasi
+        return redirect()->route('member.profile')->with('success', 'Bukti pembayaran DP berhasil diunggah.');
+    })->name('orders.pay-dp.store');
+
+    Route::get('/orders/{orderNumber}/pay-remaining', function (string $orderNumber) use ($dummyBanks, $ownOrder) {
+        $order = $ownOrder($orderNumber);
+
+        if ($order->payment_method === 'full' || ! $order->dp_paid_at || $order->remaining_paid_at || $order->status === 'cancelled') {
+            return redirect()->route('member.profile')->with('error', 'Pesanan ini tidak memerlukan pembayaran sisa.');
+        }
+
+        return view('member.orders.pay-remaining', ['order' => $order, 'bankAccounts' => $dummyBanks()]);
+    })->name('orders.pay-remaining');
+
+    Route::post('/orders/{orderNumber}/pay-remaining', function (\Illuminate\Http\Request $request, string $orderNumber) use ($ownOrder) {
+        $ownOrder($orderNumber);
+        $request->validate(['payment_proof' => ['required', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048']]);
+        $request->file('payment_proof')->store('payment-proofs', 'public');
+        // TODO backend: simpan path & tandai pelunasan menunggu verifikasi
+        return redirect()->route('member.profile')->with('success', 'Bukti pelunasan berhasil diunggah.');
+    })->name('orders.pay-remaining.store');
+    // ================= AKHIR DUMMY =================
 });
+
 
 
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
