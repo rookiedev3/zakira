@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CustomerOrder;
+use App\Models\PaymentConfirmation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -126,6 +127,24 @@ class ManageOrderController extends Controller
         $order->delete(); // item & konfirmasi ikut terhapus (cascade)
 
         return back()->with('success', "Pesanan {$number} dihapus.");
+    }
+
+    /** Tampilkan bukti di browser (dipakai modal preview) */
+    public function showProof(PaymentConfirmation $confirmation)
+    {
+        abort_unless(Storage::disk('public')->exists($confirmation->proof_path), 404);
+
+        return Storage::disk('public')->response($confirmation->proof_path);
+    }
+
+    /** Unduh bukti sebagai file */
+    public function downloadProof(PaymentConfirmation $confirmation)
+    {
+        abort_unless(Storage::disk('public')->exists($confirmation->proof_path), 404);
+
+        $name = 'bukti-' . $confirmation->id . '.' . pathinfo($confirmation->proof_path, PATHINFO_EXTENSION);
+
+        return Storage::disk('public')->download($confirmation->proof_path, $name);
     }
 
     private function reviewLatestProof(CustomerOrder $order, string $status): void

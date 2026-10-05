@@ -42,7 +42,7 @@
             </div>
             <div>
                 <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Email</h3>
-                <p class="text-lg font-semibold text-gray-900 mt-1 break-all">{{ $order->email ?: '-' }}</p>
+                <p class="text-lg font-semibold text-gray-900 mt-1 break-all">{{ $order->email ?: 'Tidak ada' }}</p>
             </div>
             <div>
                 <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total</h3>

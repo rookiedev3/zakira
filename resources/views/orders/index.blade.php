@@ -238,11 +238,10 @@
                                 </span>
                             </td>
 
-                            <!-- Bukti Bayar -->
+                            <!-- Bukti Bayar (klik = buka di tab baru) -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if ($proof)
-                                    <a href="{{ Storage::disk('public')->url($proof->proof_path) }}" target="_blank" rel="noopener"
-                                       title="Lihat bukti transfer"
+                                    <a href="{{ asset('storage/' . ltrim($proof->proof_path, '/')) }}" target="_blank" rel="noopener" title="Lihat bukti transfer"
                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200">
                                         <i class="fas fa-check mr-1"></i>
                                         Ada
@@ -417,11 +416,12 @@
         $proofSections = $isFull
             ? [['Bukti Pembayaran', 'Bukti Terupload', $proofs, true, 'Lihat Bukti']]
             : [
-                ['Bukti Pembayaran DP', 'Bukti DP Terupload', $proofs->where('type', 'dp'), true, 'Lihat Bukti DP'],
-                ['Bukti Pelunasan', 'Bukti Pelunasan Terupload', $proofs->where('type', 'remaining'), false, 'Lihat Bukti Pelunasan'],
+                // Tabel payment_confirmations tidak punya kolom `type`: bukti tanpa type dianggap bukti DP
+                ['Bukti Pembayaran DP', 'Bukti DP Terupload', $proofs->filter(fn ($p) => ($p->type ?? 'dp') === 'dp'), true, 'Lihat Bukti DP'],
+                ['Bukti Pelunasan', 'Bukti Pelunasan Terupload', $proofs->filter(fn ($p) => ($p->type ?? null) === 'remaining'), false, 'Lihat Bukti Pelunasan'],
             ];
 
-        $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors';
+        $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors cursor-pointer';
         $btnGhost   = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-transparent text-zinc-800 hover:bg-zinc-800/5 transition-colors';
     @endphp
 
@@ -670,7 +670,9 @@
                         <div class="mt-6">
                             <h4 class="font-semibold text-gray-900 mb-3">{{ $proofTitle }}</h4>
                             @forelse ($proofList as $p)
-                                @php $proofUrl = Storage::disk('public')->url($p->proof_path); @endphp
+                                @php
+                                    $proofUrl   = asset('storage/' . ltrim($p->proof_path, '/'));
+                                @endphp
                                 <div class="bg-gray-50 rounded-lg p-4 {{ ! $loop->last ? 'mb-3' : '' }}">
                                     <div class="flex items-center justify-between mb-3">
                                         <div>
@@ -683,11 +685,12 @@
                                         <div class="text-sm text-gray-500">{{ $wib($p->created_at) }}</div>
                                     </div>
                                     <div class="flex items-center space-x-3">
+                                        {{-- Lihat Bukti: buka di tab baru --}}
                                         <a href="{{ $proofUrl }}" target="_blank" rel="noopener" class="{{ $btnPrimary }}">
                                             <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path fill-rule="evenodd" d="M1.38 8.28a.87.87 0 0 1 0-.566 7.003 7.003 0 0 1 13.238.006.87.87 0 0 1 0 .566A7.003 7.003 0 0 1 1.379 8.28ZM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" clip-rule="evenodd"/></svg>
                                             <span>{{ $proofBtn }}</span>
                                         </a>
-                                        <a href="{{ $proofUrl }}" download class="{{ $btnGhost }}">
+                                        <a href="{{ $proofUrl }}" download="bukti-{{ $order->order_number }}.{{ pathinfo($p->proof_path, PATHINFO_EXTENSION) }}" class="{{ $btnGhost }}">
                                             <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z"/><path d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"/></svg>
                                             <span>Download</span>
                                         </a>
