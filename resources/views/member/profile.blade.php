@@ -171,17 +171,26 @@
                 <div class="divide-y divide-gray-200">
                     @forelse ($orders as $order)
                         @php
-                            $isFull    = $order->payment_method === 'full';
-                            $dpPaid    = (bool) $order->dp_paid_at;
-                            $remPaid   = (bool) $order->remaining_paid_at;
-                            $payKey    = $order->payment_status ?? 'pending';
+                            $isFull     = $order->payment_method === 'full';
+                            $dpPaid     = (bool) $order->dp_paid_at;
+                            $remPaid    = (bool) $order->remaining_paid_at;
+                            $payKey     = $order->payment_status ?? 'pending';
                             $invoice    = $order->invoice;
                             $hasInvoice = (bool) $invoice;
                             $isExcel    = $invoice?->format === 'excel';
+                            $cancelled  = $order->status === 'cancelled';
 
-                            // Kondisi tombol bayar
-                            $canPayDp        = ! $isFull && ! $dpPaid && $order->status !== 'cancelled';
-                            $canPayRemaining = ! $isFull && $dpPaid && ! $remPaid && $order->status !== 'cancelled';
+                            // Tombol bayar
+                            $canPayDp        = ! $isFull && ! $dpPaid && ! $cancelled;
+                            $canPayRemaining = ! $isFull && $dpPaid && ! $remPaid && ! $cancelled;
+
+                            // Masa edit: 72 jam sejak submit, hanya selama faktur belum dibuat (DP sudah dibayar pun masih boleh)
+                            $canEditState = ! $hasInvoice && ! $cancelled;
+                            $editCount    = (int) ($order->edit_count ?? 0);
+                            $secsLeft     = (int) floor(now()->diffInSeconds($order->created_at->copy()->addHours(72), false));
+                            $editOpen     = $canEditState && $secsLeft > 0;
+                            $hLeft        = intdiv(max(0, $secsLeft), 3600);
+                            $mLeft        = intdiv(max(0, $secsLeft) % 3600, 60);
                         @endphp
 
                         <div class="bg-gray-50 px-7 py-6 space-y-5">
@@ -230,6 +239,7 @@
                                         </span>
                                     @endif
                                 </div>
+
                                 <div>
                                     <span class="text-gray-600 block">DP Status:</span>
                                     @if ($isFull)
@@ -244,6 +254,7 @@
                                         </span>
                                     @endif
                                 </div>
+
                                 <div>
                                     <span class="text-gray-600 block">Sisa Bayar:</span>
                                     @if ($isFull)
@@ -254,27 +265,47 @@
                                         </span>
                                     @elseif ($dpPaid)
                                         <span class="inline-flex items-center gap-1.5 mt-1 bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">
-                                            <i class="fas fa-hourglass-half"></i> Belum Lunas
+                                            <i class="fas fa-hourglass-half"></i> Menunggu
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1.5 mt-1 bg-gray-100 text-gray-600 text-sm font-medium px-3 py-1 rounded-full">
-                                            <i class="fas fa-minus"></i> Menunggu DP
+                                            <i class="fas fa-lock"></i> Tunggu DP
                                         </span>
                                     @endif
                                 </div>
+
                                 <div>
                                     <span class="text-gray-600 block">Faktur:</span>
                                     @if ($hasInvoice)
-                                        <a href="{{ route('member.orders.invoice', $order->order_number) }}" download
-                                           class="inline-flex items-center gap-2 mt-1 bg-[#dbeafe] text-[#1447e6] text-sm px-3 py-1.5 rounded-2xl hover:underline">
+                                        <span class="inline-flex items-center gap-2 mt-1 bg-[#dbeafe] text-[#1447e6] text-sm px-3 py-1.5 rounded-2xl">
                                             <i class="fas {{ $isExcel ? 'fa-file-excel' : 'fa-file-pdf' }}"></i> {{ $invoice->invoice_number }} ({{ $isExcel ? 'Excel' : 'PDF' }})
-                                        </a>
+                                        </span>
                                         <span class="text-sm text-gray-500 block mt-1">{{ $wib($invoice->invoice_date ?? $invoice->created_at, 'd M Y H:i') }}</span>
                                     @else
-                                        <span class="text-sm text-gray-500 block mt-1">Belum tersedia</span>
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-gray-100 text-gray-600 text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-clock"></i> Belum dibuat
+                                        </span>
                                     @endif
                                 </div>
                             </div>
+
+                            <!-- Edit: sisa waktu selama faktur belum dibuat, jumlah edit setelah faktur ada -->
+                            @if ($canEditState)
+                                <div class="text-base">
+                                    <span class="text-gray-600 block">Edit:</span>
+                                    @if ($editOpen)
+                                        <span class="text-gray-900 font-medium">{{ $hLeft }} jam {{ $mLeft }} menit tersisa</span>
+                                        {{-- <span class="text-sm text-gray-500 block mt-0.5">(masa pengeditan 72 jam setelah tekan tombol submit)</span> --}}
+                                    @else
+                                        <span class="text-gray-500">Masa pengeditan sudah berakhir</span>
+                                    @endif
+                                </div>
+                            @elseif ($hasInvoice)
+                                <div class="text-base">
+                                    <span class="text-gray-600 block">Edit:</span>
+                                    <span class="text-gray-900 font-medium">{{ $editCount > 0 ? 'Diedit ' . $editCount . 'x' : 'Belum pernah diedit' }}</span>
+                                </div>
+                            @endif
 
                             <!-- Tombol Aksi -->
                             <div class="flex flex-wrap items-center gap-3 pt-1">
@@ -283,7 +314,7 @@
                                     Lihat Detail
                                 </button>
 
-                                {{-- Bayar DP: hanya jika metode DP & DP belum lunas --}}
+                                {{-- Bayar DP (biru): metode DP & DP belum lunas --}}
                                 @if ($canPayDp)
                                     <a href="{{ route('member.orders.pay-dp', $order->order_number) }}"
                                        class="bg-blue-600 hover:bg-blue-700 text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
@@ -292,7 +323,16 @@
                                     </a>
                                 @endif
 
-                                {{-- Bayar Sisa: hanya jika DP sudah lunas & sisa belum lunas --}}
+                                {{-- Edit Pesanan: hanya selama masa edit 72 jam --}}
+                                @if ($editOpen)
+                                    <a href="{{ url('/order/' . $order->order_number . '/edit') }}"
+                                       class="bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
+                                        <i class="fas fa-pen-to-square"></i>
+                                        Edit Pesanan
+                                    </a>
+                                @endif
+
+                                {{-- Bayar Sisa: DP sudah disetujui & sisa belum lunas --}}
                                 @if ($canPayRemaining)
                                     <a href="{{ route('member.orders.pay-remaining', $order->order_number) }}"
                                        class="bg-green-600 hover:bg-green-700 text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
@@ -301,17 +341,13 @@
                                     </a>
                                 @endif
 
-                                @if ($hasInvoice)
+                                {{-- Download: hanya jika faktur ada DAN DP sudah disetujui --}}
+                                @if ($hasInvoice && $dpPaid)
                                     <a href="{{ route('member.orders.invoice', $order->order_number) }}" download
                                        class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
                                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
                                         Download {{ $isExcel ? 'Excel' : 'PDF' }}
                                     </a>
-                                @else
-                                    <span class="bg-gray-100 text-gray-400 text-base font-medium px-6 py-2.5 rounded-md flex items-center gap-2 cursor-not-allowed" title="Faktur belum dibuat oleh admin">
-                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
-                                        Download {{ $isExcel ? 'Excel' : 'PDF' }}
-                                    </span>
                                 @endif
                             </div>
 
