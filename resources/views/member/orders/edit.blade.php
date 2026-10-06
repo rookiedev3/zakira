@@ -1,88 +1,30 @@
-{{-- resources/views/order/edit.blade.php --}}
+{{-- resources/views/member/orders/edit.blade.php --}}
 @extends('layouts.app')
 
-@section('title', 'Edit Pesanan ' . ($order->order_number ?? 'ORD2610060842206N3'))
+@section('title', 'Edit Pesanan ' . $order->order_number)
 
-{{-- ========================================================================
-     DATA DUMMY (sementara). Dipakai hanya jika controller belum mengirim
-     $order, $variants, $product. Setelah backend siap, controller cukup
-     mengirim ketiga variabel itu dan blok ini otomatis tidak terpakai.
-     ======================================================================== --}}
+{{-- Data dikirim OrderEditController@edit: $order, $items, $variants, $product --}}
 @php
-    if (! isset($order)) {
-        $placeholder = 'data:image/svg+xml;utf8,' . rawurlencode(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#e5e7eb"/><text x="100" y="108" font-size="16" text-anchor="middle" fill="#9ca3af">Produk</text></svg>'
-        );
-
-        $product = ['name' => 'nama produk', 'image' => $placeholder];
-
-        $variants = collect([
-            ['id' => 1, 'model' => 'Pro',      'model_desc' => 'ajjjsj',        'color' => 'Merah', 'color_hex' => '#dc2626', 'size' => 'S', 'stock' => 0, 'price' => 900000],
-            ['id' => 2, 'model' => 'Pro',      'model_desc' => 'ajjjsj',        'color' => 'Merah', 'color_hex' => '#dc2626', 'size' => 'M', 'stock' => 8, 'price' => 900000],
-            ['id' => 3, 'model' => 'Pro',      'model_desc' => 'ajjjsj',        'color' => 'Merah', 'color_hex' => '#dc2626', 'size' => 'L', 'stock' => 3, 'price' => 950000],
-            ['id' => 4, 'model' => 'Pro',      'model_desc' => 'ajjjsj',        'color' => 'Hitam', 'color_hex' => '#111827', 'size' => 'M', 'stock' => 5, 'price' => 900000],
-            ['id' => 5, 'model' => 'Reguler',  'model_desc' => 'Model standar', 'color' => 'Putih', 'color_hex' => '#ffffff', 'size' => 'S', 'stock' => 6, 'price' => 750000],
-        ]);
-
-        $order = (object) [
-            'order_number'   => 'ORD2610060842206N3',
-            'created_at'     => now()->subMinutes(6),
-            'status'         => 'pending',
-            'payment_status' => 'pending',
-            'dp_percent'     => 30,
-            'customer_name'  => 'User Customerahahahaha',
-            'whatsapp'       => '085842199807',
-            'email'          => 'customer@gmail.com',
-            'province'       => 'DI Yogyakarta',
-            'city'           => 'Sleman',
-            'postal_code'    => '55556',
-            'address'        => 'sleman',
-            'notes'          => '',
-            'coupon_code'    => '',
-            'items'          => collect([
-                (object) [
-                    'variant_id' => 1,
-                    'product'    => (object) ['name' => 'nama produk', 'image_url' => $placeholder],
-                    'model_name' => 'Pro', 'color_name' => 'Merah', 'size_name' => 'S',
-                    'price'      => 900000, 'quantity' => 1,
-                ],
-            ]),
-        ];
-    }
-@endphp
-
-@php
-    // Batas edit 72 jam sejak pesanan dibuat
-    $deadline  = $order->created_at->copy()->addHours(72);
-    $remaining = max(0, now()->diffInSeconds($deadline, false));
+    $remaining = $order->editSecondsLeft();
     $dpPercent = $order->dp_percent ?? 30;
+    $isFull    = $order->payment_method === 'full';
 
     // Tombol Batal -> kembali ke halaman sebelumnya (fallback ke beranda)
     $backUrl = url()->previous(url('/'));
     if ($backUrl === url()->current()) { $backUrl = url('/'); }
-
-    // Item pesanan yang sudah ada -> dipakai Alpine
-    $initialItems = $order->items->map(fn ($i) => [
-        'variant_id' => $i->variant_id,
-        'name'       => $i->product->name,
-        'image'      => $i->product->image_url ?? asset('images/placeholder.png'),
-        'model'      => $i->model_name,
-        'color'      => $i->color_name,
-        'size'       => $i->size_name,
-        'price'      => (int) $i->price,
-        'qty'        => (int) $i->quantity,
-    ])->values();
 @endphp
 
 @section('content')
 <div class="bg-[#FDFBF7] min-h-screen py-8"
      x-data="orderEdit({
-        items: @js($initialItems),
+        items: @js($items),
         variants: @js($variants),
         product: @js($product),
         remaining: {{ $remaining }},
         dpPercent: {{ $dpPercent }},
-        coupon: @js($order->coupon_code ?? '')
+        isFull: {{ $isFull ? 'true' : 'false' }},
+        coupon: @js($order->coupon_code ?? ''),
+        couponUrl: @js(route('member.order.coupon', $order->order_number))
      })">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -97,7 +39,7 @@
                 <p class="text-gray-600">Waktu tersisa untuk edit:</p>
                 <p class="text-2xl font-semibold text-[#A67C5B]" x-text="countdownText"></p>
                 <p class="text-xs text-gray-400 mt-2 max-w-xs sm:ml-auto">
-                    *Edit diperbolehkan max 3x24 jam, status pending, dan belum ada faktur.
+                    *Edit diperbolehkan max 3x24 jam, selama pesanan pending dan bukti transfer DP belum dikirim.
                 </p>
             </div>
         </div>
@@ -112,7 +54,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ url('/order/' . $order->order_number) }}" x-ref="form">
+        <form method="POST" action="{{ route('member.order.update', $order->order_number) }}" x-ref="form">
             @csrf
             @method('PUT')
 
@@ -137,13 +79,13 @@
                             <div>
                                 <label class="block text-gray-800 mb-2">Nama Lengkap</label>
                                 <input type="text" name="customer_name" required
-                                       value="{{ old('customer_name', $order->customer_name) }}"
+                                       value="{{ old('customer_name', trim($order->first_name . ' ' . $order->last_name)) }}"
                                        class="w-full rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C]">
                             </div>
                             <div>
                                 <label class="block text-gray-800 mb-2">WhatsApp</label>
                                 <input type="text" name="whatsapp" required
-                                       value="{{ old('whatsapp', $order->whatsapp) }}"
+                                       value="{{ old('whatsapp', $order->whatsapp_number) }}"
                                        class="w-full rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C]">
                             </div>
                             <div>
@@ -274,7 +216,7 @@
                             <span class="text-lg font-bold text-[#A67C5B]" x-text="rupiah(total)"></span>
                         </div>
 
-                        <div class="mt-5 rounded-xl bg-blue-50 p-4 space-y-2">
+                        <div x-show="!isFull" class="mt-5 rounded-xl bg-blue-50 p-4 space-y-2">
                             <p class="font-medium text-blue-800">Rincian Down Payment</p>
                             <div class="flex justify-between text-gray-600">
                                 <span x-text="`DP (${dpPercent.toFixed(1)}%):`"></span>
@@ -409,18 +351,15 @@
     function orderEdit(cfg) {
         return {
             items: cfg.items,
-            variants: cfg.variants,   // [{id, model, model_desc, color, color_hex, size, stock, price}]
+            variants: cfg.variants,   // [{id, model, model_desc, color, color_hex, size, stock, price, image}]
             product: cfg.product,     // {name, image}
             dpPercent: Number(cfg.dpPercent),
+            isFull: !!cfg.isFull,
+            couponUrl: cfg.couponUrl,
             couponCode: cfg.coupon || '',
             coupon: null,
             couponMsg: '',
             couponOk: false,
-            // DUMMY: ganti dengan request ke backend saat sudah siap
-            dummyCoupons: {
-                ZAKIRA10: { type: 'percent', value: 10 },
-                HEMAT50K: { type: 'nominal', value: 50000 },
-            },
             remaining: cfg.remaining,
             modal: false,
             sel: { model: null, color: null, size: null },
@@ -439,30 +378,46 @@
             },
 
             get subtotal() { return this.items.reduce((t, i) => t + i.price * i.qty, 0); },
+            get totalQty() { return this.items.reduce((t, i) => t + i.qty, 0); },
             get discount() {
                 if (!this.coupon) return 0;
-                return this.coupon.type === 'percent'
-                    ? Math.round(this.subtotal * this.coupon.value / 100)
-                    : Math.min(this.coupon.value, this.subtotal);
+                if (this.coupon.type === 'percent') {
+                    let d = Math.round(this.subtotal * this.coupon.value / 100);
+                    if (this.coupon.max) d = Math.min(d, this.coupon.max);
+                    return Math.min(d, this.subtotal);
+                }
+                return Math.min(this.coupon.value, this.subtotal);
             },
             get total() { return Math.max(0, this.subtotal - this.discount); },
-            get dpAmount() { return Math.round(this.total * this.dpPercent / 100); },
+            get dpAmount() { return this.isFull ? this.total : Math.round(this.total * this.dpPercent / 100); },
 
-            applyCoupon() {
+            // Cek kupon ke server (total akhir tetap dihitung ulang di server saat disimpan)
+            async applyCoupon() {
                 const code = (this.couponCode || '').trim().toUpperCase();
                 if (!code) {
                     this.coupon = null; this.couponOk = false;
                     this.couponMsg = 'Masukkan kode kupon terlebih dahulu.';
                     return;
                 }
-                const found = this.dummyCoupons[code];
-                if (!found) {
+                try {
+                    const res = await fetch(this.couponUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                        },
+                        body: JSON.stringify({ code, subtotal: this.subtotal, quantity: this.totalQty }),
+                    });
+                    const json = await res.json();
+                    this.couponOk   = !!json.valid;
+                    this.coupon     = json.valid ? { type: json.type, value: json.value, max: json.max } : null;
+                    this.couponCode = json.valid ? json.code : this.couponCode;
+                    this.couponMsg  = json.message;
+                } catch (e) {
                     this.coupon = null; this.couponOk = false;
-                    this.couponMsg = 'Kode kupon tidak valid.';
-                    return;
+                    this.couponMsg = 'Gagal memeriksa kupon, coba lagi.';
                 }
-                this.coupon = found; this.couponCode = code; this.couponOk = true;
-                this.couponMsg = `Kupon ${code} berhasil diterapkan.`;
             },
 
             // Opsi modal bertingkat: model -> warna -> ukuran
@@ -506,7 +461,7 @@
                     existing.qty++;
                 } else {
                     this.items.push({
-                        variant_id: v.id, name: this.product.name, image: this.product.image,
+                        variant_id: v.id, name: this.product.name, image: v.image || this.product.image,
                         model: v.model, color: v.color, size: v.size, price: v.price, qty: 1,
                     });
                 }

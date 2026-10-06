@@ -184,13 +184,14 @@
                             $canPayDp        = ! $isFull && ! $dpPaid && ! $cancelled;
                             $canPayRemaining = ! $isFull && $dpPaid && ! $remPaid && ! $cancelled;
 
-                            // Masa edit: 72 jam sejak submit, hanya selama faktur belum dibuat (DP sudah dibayar pun masih boleh)
-                            $canEditState = ! $hasInvoice && ! $cancelled;
-                            $editCount    = (int) ($order->edit_count ?? 0);
-                            $secsLeft     = (int) floor(now()->diffInSeconds($order->created_at->copy()->addHours(72), false));
-                            $editOpen     = $canEditState && $secsLeft > 0;
-                            $hLeft        = intdiv(max(0, $secsLeft), 3600);
-                            $mLeft        = intdiv(max(0, $secsLeft) % 3600, 60);
+                            // Masa edit: aturan ada di model CustomerOrder::editBlockReason()
+                            // (pending, bukti transfer DP belum dikirim, faktur belum ada, masih dalam 72 jam)
+                            $editOpen  = $order->isEditable();
+                            $editBlock = $order->editBlockReason();
+                            $editCount = (int) ($order->edit_count ?? 0);
+                            $secsLeft  = $order->editSecondsLeft();
+                            $hLeft     = intdiv($secsLeft, 3600);
+                            $mLeft     = intdiv($secsLeft % 3600, 60);
                         @endphp
 
                         <div class="bg-gray-50 px-7 py-6 space-y-5">
@@ -289,21 +290,18 @@
                                 </div>
                             </div>
 
-                            <!-- Edit: sisa waktu selama faktur belum dibuat, jumlah edit setelah faktur ada -->
-                            @if ($canEditState)
+                            <!-- Edit: sisa waktu jika masih bisa diedit, alasan jika tidak (mis. bukti DP sudah dikirim) -->
+                            @if (! $cancelled)
                                 <div class="text-base">
                                     <span class="text-gray-600 block">Edit:</span>
                                     @if ($editOpen)
                                         <span class="text-gray-900 font-medium">{{ $hLeft }} jam {{ $mLeft }} menit tersisa</span>
-                                        {{-- <span class="text-sm text-gray-500 block mt-0.5">(masa pengeditan 72 jam setelah tekan tombol submit)</span> --}}
                                     @else
-                                        <span class="text-gray-500">Masa pengeditan sudah berakhir</span>
+                                        <span class="text-gray-500">{{ $editBlock }}</span>
                                     @endif
-                                </div>
-                            @elseif ($hasInvoice)
-                                <div class="text-base">
-                                    <span class="text-gray-600 block">Edit:</span>
-                                    <span class="text-gray-900 font-medium">{{ $editCount > 0 ? 'Diedit ' . $editCount . 'x' : 'Belum pernah diedit' }}</span>
+                                    @if ($editCount > 0)
+                                        <span class="text-sm text-gray-500 block mt-0.5">Sudah diedit {{ $editCount }}x</span>
+                                    @endif
                                 </div>
                             @endif
 
@@ -323,14 +321,14 @@
                                     </a>
                                 @endif
 
-                          {{-- Edit Pesanan: hanya selama masa edit 72 jam --}}
-                            @if ($editOpen)
-                                <a href="{{ route('member.order.edit', $order->order_number) }}"
-                                class="bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
-                                    <i class="fas fa-pen-to-square"></i>
-                                    Edit Pesanan
-                                </a>
-                            @endif
+                                {{-- Edit Pesanan: hanya selama pending, bukti DP belum dikirim, dan masih dalam masa edit 72 jam --}}
+                                @if ($editOpen)
+                                    <a href="{{ route('member.order.edit', $order->order_number) }}"
+                                       class="bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
+                                        <i class="fas fa-pen-to-square"></i>
+                                        Edit Pesanan
+                                    </a>
+                                @endif
 
                                 {{-- Bayar Sisa: DP sudah disetujui & sisa belum lunas --}}
                                 @if ($canPayRemaining)

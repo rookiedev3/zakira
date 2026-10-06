@@ -84,6 +84,13 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
         ->defaults('type', 'remaining')->name('orders.pay-remaining.store');
     // ================= AKHIR PEMBAYARAN DP & SISA =================
 
+    // ================= EDIT PESANAN (masa edit 72 jam) =================
+    // URL: /member/order/{orderNumber}/edit  -> nama route: member.order.edit
+    Route::get('/order/{orderNumber}/edit', [ProfileController::class, 'editOrder'])->name('order.edit');
+    Route::put('/order/{orderNumber}', [ProfileController::class, 'updateOrder'])->name('order.update');
+    Route::post('/order/{orderNumber}/coupon', [ProfileController::class, 'checkCoupon'])->name('order.coupon');
+    // ================= AKHIR EDIT PESANAN =================
+
     // [VERSI LAIN - dinonaktifkan karena URL & nama route sama dengan blok ProfileController di atas]
     // ================= DUMMY: PEMBAYARAN DP & SISA (sementara, pindahkan ke controller) =================
     // $dummyBanks = fn () => collect([
@@ -132,16 +139,7 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     //     return redirect()->route('member.profile')->with('success', 'Bukti pelunasan berhasil diunggah.');
     // })->name('orders.pay-remaining.store');
     // ================= AKHIR DUMMY =================
-
-    //halaman edit pesanan member dummy
-// Halaman Edit Pesanan (dummy, hanya menampilkan blade)
-Route::get('/order/{orderNumber}/edit', fn ($orderNumber) => view('member.orders.edit'))
-    ->name('order.edit');
-
-// Simpan perubahan (sementara kembali ke halaman akun, nanti diganti controller)
-Route::put('/order/{orderNumber}', fn ($orderNumber) => redirect('/akun'))
-    ->name('order.update');
-    });
+});
 
 
 
