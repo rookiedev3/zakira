@@ -51,6 +51,11 @@ Route::middleware('auth')->group(function () {
         //     return view('admin.dashboard');
         // })->name('dashboard');
 
+        Route::get('/sellers', [SellerController::class, 'index'])->name('seller.index');
+Route::post('/sellers', [SellerController::class, 'store'])->name('seller.store');
+Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('seller.update');
+Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('seller.destroy');
+
     });
 });
 
@@ -193,10 +198,7 @@ Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount']
 Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
 Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
 
-Route::get('/sellers', [SellerController::class, 'index'])->name('seller.index');
-Route::post('/sellers', [SellerController::class, 'store'])->name('seller.store');
-Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('seller.update');
-Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('seller.destroy');
+
 
 // ==== Kupon ====
 Route::get('/kupon', [CouponController::class, 'index'])->name('kupon.index');
