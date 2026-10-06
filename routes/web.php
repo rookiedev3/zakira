@@ -132,7 +132,16 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     //     return redirect()->route('member.profile')->with('success', 'Bukti pelunasan berhasil diunggah.');
     // })->name('orders.pay-remaining.store');
     // ================= AKHIR DUMMY =================
-});
+
+    //halaman edit pesanan member dummy
+// Halaman Edit Pesanan (dummy, hanya menampilkan blade)
+Route::get('/order/{orderNumber}/edit', fn ($orderNumber) => view('member.orders.edit'))
+    ->name('order.edit');
+
+// Simpan perubahan (sementara kembali ke halaman akun, nanti diganti controller)
+Route::put('/order/{orderNumber}', fn ($orderNumber) => redirect('/akun'))
+    ->name('order.update');
+    });
 
 
 

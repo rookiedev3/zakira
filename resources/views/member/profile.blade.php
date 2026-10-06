@@ -323,14 +323,14 @@
                                     </a>
                                 @endif
 
-                                {{-- Edit Pesanan: hanya selama masa edit 72 jam --}}
-                                @if ($editOpen)
-                                    <a href="{{ url('/order/' . $order->order_number . '/edit') }}"
-                                       class="bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
-                                        <i class="fas fa-pen-to-square"></i>
-                                        Edit Pesanan
-                                    </a>
-                                @endif
+                          {{-- Edit Pesanan: hanya selama masa edit 72 jam --}}
+                            @if ($editOpen)
+                                <a href="{{ route('member.order.edit', $order->order_number) }}"
+                                class="bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
+                                    <i class="fas fa-pen-to-square"></i>
+                                    Edit Pesanan
+                                </a>
+                            @endif
 
                                 {{-- Bayar Sisa: DP sudah disetujui & sisa belum lunas --}}
                                 @if ($canPayRemaining)
