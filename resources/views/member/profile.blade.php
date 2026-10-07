@@ -357,11 +357,10 @@
                     @endforelse
                 </div>
 
-                @if ($orders->hasPages())
-                    <div class="px-7 py-4 border-t border-gray-200">
-                        {{ $orders->links() }}
-                    </div>
-                @endif
+                {{-- Pagination gaya "Showing 1 to 10 of 23 results" --}}
+                <div class="px-7 py-4 border-t border-gray-200">
+                    {{ $orders->links('vendor.pagination.zakira') }}
+                </div>
             </div>
         </div>
 

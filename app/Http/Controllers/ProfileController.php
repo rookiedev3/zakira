@@ -35,7 +35,8 @@ class ProfileController extends Controller
             ->withCount('items')
             ->with(['items', 'invoice'])
             ->latest()
-            ->paginate(5, ['*'], 'pesanan');
+            ->paginate(10, ['*'], 'pesanan')
+            ->withQueryString();
 
         // Statistik pesanan
         $base = CustomerOrder::ownedBy($user);

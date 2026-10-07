@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\CustomerService;
 use App\Models\SocialMedia;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Semua ->links() otomatis memakai tampilan pagination Zakira
+        Paginator::defaultView('vendor.pagination.zakira');
+        
         View::composer('layouts.app', function ($view) {
             $socialMedia = SocialMedia::query()
                 ->where('status', 'aktif')

@@ -56,7 +56,7 @@ class LaporanController extends Controller
 
         // ---------- Tabel Detail Closing (SEMUA order, termasuk pending) ----------
         $closings = $this->selectRows($this->orderQuery($brandId, $sellerId, $from, $to, false))
-            ->paginate(20)
+            ->paginate(15)
             ->withQueryString();
 
         // ---------- Data untuk dropdown ----------

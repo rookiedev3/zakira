@@ -149,15 +149,15 @@
                 <h3 class="font-bold text-zinc-900 text-base">Detail Closing</h3>
                 <p class="text-xs text-zinc-500 mt-0.5">Filter per brand, ID seller, dan periode (bulanan/tahunan)</p>
             </div>
-<div class="flex flex-wrap items-center gap-3">
-    <a href="{{ route('admin.laporan.export', request()->except('page')) }}"
-       class="px-4 py-2 bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-semibold rounded-xl transition shadow-sm">
-        Export Excel
-    </a>
-    <span class="px-3 py-1.5 bg-zinc-100 text-zinc-600 text-xs font-medium rounded-lg">
-        {{ number_format($closings->total(), 0, ',', '.') }} data
-    </span>
-</div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="{{ route('admin.laporan.export', request()->except('page')) }}"
+                   class="px-4 py-2 bg-[#8C6239] hover:bg-[#724e2c] text-white text-xs font-semibold rounded-xl transition shadow-sm">
+                    Export Excel
+                </a>
+                <span class="px-3 py-1.5 bg-zinc-100 text-zinc-600 text-xs font-medium rounded-lg">
+                    {{ number_format($closings->total(), 0, ',', '.') }} data
+                </span>
+            </div>
         </div>
 
         <!-- Tabel Data -->
@@ -207,11 +207,10 @@
             </table>
         </div>
 
-        @if ($closings->hasPages())
-            <div class="px-6 py-4 border-t border-zinc-100">
-                {{ $closings->links() }}
-            </div>
-        @endif
+        {{-- ===== PAGINATION (gaya "Showing 1 to 20 of 23 results") ===== --}}
+        <div class="px-6 py-4 border-t border-zinc-100">
+            {{ $closings->links('vendor.pagination.zakira') }}
+        </div>
 
     </div>
 
