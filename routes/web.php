@@ -68,7 +68,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
         Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
         Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
-        
+
         // cs
         Route::get('/customer-services', [CustomerServiceController::class, 'index'])->name('customer-services.index');
         Route::post('/customer-services', [CustomerServiceController::class, 'store'])->name('customer-services.store');
@@ -125,6 +125,82 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
         Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
         Route::get('/admin/laporan/export', [LaporanController::class, 'export'])->name('admin.laporan.export');
+
+        Route::get('orders', [ManageOrderController::class, 'index'])->name('admin.orders.index');
+        Route::patch('orders/{order}/status', [ManageOrderController::class, 'updateStatus'])->name('admin.orders.status');
+        Route::patch('orders/{order}/payment', [ManageOrderController::class, 'updatePayment'])->name('admin.orders.payment');
+        Route::patch('orders/{order}/dp-paid', [ManageOrderController::class, 'markDpPaid'])->name('admin.orders.dp-paid');
+        Route::patch('orders/{order}/remaining-paid', [ManageOrderController::class, 'markRemainingPaid'])->name('admin.orders.remaining-paid');
+        Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
+
+        Route::post('orders/{order}/invoice', [InvoiceController::class, 'store'])->name('admin.orders.invoice.store');
+        Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('admin.invoices.download');
+        Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('admin.invoices.destroy');
+
+        // Route untuk Manajemen Kategori
+        Route::prefix('c/categories')->name('categories.')->group(function () {
+            Route::get('/', [CategoryController::class, 'index'])->name('index');
+            Route::get('/create', [CategoryController::class, 'create'])->name('create');
+            Route::post('/', [CategoryController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
+            Route::patch('/{id}/toggle', [CategoryController::class, 'toggleStatus'])->name('toggle');
+            Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('c/brands')->name('brands.')->group(function () {
+
+            // ---------- CRUD ----------
+            Route::get('/',          [BrandController::class, 'index'])->name('index');
+            Route::get('/create',    [BrandController::class, 'create'])->name('create');
+            Route::post('/',         [BrandController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [BrandController::class, 'edit'])->name('edit');
+            Route::put('/{id}',      [BrandController::class, 'update'])->name('update');
+            Route::delete('/{id}',   [BrandController::class, 'destroy'])->name('destroy');
+
+            // ---------- FITUR TAMBAHAN ----------
+            // 1. Toggle “Tampil di Homepage”
+            Route::patch('/{id}/toggle-home', [BrandController::class, 'toggleHome'])
+                ->name('toggleHome');
+
+            // 2. Naik / Turun urutan di homepage carousel
+            Route::patch('/{id}/move-order/{direction}', [BrandController::class, 'moveOrder'])
+                ->where('direction', 'up|down')
+                ->name('moveOrder');
+
+            // 3. Aktif / Non‑aktif brand
+            Route::patch('/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
+                ->name('toggleStatus');
+        });
+
+        // Route untuk Manajemen Produk
+        Route::prefix('c/products')->name('products.')->group(function () {
+
+            // ---------- Sudah aktif ----------
+            Route::get('/',                     [ProductController::class, 'index'])->name('index');
+            Route::post('/',                    [ProductController::class, 'store'])->name('store');
+            Route::put('/{id}',                 [ProductController::class, 'update'])->name('update');
+            Route::patch('/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggleStatus');
+            Route::delete('/{id}',              [ProductController::class, 'destroy'])->name('destroy');
+
+            // ---------- Sementara dummy, ganti ke controller saat halamannya dibuat ----------
+            Route::get('/create',    [ProductController::class, 'create'])->name('create');
+            Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
+        });
+        Route::patch('/products/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
+
+        // ==== Pesanan ====
+        // Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
+        Route::get('orders/index', [ManageOrderController::class, 'index'])->name('orders.index');
+        Route::get('orders', [ManageOrderController::class, 'index'])->name('admin.orders.index');
+        Route::put('orders/{order}', [ManageOrderController::class, 'update'])->name('admin.orders.update'); // BARU
+        Route::patch('orders/{order}/status', [ManageOrderController::class, 'updateStatus'])->name('admin.orders.status');
+        Route::patch('orders/{order}/payment', [ManageOrderController::class, 'updatePayment'])->name('admin.orders.payment');
+        Route::patch('orders/{order}/dp-paid', [ManageOrderController::class, 'markDpPaid'])->name('admin.orders.dp-paid');
+        Route::patch('orders/{order}/remaining-paid', [ManageOrderController::class, 'markRemainingPaid'])->name('admin.orders.remaining-paid');
+        Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
+
+        Route::get('orders/export', [ManageOrderController::class, 'export'])->name('admin.orders.export');
     });
 });
 
@@ -178,7 +254,6 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
 Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.index');
 Route::get('/katalog/{product}', [CatalogController::class, 'show'])->name('catalog.show');
 Route::post('/order', [OrderController::class, 'store'])->name('order.store');
-Route::get('orders/export', [ManageOrderController::class, 'export'])->name('admin.orders.export');
 
 Route::get('/katalog-po', [CatalogController::class, 'index'])
     ->defaults('defaultType', 'po')
@@ -209,17 +284,6 @@ Route::get('/payment/confirmation/{order:order_number}', [PaymentConfirmationCon
 Route::post('/payment/confirmation/{order:order_number}', [PaymentConfirmationController::class, 'store'])
     ->name('payment.confirmation.store')->middleware(['signed', 'throttle:10,1']);
 
-Route::get('orders', [ManageOrderController::class, 'index'])->name('admin.orders.index');
-Route::patch('orders/{order}/status', [ManageOrderController::class, 'updateStatus'])->name('admin.orders.status');
-Route::patch('orders/{order}/payment', [ManageOrderController::class, 'updatePayment'])->name('admin.orders.payment');
-Route::patch('orders/{order}/dp-paid', [ManageOrderController::class, 'markDpPaid'])->name('admin.orders.dp-paid');
-Route::patch('orders/{order}/remaining-paid', [ManageOrderController::class, 'markRemainingPaid'])->name('admin.orders.remaining-paid');
-Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
-
-Route::post('orders/{order}/invoice', [InvoiceController::class, 'store'])->name('admin.orders.invoice.store');
-Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('admin.invoices.download');
-Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('admin.invoices.destroy');
-
 // Route untuk Halaman Pre Order Member
 Route::middleware(['auth'])->group(function () {
     Route::get('/member/pre-order', function () {
@@ -241,68 +305,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// Route untuk Manajemen Kategori
-Route::prefix('c/categories')->name('categories.')->group(function () {
-    Route::get('/', [CategoryController::class, 'index'])->name('index');
-    Route::get('/create', [CategoryController::class, 'create'])->name('create');
-    Route::post('/', [CategoryController::class, 'store'])->name('store');
-    Route::get('/{id}/edit', [CategoryController::class, 'edit'])->name('edit');
-    Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
-    Route::patch('/{id}/toggle', [CategoryController::class, 'toggleStatus'])->name('toggle');
-    Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
-});
 
-Route::prefix('c/brands')->name('brands.')->group(function () {
-
-    // ---------- CRUD ----------
-    Route::get('/',          [BrandController::class, 'index'])->name('index');
-    Route::get('/create',    [BrandController::class, 'create'])->name('create');
-    Route::post('/',         [BrandController::class, 'store'])->name('store');
-    Route::get('/{id}/edit', [BrandController::class, 'edit'])->name('edit');
-    Route::put('/{id}',      [BrandController::class, 'update'])->name('update');
-    Route::delete('/{id}',   [BrandController::class, 'destroy'])->name('destroy');
-
-    // ---------- FITUR TAMBAHAN ----------
-    // 1. Toggle “Tampil di Homepage”
-    Route::patch('/{id}/toggle-home', [BrandController::class, 'toggleHome'])
-        ->name('toggleHome');
-
-    // 2. Naik / Turun urutan di homepage carousel
-    Route::patch('/{id}/move-order/{direction}', [BrandController::class, 'moveOrder'])
-        ->where('direction', 'up|down')
-        ->name('moveOrder');
-
-    // 3. Aktif / Non‑aktif brand
-    Route::patch('/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
-        ->name('toggleStatus');
-});
-
-// Route untuk Manajemen Produk
-Route::prefix('c/products')->name('products.')->group(function () {
-
-    // ---------- Sudah aktif ----------
-    Route::get('/',                     [ProductController::class, 'index'])->name('index');
-    Route::post('/',                    [ProductController::class, 'store'])->name('store');
-    Route::put('/{id}',                 [ProductController::class, 'update'])->name('update');
-    Route::patch('/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggleStatus');
-    Route::delete('/{id}',              [ProductController::class, 'destroy'])->name('destroy');
-
-    // ---------- Sementara dummy, ganti ke controller saat halamannya dibuat ----------
-    Route::get('/create',    [ProductController::class, 'create'])->name('create');
-    Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
-});
-Route::patch('/products/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
-
-// ==== Pesanan ====
-// Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
-Route::get('orders/index', [ManageOrderController::class, 'index'])->name('orders.index');
-Route::get('orders', [ManageOrderController::class, 'index'])->name('admin.orders.index');
-Route::put('orders/{order}', [ManageOrderController::class, 'update'])->name('admin.orders.update'); // BARU
-Route::patch('orders/{order}/status', [ManageOrderController::class, 'updateStatus'])->name('admin.orders.status');
-Route::patch('orders/{order}/payment', [ManageOrderController::class, 'updatePayment'])->name('admin.orders.payment');
-Route::patch('orders/{order}/dp-paid', [ManageOrderController::class, 'markDpPaid'])->name('admin.orders.dp-paid');
-Route::patch('orders/{order}/remaining-paid', [ManageOrderController::class, 'markRemainingPaid'])->name('admin.orders.remaining-paid');
-Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
 // ==== Laporan ====
 // Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
 // Route Laporan Penjualan Mitra (File: admin/reports/mitra.blade.php)
