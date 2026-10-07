@@ -19,6 +19,9 @@ class ManageOrderController extends Controller
     private const STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
     private const PAYMENT  = ['pending', 'paid', 'failed', 'refunded'];
 
+    /** Pilihan jumlah data per halaman (urutan pertama = default) */
+    private const PER_PAGE_OPTIONS = [15, 30, 50, 100];
+
     /**
      * Query pesanan + semua filter.
      * Dipakai bersama oleh index() dan export() agar hasilnya selalu sama.
@@ -94,13 +97,20 @@ class ManageOrderController extends Controller
                 'paymentConfirmations' => fn ($c) => $c->latest('id'),
             ]);
 
+        // Jumlah data per halaman: hanya nilai dari daftar yang diizinkan, selain itu default
+        $perPage = (int) $request->input('per_page');
+        if (! in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
+            $perPage = self::PER_PAGE_OPTIONS[0];
+        }
+
         return view('orders.index', [
-            'orders'   => $q->paginate(15)->withQueryString(),
-            'brands'   => DB::table('brands')->orderBy('name')->pluck('name', 'id'),
-            'products' => DB::table('products')->orderBy('name')->pluck('name', 'id'),
-            'coupons'  => Coupon::orderBy('code')->get(),
+            'orders'         => $q->paginate($perPage)->withQueryString(),
+            'perPageOptions' => self::PER_PAGE_OPTIONS,
+            'brands'         => DB::table('brands')->orderBy('name')->pluck('name', 'id'),
+            'products'       => DB::table('products')->orderBy('name')->pluck('name', 'id'),
+            'coupons'        => Coupon::orderBy('code')->get(),
             // Dipakai dialog "Tambah Produk": varian & matriks harga tiap produk
-            'productMeta' => $this->productMeta(),
+            'productMeta'    => $this->productMeta(),
         ]);
     }
 

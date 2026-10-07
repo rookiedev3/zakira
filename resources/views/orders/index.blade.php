@@ -57,6 +57,9 @@
     // Varian & harga tiap produk untuk dialog "Tambah Produk" (dikirim dari controller)
     $productMeta = $productMeta ?? [];
 
+    // Pilihan jumlah data per halaman (dikirim dari controller)
+    $perPageOptions = $perPageOptions ?? [15, 30, 50, 100];
+
     // Nilai awal form Buat Faktur
     $nextInvoiceNumber = \App\Models\Invoice::nextNumber();
     $nowLocal          = now('Asia/Jakarta')->format('Y-m-d\TH:i');
@@ -88,6 +91,11 @@
 
     <!-- Filters -->
     <form method="GET" action="{{ route('admin.orders.index') }}" id="filterForm" class="bg-white shadow rounded-lg p-6">
+        {{-- Jumlah per halaman ikut terbawa saat filter diterapkan --}}
+        @if (request()->filled('per_page'))
+            <input type="hidden" name="per_page" value="{{ request('per_page') }}">
+        @endif
+
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label for="search" class="{{ $labelClass }}">Cari Pesanan</label>
@@ -424,9 +432,9 @@
             </table>
         </div>
 
-        {{-- Pagination gaya "Showing 1 to 15 of 23 results" --}}
+        {{-- Pagination: info "Showing x to y of z results" + pilihan per halaman --}}
         <div class="px-6 py-4 border-t border-gray-200">
-            {{ $orders->links('vendor.pagination.zakira') }}
+            {{ $orders->links('vendor.pagination.orders', ['perPageOptions' => $perPageOptions]) }}
         </div>
     </div>
 

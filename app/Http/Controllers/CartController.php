@@ -30,10 +30,29 @@ class CartController extends Controller
             'quantity'   => 'required|integer|min:1|max:999',
         ]);
 
-        // Hanya produk aktif & tampil publik yang boleh masuk keranjang
-        Product::where('is_active', true)
-            ->where('show_public', true)
-            ->findOrFail($data['product_id']);
+        $product = Product::where('is_active', true)->findOrFail($data['product_id']);
+
+        // Ready Stock dicek lewat show_public, PO dicek lewat show_member
+        $visibleColumn = $product->product_type === 'po' ? 'show_member' : 'show_public';
+        abort_unless($product->{$visibleColumn}, 404);
+
+        // Produk PO hanya untuk customer / admin yang sudah login
+        if ($product->product_type === 'po' && ! $this->canSeePo()) {
+            abort(403, 'Produk PO khusus akun customer dan admin yang sudah login.');
+        }
+
+        // Pastikan model / warna / ukuran yang dikirim memang milik produk ini
+        $variants = [
+            'model_id' => 'models',
+            'color_id' => 'colors',
+            'size_id'  => 'sizes',
+        ];
+
+        foreach ($variants as $field => $relation) {
+            if (! empty($data[$field]) && ! $product->{$relation}()->whereKey($data[$field])->exists()) {
+                return response()->json(['message' => 'Pilihan varian tidak valid untuk produk ini.'], 422);
+            }
+        }
 
         $cart = session('cart', []);
         $key  = md5(implode('|', [
@@ -135,6 +154,21 @@ class CartController extends Controller
         session(['payment_method' => $data['method']]);
 
         return response()->json($this->payload());
+    }
+
+    /* ================================================================
+     |  Helper Akses PO
+     ================================================================ */
+
+    /**
+     * PO hanya untuk user yang login dengan role 'customer' atau 'admin'
+     * (aturan yang sama dengan CatalogController::canSeePo).
+     */
+    private function canSeePo(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && in_array($user->role, ['customer', 'admin'], true);
     }
 
     /* ================================================================
@@ -373,6 +407,8 @@ class CartController extends Controller
 
         $rupiah = fn ($n) => 'Rp ' . number_format($n, 0, ',', '.');
 
+        $canSeePo = $this->canSeePo();
+
         $items    = [];
         $lines    = [];
         $count    = 0;
@@ -383,6 +419,13 @@ class CartController extends Controller
 
             // Produk sudah dihapus dari database -> buang dari keranjang
             if (! $product) {
+                unset($cart[$key]);
+                continue;
+            }
+
+            // Produk PO hanya boleh ada di keranjang milik customer / admin
+            // (mis. setelah logout, item PO otomatis dibuang)
+            if ($product->product_type === 'po' && ! $canSeePo) {
                 unset($cart[$key]);
                 continue;
             }
@@ -414,7 +457,7 @@ class CartController extends Controller
             $lines[] = [
                 'product_id'   => (int) $product->id,
                 'category_ids' => $product->categories->pluck('id')->all(),
-                'brand_id'     => $product->brand_id ?? null, // TODO: pastikan kolom brand_id ada di tabel products
+                'brand_id'     => $product->brand_id,
                 'quantity'     => (int) $row['quantity'],
                 'total'        => (int) $lineTotal,
             ];
@@ -472,22 +515,22 @@ class CartController extends Controller
         $dpAmount  = (int) round($total * $dpPercent / 100);
 
         return [
-            'items'              => $summary['items'],
-            'count'              => $summary['count'],
-            'subtotal'           => $subtotal,
-            'subtotal_formatted' => $rupiah($subtotal),
-            'discount'           => $discount,
-            'discount_formatted' => $rupiah($discount),
-            'coupon'             => $coupon,
-            'coupon_notice'      => $notice,
-            'available_coupons'  => $this->availableCoupons($summary, $coupon['code'] ?? null),
-            'total'              => (int) $total,
-            'total_formatted'    => $rupiah($total),
-            'payment_method'     => session('payment_method', 'dp'),
-            'dp_percent'         => $dpPercent,
-            'dp_amount'          => $dpAmount,
-            'dp_formatted'       => $rupiah($dpAmount),
-            'remaining_formatted'=> $rupiah($total - $dpAmount),
+            'items'               => $summary['items'],
+            'count'               => $summary['count'],
+            'subtotal'            => $subtotal,
+            'subtotal_formatted'  => $rupiah($subtotal),
+            'discount'            => $discount,
+            'discount_formatted'  => $rupiah($discount),
+            'coupon'              => $coupon,
+            'coupon_notice'       => $notice,
+            'available_coupons'   => $this->availableCoupons($summary, $coupon['code'] ?? null),
+            'total'               => (int) $total,
+            'total_formatted'     => $rupiah($total),
+            'payment_method'      => session('payment_method', 'dp'),
+            'dp_percent'          => $dpPercent,
+            'dp_amount'           => $dpAmount,
+            'dp_formatted'        => $rupiah($dpAmount),
+            'remaining_formatted' => $rupiah($total - $dpAmount),
         ];
     }
 }
