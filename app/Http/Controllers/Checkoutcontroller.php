@@ -228,11 +228,20 @@ class CheckoutController extends Controller
         // Ambil admin handle dari database berdasarkan ID yang dipilih
         $admin = AdminHandle::findOrFail($data['admin_handle_id']);
 
-        // Hitung ulang dari server (harga, kupon, total) — jangan percaya data dari browser
+        // Hitung ulang dari server (harga, kupon, total) — jangan percaya data dari browser.
+        // Request ini membawa whatsapp_number, jadi batas per pelanggan ikut dicek dengan nomor tsb.
+        $hadCoupon = session()->has('coupon');
         $cart = $this->cart->payload();
 
         if (empty($cart['items'])) {
             return redirect(url('/cart'))->with('error', 'Keranjang masih kosong.');
+        }
+
+        // Kupon yang tadi terpasang ternyata sudah tidak valid: hentikan, jangan lanjut tanpa diskon diam-diam
+        if ($hadCoupon && ! $cart['coupon']) {
+            return back()->withInput()->withErrors([
+                'coupon' => $cart['coupon_notice'] ?? 'Kupon sudah tidak dapat dipakai. Silakan periksa kembali pesanan Anda.',
+            ]);
         }
 
         $order = DB::transaction(function () use ($data, $cart, $seller, $admin, $shipDifferent, $email) {
@@ -243,10 +252,29 @@ class CheckoutController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if (! $coupon || ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit)) {
-                    throw ValidationException::withMessages([
-                        'coupon' => 'Kuota kupon sudah habis. Silakan periksa kembali kupon Anda.',
-                    ]);
+                // Cek ulang setelah baris kupon dikunci (mencegah dua checkout bersamaan menembus batas)
+                $reject = function (string $message) {
+                    session()->forget('coupon');
+                    throw ValidationException::withMessages(['coupon' => $message]);
+                };
+
+                if (! $coupon || in_array($coupon->status, ['inactive', 'upcoming', 'expired'], true)) {
+                    $reject('Kupon sudah tidak berlaku. Silakan periksa kembali kupon Anda.');
+                }
+
+                if ($coupon->status === 'used_up') {
+                    $reject('Kuota kupon sudah habis. Silakan periksa kembali kupon Anda.');
+                }
+
+                if ($coupon->usage_limit_per_customer) {
+                    $used = CustomerOrder::forCustomer(Auth::user(), $data['whatsapp_number'])
+                        ->where('coupon_code', $coupon->code)
+                        ->where('status', '!=', 'cancelled')
+                        ->count();
+
+                    if ($used >= $coupon->usage_limit_per_customer) {
+                        $reject('Anda sudah mencapai batas pemakaian kupon ini.');
+                    }
                 }
 
                 $coupon->increment('used_count');
@@ -304,7 +332,12 @@ class CheckoutController extends Controller
         });
 
         session()->forget(['cart', 'coupon', 'payment_method']);
-        session(['last_order' => $order->order_number]);
+
+        // Nomor WhatsApp disimpan agar batas pemakaian kupon per pelanggan juga berlaku untuk tamu di sesi ini
+        session([
+            'last_order'     => $order->order_number,
+            'customer_phone' => $data['whatsapp_number'],
+        ]);
 
         return redirect()->route('checkout.success', $order->order_number);
     }

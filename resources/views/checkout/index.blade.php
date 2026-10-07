@@ -22,9 +22,9 @@ $req = '<span class="text-red-500">*</span>';
         </nav>
     </div>
 
-    @if ($errors->has('coupon') || session('error'))
+    @if ($errors->has('coupon') || session('error') || $cart['coupon_notice'])
     <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        {{ $errors->first('coupon') ?: session('error') }}
+        {{ $errors->first('coupon') ?: (session('error') ?: $cart['coupon_notice']) }}
     </div>
     @endif
 
@@ -296,6 +296,9 @@ $req = '<span class="text-red-500">*</span>';
                                             {{ str_replace(' OFF', ' Off', $c['discount_label']) }}@if ($c['max_discount_formatted']) (Maks. {{ $c['max_discount_formatted'] }})@endif
                                         </div>
                                         @if ($c['min_amount_formatted'])<div class="text-xs text-gray-500 mt-1">Min. pembelian {{ $c['min_amount_formatted'] }}</div>@endif
+                                        @if ($c['expires_at'])<div class="text-xs text-gray-500 mt-1">Berlaku sampai {{ $c['expires_at'] }}</div>@endif
+                                        @if ($c['audience'])<span class="inline-block mt-1 text-[11px] rounded bg-gray-100 text-gray-600 px-1.5 py-0.5">{{ $c['audience'] }}</span>@endif
+                                        @if ($c['saving_formatted'])<div class="text-xs text-green-600 mt-1">Hemat {{ $c['saving_formatted'] }}</div>@endif
                                     </div>
                                     <input type="radio" name="coupon" value="{{ $c['code'] }}" @checked($c['applied']) class="mt-1 text-[#B4775E] pointer-events-none">
                                 </div>
@@ -545,12 +548,14 @@ $req = '<span class="text-red-500">*</span>';
         // Isi nama seller & tampilkan Admin Handle saat halaman dimuat ulang (old input / draf)
         if (sellerId.value.trim()) lookupSeller();
 
+        // Nomor WhatsApp ikut dikirim agar batas pemakaian kupon per pelanggan bisa dicek untuk tamu
         async function applyCode(code) {
             const {
                 ok,
                 data
             } = await api(URLS.apply, 'POST', {
-                code
+                code,
+                whatsapp_number: form.elements.whatsapp_number.value
             });
             if (ok) return reload();
             showErrors(data.errors ? Object.values(data.errors).flat() : (data.message || 'Kupon tidak dapat dipakai.'));

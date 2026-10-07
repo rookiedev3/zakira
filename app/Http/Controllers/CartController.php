@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Coupon;
+use App\Models\CustomerOrder;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -189,12 +190,13 @@ class CartController extends Controller
         }
 
         // 3. Target pelanggan (semua / member / non_member)
+        // Member = pembeli yang sedang login; non member = pembeli tanpa login
         if ($coupon->customer_scope === 'member' && ! $this->isMember()) {
-            $errors[] = 'Kupon ini khusus untuk member.';
+            $errors[] = 'Kupon ini khusus member. Silakan login terlebih dahulu.';
         }
 
         if ($coupon->customer_scope === 'non_member' && $this->isMember()) {
-            $errors[] = 'Kupon ini tidak berlaku untuk member.';
+            $errors[] = 'Kupon ini hanya untuk pembeli tanpa login.';
         }
 
         // 4. Khusus pelanggan baru
@@ -219,7 +221,7 @@ class CartController extends Controller
     /**
      * Daftar kupon yang ditampilkan di keranjang ("Kupon Tersedia").
      * Hanya kupon aktif, belum kedaluwarsa, kuota masih ada, dan show_in_checkout = true.
-     * Kupon yang belum memenuhi syarat tetap tampil (redup) beserta alasannya.
+     * Kupon yang belum memenuhi syarat tetap dikirim beserta alasannya (view checkout menyaringnya).
      */
     private function availableCoupons(array $summary, ?string $appliedCode): array
     {
@@ -321,24 +323,38 @@ class CartController extends Controller
         return $total;
     }
 
-    /* ---- Data yang perlu disesuaikan dengan sistem Anda ---- */
+    /* ---- Identitas pelanggan (dipakai aturan kupon) ---- */
 
-    /** TODO: sesuaikan dengan cara sistem Anda menandai member. */
+    /** Member = pembeli yang sedang login. */
     private function isMember(): bool
     {
-        return (bool) optional(auth()->user())->is_member;
+        return auth()->check();
     }
 
-    /** TODO: cek riwayat order pelanggan (tabel orders belum punya user_id/email/telepon). */
+    /**
+     * No. WhatsApp pembeli: dari form checkout (bila request membawanya),
+     * atau dari pesanan terakhir di sesi ini (untuk tamu).
+     */
+    private function customerPhone(): ?string
+    {
+        return request()->input('whatsapp_number') ?: session('customer_phone');
+    }
+
+    /** Pelanggan baru = belum pernah punya pesanan (yang tidak dibatalkan). */
     private function isNewCustomer(): bool
     {
-        return true;
+        return ! CustomerOrder::forCustomer(auth()->user(), $this->customerPhone())
+            ->where('status', '!=', 'cancelled')
+            ->exists();
     }
 
-    /** TODO: hitung pemakaian kupon oleh pelanggan ini (butuh tabel coupon_usages / kolom di orders). */
+    /** Berapa kali pelanggan ini sudah memakai kupon (pesanan dibatalkan tidak dihitung). */
     private function customerUsageCount(Coupon $coupon): int
     {
-        return 0;
+        return CustomerOrder::forCustomer(auth()->user(), $this->customerPhone())
+            ->where('coupon_code', $coupon->code)
+            ->where('status', '!=', 'cancelled')
+            ->count();
     }
 
     /* ================================================================

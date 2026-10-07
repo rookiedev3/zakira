@@ -85,6 +85,31 @@ class CustomerOrder extends Model
         return ['0' . $core, '62' . $core, '+62' . $core];
     }
 
+    // Pesanan milik pelanggan tertentu: email akun (bila login) ATAU nomor WhatsApp (0812 / 62812 / +62812).
+    // Dipakai untuk menghitung pemakaian kupon per pelanggan & status pelanggan baru.
+    public function scopeForCustomer(Builder $query, $user = null, ?string $phone = null): Builder
+    {
+        $emails = $user ? [$user->email] : [];
+        $phones = array_values(array_unique(array_merge(
+            self::phoneVariants($phone),
+            $user ? self::phoneVariants($user->detail?->phone) : []
+        )));
+
+        // Identitas belum diketahui (tamu yang belum mengisi WhatsApp)
+        if (! $emails && ! $phones) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $w) use ($emails, $phones) {
+            if ($emails) {
+                $w->whereIn('email', $emails);
+            }
+            if ($phones) {
+                $w->orWhereIn('whatsapp_number', $phones);
+            }
+        });
+    }
+
     public function coupon()
     {
         return $this->belongsTo(Coupon::class, 'coupon_code', 'code');
