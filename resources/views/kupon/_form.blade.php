@@ -94,6 +94,7 @@
                 </div>
                 <input type="hidden" name="max_discount_amount" id="max_discount_amount" value="{{ old('max_discount_amount', $coupon->max_discount_amount ?? '') }}">
                 <p class="text-sm text-zinc-500">Batas maksimal diskon (opsional)</p>
+                @error('max_discount_amount') <span class="text-sm font-medium text-red-500">{{ $message }}</span> @enderror
             </div>
         </div>
     </div>
@@ -348,7 +349,7 @@
         displayInput.value = new Intl.NumberFormat('id-ID').format(parseInt(raw, 10));
     }
 
-    function toggleDiscountType() {
+    function syncDiscountType(clearValues) {
         var type = document.getElementById('discount-type').value;
         var prefix = document.getElementById('value-prefix');
         var suffix = document.getElementById('value-suffix');
@@ -360,15 +361,19 @@
         var maxDiscountHidden = document.getElementById('max_discount_amount');
 
         if (type === 'fixed') {
+            // Nominal Tetap: tampil "Rp", tanpa "%"
             prefix.classList.remove('hidden');
             suffix.classList.add('hidden');
             display.placeholder = '50.000';
             hint.textContent = 'Nominal diskon dalam Rupiah';
 
             maxDiscountWrap.classList.add('hidden');
-            maxDiscountDisplay.value = '';
-            maxDiscountHidden.value = '';
+            if (clearValues) {
+                maxDiscountDisplay.value = '';
+                maxDiscountHidden.value = '';
+            }
         } else {
+            // Persentase: tampil "%", tanpa "Rp"
             prefix.classList.add('hidden');
             suffix.classList.remove('hidden');
             display.placeholder = '10';
@@ -377,9 +382,21 @@
             maxDiscountWrap.classList.remove('hidden');
         }
 
-        display.value = '';
-        hidden.value = '';
+        if (clearValues) {
+            display.value = '';
+            hidden.value = '';
+        }
     }
+
+    // Dipanggil saat user mengganti tipe: nilai dikosongkan
+    function toggleDiscountType() {
+        syncDiscountType(true);
+    }
+
+    // Dipanggil saat halaman dimuat: nilai tidak dikosongkan
+    document.addEventListener('DOMContentLoaded', function () {
+        syncDiscountType(false);
+    });
 
     function handleValueInput() {
         var type = document.getElementById('discount-type').value;

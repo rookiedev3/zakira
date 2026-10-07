@@ -268,14 +268,21 @@ $req = '<span class="text-red-500">*</span>';
                         <div id="couponMsg" class="mt-2"></div>
                     </div>
 
-                    @if (count($cart['available_coupons']))
+                    @php
+                        // Hanya voucher yang cocok dengan isi keranjang.
+                        // Voucher yang sedang dipakai tetap tampil supaya bisa dilepas.
+                        $shownCoupons = collect($cart['available_coupons'])
+                            ->filter(fn ($c) => $c['eligible'] || $c['applied']);
+                    @endphp
+
+                    @if ($shownCoupons->isNotEmpty())
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="text-md font-medium text-gray-800">Voucher Tersedia</h4>
                             <span class="text-xs text-gray-500">Opsional</span>
                         </div>
                         <div class="space-y-3">
-                            @foreach ($cart['available_coupons'] as $c)
+                            @foreach ($shownCoupons as $c)
                             <div data-coupon="{{ $c['code'] }}"
                                 class="border rounded-lg p-3 transition-all cursor-pointer {{ $c['applied'] ? 'border-[#B4775E] bg-[#B4775E]/5' : 'border-gray-200 hover:border-[#B4775E]' }}">
                                 <div class="flex items-start justify-between gap-3">
@@ -400,8 +407,13 @@ $req = '<span class="text-red-500">*</span>';
             "'": '&#39;'
         } [c]));
 
+        // Pesan peringatan kupon (kotak merah di bawah kolom kode)
         const showErrors = (lines) => {
-            msg.innerHTML = [].concat(lines).map((l) => `<p class="text-red-500 text-sm">${esc(l)}</p>`).join('');
+            msg.innerHTML = [].concat(lines).map((l) =>
+                `<div class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <i class="fas fa-exclamation-circle mt-0.5"></i><span>${esc(l)}</span>
+                </div>`
+            ).join('');
         };
 
         async function api(url, method, body = null) {

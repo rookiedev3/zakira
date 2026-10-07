@@ -105,12 +105,21 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded font-semibold text-zinc-800">{{ $coupon->code }}</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="font-medium text-gray-900">{{ $coupon->discount_label }}</div>
-                                    @if ($coupon->minimum_amount)
-                                        <div class="text-gray-500 text-[11px]">Min: Rp {{ number_format($coupon->minimum_amount, 0, ',', '.') }}</div>
-                                    @endif
-                                </td>
+<td class="px-6 py-4 whitespace-nowrap">
+    <div class="font-medium text-gray-900">
+        @if ($coupon->type === 'percentage')
+            {{ number_format($coupon->value, 2, '.', '') }}%
+            @if ($coupon->max_discount_amount)
+                (max Rp {{ number_format($coupon->max_discount_amount, 0, ',', '.') }})
+            @endif
+        @else
+            Rp {{ number_format($coupon->value, 0, ',', '.') }}
+        @endif
+    </div>
+    @if ($coupon->minimum_amount)
+        <div class="text-gray-500 text-[11px]">Min: Rp {{ number_format($coupon->minimum_amount, 0, ',', '.') }}</div>
+    @endif
+</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">{{ $coupon->audience_label }}</span>
                                 </td>
