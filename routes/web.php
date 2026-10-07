@@ -221,6 +221,11 @@ Route::get('/katalog/{product}', [CatalogController::class, 'show'])->name('cata
 Route::post('/order', [OrderController::class, 'store'])->name('order.store');
 Route::get('orders/export', [ManageOrderController::class, 'export'])->name('admin.orders.export');
 
+Route::get('/katalog-po', [CatalogController::class, 'index'])
+    ->defaults('defaultType', 'po')
+    ->name('catalog.po');
+
+
 Route::get('/cart', [CartController::class, 'page'])->name('cart.page');
 Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon.apply');
 Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');

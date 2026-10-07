@@ -1,4 +1,4 @@
-@extends('layouts.app')
+{{-- @extends('layouts.app')
 
 @section('title', 'Katalog Produk — Zakira Moslem Hijab Identity')
 
@@ -67,4 +67,4 @@
             </div>
         </section>
     </main>
-@endsection
+@endsection --}}

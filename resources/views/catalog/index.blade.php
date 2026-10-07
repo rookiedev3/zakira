@@ -3,11 +3,6 @@
 @section('title', 'Katalog Produk — Zakira Moslem Hijab Identity')
 
 @section('content')
-    @php
-        // PO hanya muncul untuk Admin atau Customer berstatus 'member' (aturan sama dengan menu PO di navbar)
-        $canSeePo = Auth::check() && (Auth::user()->role !== 'customer' || Auth::user()->customer_type === 'member');
-        $currentType = ($canSeePo && request('type') === 'po') ? 'po' : 'ready';
-    @endphp
     <style>
         /* Kolom filter: tinggi besar, sudut membulat, border beige tipis */
         .zk-filter-field {

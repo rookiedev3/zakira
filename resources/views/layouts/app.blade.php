@@ -74,9 +74,9 @@
 
                 <!-- MENU PRE ORDER (PO) - Hanya muncul untuk Admin atau Customer berstatus 'member' -->
                 @auth
-                @if(Auth::user()->role !== 'customer' || (Auth::user()->role === 'customer' && Auth::user()->customer_type === 'member'))
-                <a href="/member/pre-order" class="zk-nav-po">PO (Pre Order)</a>
-                @endif
+                @if(Auth::user()->role !== 'customer' || Auth::user()->customer_type === 'member')
+            <a href="{{ route('catalog.index', ['type' => 'po']) }}">PO (Pre Order)</a>
+        @endif
                 @endauth
 
                 <a href="/#tentang-kami">Tentang Kami</a>
@@ -121,9 +121,9 @@
             <a href="/#brand">Brand</a>
             <a href="/katalog">Ready Stock</a>
             @auth
-            @if(Auth::user()->role !== 'customer' || (Auth::user()->role === 'customer' && Auth::user()->customer_type === 'member'))
-            <a href="/member/pre-order">PO (Pre Order)</a>
-            @endif
+             @if(Auth::user()->role !== 'customer' || Auth::user()->customer_type === 'member')
+            <a href="{{ route('catalog.index', ['type' => 'po']) }}">PO (Pre Order)</a>
+        @endif
             @endauth
             <a href="/#tentang-kami">Tentang Kami</a>
             <a href="/#kontak">Kontak</a>
@@ -209,9 +209,9 @@
                 <ul>
                     <li><a href="/katalog">Ready Stock</a></li>
                     @auth
-                    @if(Auth::user()->role !== 'customer' || (Auth::user()->role === 'customer' && Auth::user()->customer_type === 'member'))
-                    <li><a href="/member/pre-order">Pre Order (PO)</a></li>
-                    @endif
+                    @if(Auth::user()->role !== 'customer' || Auth::user()->customer_type === 'member')
+            <a href="{{ route('catalog.index', ['type' => 'po']) }}">PO (Pre Order)</a>
+        @endif
                     @endauth
                     <li><a href="/login">Login Member</a></li>
                     <li><a href="/cart">Keranjang</a></li>
