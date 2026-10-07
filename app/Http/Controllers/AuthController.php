@@ -54,7 +54,7 @@ class AuthController extends Controller
 
         $user->forceFill(['last_login_at' => now()])->save();
 
-        $redirect = $user->role === 'admin' ? route('admin.dashboard') : route('home');
+        $redirect = $user->role === 'admin' ? route('dashboard') : route('home');
 
         return redirect()->intended($redirect)
             ->with('success', 'Selamat datang kembali, ' . $user->name . '!');
