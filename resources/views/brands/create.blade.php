@@ -90,11 +90,13 @@
             {{-- Urutan homepage --}}
             <div>
                 <label for="home_order" class="block text-sm font-medium text-zinc-800 mb-2">Urutan di Homepage</label>
-                <input type="number" id="home_order" name="home_order" min="0" max="9999"
+                <input type="number" id="home_order" name="home_order" min="1" step="1"
                        value="{{ old('home_order', $nextOrder ?? 1) }}"
                        class="w-full border rounded-lg py-2 px-3 text-sm shadow-xs border-zinc-200
                               focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d] outline-none">
-                <p class="mt-1 text-xs text-gray-500">Angka lebih kecil tampil lebih awal di carousel.</p>
+                <p class="mt-1 text-xs text-gray-500">
+                    Mulai dari 1. Jika urutan sudah dipakai, brand lain otomatis bergeser ke bawah.
+                </p>
                 @error('home_order')
                     <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
                 @enderror

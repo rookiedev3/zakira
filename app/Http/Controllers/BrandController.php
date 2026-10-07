@@ -40,7 +40,7 @@ class BrandController extends Controller
     {
         return view('brands.create', [
             'brands'    => $this->brandList(),
-            'nextOrder' => (Brand::max('home_order') ?? 0) + 1,
+            'nextOrder' => Brand::count() + 1,
         ]);
     }
 
@@ -50,7 +50,7 @@ class BrandController extends Controller
             'name'         => 'required|string|max:255|unique:brands,name',
             'description'  => 'nullable|string|max:1000',
             'logo'         => 'nullable|image|max:2048',
-            'home_order'   => 'nullable|integer|min:0|max:9999',
+            'home_order'   => 'nullable|integer|min:1|max:2147483647',
             'show_on_home' => 'nullable|boolean',
             'is_active'    => 'nullable|boolean',
         ]);
@@ -58,8 +58,7 @@ class BrandController extends Controller
         $data = [
             'name'         => $validated['name'],
             'description'  => $validated['description'] ?? null,
-            'home_order'   => $validated['home_order']
-                              ?? ((Brand::max('home_order') ?? 0) + 1),
+            'home_order'   => 1, // sementara, ditentukan ulang oleh placeAt()
             'show_on_home' => $request->boolean('show_on_home'),
             'is_active'    => $request->boolean('is_active', true),
         ];
@@ -68,7 +67,12 @@ class BrandController extends Controller
             $data['logo'] = $request->file('logo')->store('brand-logos', 'public');
         }
 
-        Brand::create($data);
+        DB::transaction(function () use ($data, $validated) {
+            $brand = Brand::create($data);
+
+            // Kosong => taruh di urutan paling akhir
+            $this->placeAt($brand, (int) ($validated['home_order'] ?? PHP_INT_MAX));
+        });
 
         return redirect()->route('brands.index')
             ->with('success', 'Brand berhasil ditambahkan.');
@@ -93,7 +97,7 @@ class BrandController extends Controller
             'name'         => 'required|string|max:255|unique:brands,name,' . $brand->id,
             'description'  => 'nullable|string|max:1000',
             'logo'         => 'nullable|image|max:2048',
-            'home_order'   => 'nullable|integer|min:0|max:9999',
+            'home_order'   => 'nullable|integer|min:1|max:2147483647',
             'show_on_home' => 'nullable|boolean',
             'is_active'    => 'nullable|boolean',
         ]);
@@ -101,7 +105,6 @@ class BrandController extends Controller
         $data = [
             'name'         => $validated['name'],
             'description'  => $validated['description'] ?? null,
-            'home_order'   => $validated['home_order'] ?? $brand->home_order,
             'show_on_home' => $request->boolean('show_on_home'),
             'is_active'    => $request->boolean('is_active'),
         ];
@@ -117,7 +120,12 @@ class BrandController extends Controller
             $data['logo'] = $newLogo;
         }
 
-        $brand->update($data);
+        DB::transaction(function () use ($brand, $data, $validated) {
+            $brand->update($data);
+
+            // Kosong => tetap di posisi sekarang
+            $this->placeAt($brand, (int) ($validated['home_order'] ?? $brand->home_order));
+        });
 
         return redirect()->route('brands.index')
             ->with('success', 'Brand berhasil diperbarui.');
@@ -135,7 +143,10 @@ class BrandController extends Controller
         }
 
         // products.brand_id memakai nullOnDelete, jadi produk tidak ikut terhapus
-        $brand->delete();
+        DB::transaction(function () use ($brand) {
+            $brand->delete();
+            $this->normalizeOrder(); // tutup lubang urutan
+        });
 
         return redirect()->route('brands.index')
             ->with('success', 'Brand berhasil dihapus.');
@@ -193,13 +204,7 @@ class BrandController extends Controller
                 $moved = true;
             }
 
-            foreach ($ordered as $position => $item) {
-                $newOrder = $position + 1;
-
-                if ((int) $item->home_order !== $newOrder) {
-                    Brand::whereKey($item->id)->update(['home_order' => $newOrder]);
-                }
-            }
+            $this->saveOrder($ordered);
         });
 
         return $moved
@@ -207,5 +212,47 @@ class BrandController extends Controller
             : back()->with('success', $direction === 'up'
                 ? 'Brand sudah berada di urutan paling atas.'
                 : 'Brand sudah berada di urutan paling bawah.');
+    }
+
+    /* --------------------------------------------------------------
+       Helper urutan (selalu 1..n, tanpa duplikat, tanpa lubang)
+    -------------------------------------------------------------- */
+
+    /**
+     * Sisipkan brand di posisi tertentu (1-based), geser brand lain,
+     * lalu rapikan jadi 1..n. Posisi di luar rentang otomatis dibatasi.
+     */
+    private function placeAt(Brand $brand, int $position): void
+    {
+        $others = Brand::where('id', '!=', $brand->id)
+            ->orderBy('home_order')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->all();
+
+        $position = max(1, min($position, count($others) + 1));
+
+        array_splice($others, $position - 1, 0, [$brand]);
+
+        $this->saveOrder($others);
+    }
+
+    private function normalizeOrder(): void
+    {
+        $this->saveOrder(
+            Brand::orderBy('home_order')->orderBy('id')->lockForUpdate()->get()->all()
+        );
+    }
+
+    private function saveOrder(array $ordered): void
+    {
+        foreach ($ordered as $i => $item) {
+            $newOrder = $i + 1;
+
+            if ((int) $item->home_order !== $newOrder) {
+                Brand::whereKey($item->id)->update(['home_order' => $newOrder]);
+            }
+        }
     }
 }

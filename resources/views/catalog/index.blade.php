@@ -38,7 +38,7 @@
     <section class="max-w-7xl mx-auto px-6 py-12 w-full">
         <span class="text-xs uppercase tracking-widest text-gray-500 font-semibold">KOLEKSI ZAKIRA</span>
         <h1 class="text-4xl font-serif font-medium mt-2 mb-3">Katalog Produk</h1>
-        <p class="text-gray-600 text-sm">Ready Stock untuk semua pembeli. Produk PO khusus member Zakira yang sudah login.
+        <p class="text-gray-600 text-sm">Ready Stock untuk semua pembeli. Produk PO khusus akun customer dan admin yang sudah login.
         </p>
     </section>
 
@@ -82,6 +82,7 @@
                     <label class="block text-sm font-semibold text-gray-900 mb-2">Jenis Produk</label>
                     <select name="type" data-dd x-model="type" onchange="this.form.submit()" class="zk-filter-field zk-chevron">
                         <option value="ready" @selected($currentType === 'ready')>Ready Stock</option>
+                        {{-- Opsi PO hanya muncul untuk akun dengan role customer / admin (lihat CatalogController::canSeePo) --}}
                         @if($canSeePo)
                             <option value="po" @selected($currentType === 'po')>Pre Order (PO)</option>
                         @endif
@@ -93,7 +94,7 @@
                     <i class="fas fa-user-shield text-[#6b5c52] mt-1"></i>
                     <div>
                         <p class="text-sm font-semibold text-[#5b4c43]" x-text="type === 'po' ? 'Pre Order (PO)' : 'Ready Stock'">Ready Stock</p>
-                        <p class="text-sm text-[#6b5c52]" x-text="type === 'po' ? 'Khusus Member Zakira yang sudah login.' : 'Dapat dibeli tanpa login.'">Dapat dibeli tanpa login.</p>
+                        <p class="text-sm text-[#6b5c52]" x-text="type === 'po' ? 'Khusus akun customer dan admin yang sudah login.' : 'Dapat dibeli tanpa login.'">Dapat dibeli tanpa login.</p>
                     </div>
                 </div>
             </aside>

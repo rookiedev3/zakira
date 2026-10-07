@@ -18,12 +18,15 @@ class CatalogController extends Controller
         $requested   = $request->query('type', $defaultType);
         $currentType = ($canSeePo && $requested === 'po') ? 'po' : 'ready';
 
-        // Hanya ambil produk yang aktif dan ditampilkan ke publik
+        // Hanya ambil produk yang aktif.
+        // Ready Stock dicek lewat show_public, PO dicek lewat show_member.
+        $visibleColumn = $currentType === 'po' ? 'show_member' : 'show_public';
+
         $products = Product::with(['brand', 'categories', 'colors', 'prices'])
             ->withMin('prices', 'price')
             ->withMax('prices', 'price')
             ->where('is_active', true)
-            ->where('show_public', true)
+            ->where($visibleColumn, true)
             ->where('product_type', $currentType)
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->query('search') . '%');
@@ -51,7 +54,10 @@ class CatalogController extends Controller
 
     public function show(Request $request, Product $product)
     {
-        if (! $product->is_active || ! $product->show_public) {
+        // Ready Stock dicek lewat show_public, PO dicek lewat show_member
+        $visibleColumn = $product->product_type === 'po' ? 'show_member' : 'show_public';
+
+        if (! $product->is_active || ! $product->{$visibleColumn}) {
             abort(404);
         }
 
@@ -82,14 +88,13 @@ class CatalogController extends Controller
     }
 
     /**
-     * PO hanya untuk Admin atau Customer berstatus 'member'
-     * (aturan sama dengan menu PO di navbar).
+     * PO hanya untuk user yang login dengan role 'customer' atau 'admin'.
+     * (Tamu yang belum login hanya melihat Ready Stock.)
      */
     private function canSeePo(Request $request): bool
     {
         $user = $request->user();
 
-        return $user !== null
-            && ($user->role !== 'customer' || $user->customer_type === 'member');
+        return $user !== null && in_array($user->role, ['customer', 'admin'], true);
     }
 }
