@@ -219,6 +219,7 @@ Route::get('/admin/laporan/export', [LaporanController::class, 'export'])->name(
 Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.index');
 Route::get('/katalog/{product}', [CatalogController::class, 'show'])->name('catalog.show');
 Route::post('/order', [OrderController::class, 'store'])->name('order.store');
+Route::get('orders/export', [ManageOrderController::class, 'export'])->name('admin.orders.export');
 
 Route::get('/cart', [CartController::class, 'page'])->name('cart.page');
 Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon.apply');

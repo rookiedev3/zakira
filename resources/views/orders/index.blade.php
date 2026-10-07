@@ -73,9 +73,17 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
         <h1 class="text-2xl font-semibold text-gray-900">Kelola Pesanan</h1>
-        <div class="text-sm text-gray-500">
-            Total: {{ $orders->total() }} pesanan
-        </div>
+        <div class="flex items-center gap-4">
+    {{-- Export Excel: buka modal setting export --}}
+    <button type="button" data-export-open
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-5 text-sm font-semibold rounded-lg bg-green-600 hover:bg-green-700 active:bg-green-800 text-white shadow-sm transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+        <i class="fas fa-file-download text-sm"></i> <span>Export Excel</span>
+    </button>
+
+    <div class="text-sm text-gray-500">
+        Total: {{ $orders->total() }} pesanan
+    </div>
+</div>
     </div>
 
     <!-- Filters -->
@@ -1245,8 +1253,180 @@
     </form>
 </dialog>
 
+{{-- ============ Modal Export Pesanan ke Excel (form GET -> admin.orders.export) ============ --}}
+@php
+    $exportColumns  = \App\Exports\OrdersExport::COLUMNS;
+    $exportDefaults = \App\Exports\OrdersExport::DEFAULT_COLUMNS;
+
+    // [value, judul, deskripsi, catatan, kelas warna catatan]
+    $exportRadios = [
+        'mode' => ['Mode Export', [
+            ['ordered_only', 'Hanya Produk yang Dipesan', 'Hanya menampilkan produk dan varian yang benar-benar dipesan oleh pelanggan.', '✓ Mode default untuk laporan pesanan', 'text-blue-600'],
+            ['all_variants', 'Semua Varian Produk', 'Menampilkan semua kombinasi varian yang tersedia, termasuk yang tidak dipesan (jumlah 0).', '✓ Cocok untuk analisis stok dan permintaan produk', 'text-green-600'],
+        ]],
+        'format' => ['Format Export', [
+            ['consolidated', 'Consolidated (Ringkas)', 'Satu baris per pesanan. Semua produk dan varian digabung dalam satu baris.', '✓ Cocok untuk ringkasan pesanan dan analisis umum', 'text-blue-600'],
+            ['detailed', 'Detailed (Detail)', 'Satu baris per item produk. Setiap produk dengan varian spesifiknya ditampilkan terpisah.', '✓ Cocok untuk analisis produk dan varian yang jelas', 'text-green-600'],
+        ]],
+        'sorting' => ['Metode Pengurutan Kombinasi Varian', [
+            ['model_first', 'Urut berdasarkan Model-Warna-Ukuran', 'Mengelompokkan berdasarkan model dan warna, lalu mengurutkan ukuran', '✓ Contoh: DASTER - CORN - M, DASTER - CORN - L, DASTER - CORN - XL', 'text-blue-600'],
+            ['size_first', 'Urut berdasarkan Ukuran-Model-Warna', 'Mengelompokkan berdasarkan ukuran terlebih dahulu', '✓ Contoh: DASTER - CORN - M, DASTER - INDIGO - M, DASTER - CORN - L, DASTER - INDIGO - L', 'text-green-600'],
+        ]],
+    ];
+@endphp
+
+<dialog id="export-dialog"
+        class="m-auto p-0 bg-transparent w-[calc(100%-2rem)] max-w-2xl overflow-hidden backdrop:bg-black/30">
+    <form method="GET" action="{{ route('admin.orders.export') }}" id="export-form"
+          class="bg-white rounded-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+        {{-- Filter Status DP di halaman ikut terbawa --}}
+        <input type="hidden" name="dp_status_filter" value="{{ request('dp_status_filter') }}">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b shrink-0">
+            <h3 class="text-xl font-semibold text-gray-900">Export Pesanan ke Excel</h3>
+            <button type="button" class="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-800 hover:bg-zinc-800/5"
+                    onclick="this.closest('dialog').close()" aria-label="Tutup">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 flex-1 min-h-0 overflow-y-auto space-y-6">
+
+            <!-- Filter Tanggal -->
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-3">Filter Tanggal</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="export_date_from" class="{{ $labelClass }}">Tanggal Dari</label>
+                        <input type="date" id="export_date_from" name="date_from" value="{{ request('date_from') }}" class="{{ $inputClass }}">
+                    </div>
+                    <div>
+                        <label for="export_date_to" class="{{ $labelClass }}">Tanggal Sampai</label>
+                        <input type="date" id="export_date_to" name="date_to" value="{{ request('date_to') }}" class="{{ $inputClass }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Status -->
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-3">Filter Status</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="export_status_filter" class="{{ $labelClass }}">Status Pesanan</label>
+                        <select id="export_status_filter" name="status_filter" class="{{ $inputClass }}">
+                            <option value="">Semua Status</option>
+                            @foreach ($statusLabels as $value => $label)
+                                <option value="{{ $value }}" {{ $sel('status_filter', $value) }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="export_payment_status_filter" class="{{ $labelClass }}">Status Pembayaran</label>
+                        <select id="export_payment_status_filter" name="payment_status_filter" class="{{ $inputClass }}">
+                            <option value="">Semua Status</option>
+                            @foreach ($paymentLabels as $value => $label)
+                                <option value="{{ $value }}" {{ $sel('payment_status_filter', $value) }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Pencarian -->
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-3">Filter Pencarian</h4>
+                <input type="text" name="search" value="{{ request('search') }}"
+                       placeholder="Order ID, nama, email, WhatsApp..." class="{{ $inputClass }}">
+            </div>
+
+            <!-- Filter Brand -->
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-3">Filter Brand</h4>
+                <select name="brand_filter" class="{{ $inputClass }}">
+                    <option value="">Semua Brand</option>
+                    @foreach ($brands as $id => $name)
+                        <option value="{{ $id }}" {{ $sel('brand_filter', (string) $id) }}>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Filter Produk -->
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-3">Filter Produk</h4>
+                <select name="product_filter" class="{{ $inputClass }}">
+                    <option value="">Semua Produk</option>
+                    @foreach ($products as $id => $name)
+                        <option value="{{ $id }}" {{ $sel('product_filter', (string) $id) }}>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Mode Export, Format Export, Metode Pengurutan -->
+            @foreach ($exportRadios as $groupName => [$groupTitle, $groupOptions])
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">{{ $groupTitle }}</h4>
+                    <div class="space-y-3">
+                        @foreach ($groupOptions as [$value, $title, $desc, $hint, $hintClass])
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="radio" name="{{ $groupName }}" value="{{ $value }}" @checked($loop->first)
+                                       class="mt-1 border-gray-300 text-primary-600 focus:ring-primary-500">
+                                <div>
+                                    <div class="font-medium text-gray-900">{{ $title }}</div>
+                                    <div class="text-sm text-gray-500">{{ $desc }}</div>
+                                    <div class="text-xs {{ $hintClass }} mt-1">{{ $hint }}</div>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+
+            <!-- Pilih Kolom -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold text-gray-900">Pilih Kolom yang Akan Diekspor</h4>
+                    <div class="flex items-center gap-3 text-xs">
+                        <button type="button" data-export-cols="all" class="text-[#935b33] hover:underline">Pilih semua</button>
+                        <button type="button" data-export-cols="none" class="text-[#935b33] hover:underline">Kosongkan</button>
+                        <button type="button" data-export-cols="default" class="text-[#935b33] hover:underline">Default</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    @foreach ($exportColumns as $key => $label)
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" name="columns[]" value="{{ $key }}" @checked(in_array($key, $exportDefaults, true))
+                                   class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                            <span class="ml-2 text-sm text-gray-700">{{ $label }}</span>
+                            @if ($key === 'variant_combinations')
+                                <span class="ml-2 text-xs text-gray-500">Kolom dinamis untuk setiap kombinasi model-warna-ukuran dengan total kuantitas</span>
+                            @endif
+                        </label>
+                    @endforeach
+                </div>
+                <p id="export-error" class="hidden mt-3 text-xs text-red-600">Pilih minimal satu kolom untuk diekspor.</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end items-center gap-3 p-6 border-t bg-gray-50 shrink-0">
+            <button type="button" onclick="this.closest('dialog').close()"
+                    class="inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg text-zinc-800 hover:bg-zinc-800/5 transition-colors">
+                <span>Batal</span>
+            </button>
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 px-4 text-sm font-medium rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors">
+                <i class="fas fa-download text-xs"></i> <span>Export Excel</span>
+            </button>
+        </div>
+    </form>
+</dialog>
+
 <style>
     /* Kunci scroll halaman di belakang modal */
+    html:has(#export-dialog[open]),
+    body:has(#export-dialog[open]),
     html:has(dialog[data-order-dialog][open]),
     body:has(dialog[data-order-dialog][open]),
     html:has(#invoice-dialog[open]),
@@ -1644,6 +1824,47 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validasi edit gagal: buka lagi modal edit pesanan terkait
         document.querySelector('#order-edit-{{ (int) old('_edit_order') }}')?.showModal();
     @endif
+
+    // ------------------------------------------------------------------
+    // Modal "Export Pesanan ke Excel"
+    // ------------------------------------------------------------------
+    const expDlg  = document.getElementById('export-dialog');
+    const expForm = document.getElementById('export-form');
+    const expErr  = document.getElementById('export-error');
+
+    document.querySelectorAll('[data-export-open]').forEach((b) =>
+        b.addEventListener('click', () => expDlg.showModal())
+    );
+    expDlg.addEventListener('click', (e) => { if (e.target === expDlg) expDlg.close(); });
+
+    // Tanggal sampai tidak boleh lebih awal dari tanggal dari
+    const expFrom = expForm.querySelector('[name="date_from"]');
+    const expTo   = expForm.querySelector('[name="date_to"]');
+    const syncRange = () => { expTo.min = expFrom.value || ''; };
+    expFrom.addEventListener('change', syncRange);
+    syncRange();
+
+    // Pilih semua / kosongkan / kembali ke default
+    expForm.querySelectorAll('[data-export-cols]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.exportCols;
+            expForm.querySelectorAll('input[name="columns[]"]').forEach((cb) => {
+                cb.checked = mode === 'all' ? true : (mode === 'none' ? false : cb.defaultChecked);
+            });
+            expErr.classList.add('hidden');
+        })
+    );
+
+    expForm.addEventListener('submit', (e) => {
+        if (!expForm.querySelector('input[name="columns[]"]:checked')) {
+            e.preventDefault();
+            expErr.classList.remove('hidden');
+            return;
+        }
+        expErr.classList.add('hidden');
+        // File diunduh tanpa pindah halaman; tutup modal setelah unduhan dimulai
+        setTimeout(() => expDlg.close(), 400);
+    });
 
     // Dropdown aksi: menu memakai posisi fixed agar tidak terpotong oleh tabel
     const dds = document.querySelectorAll('details[data-dd]');

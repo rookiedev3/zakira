@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\OrdersExport;
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\CustomerOrder;
 use App\Models\PaymentConfirmation;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -17,17 +19,13 @@ class ManageOrderController extends Controller
     private const STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
     private const PAYMENT  = ['pending', 'paid', 'failed', 'refunded'];
 
-    /** Daftar pesanan + filter (semua dari database) */
-    public function index(Request $request)
+    /**
+     * Query pesanan + semua filter.
+     * Dipakai bersama oleh index() dan export() agar hasilnya selalu sama.
+     */
+    private function filteredQuery(Request $request)
     {
-        $q = CustomerOrder::query()
-            ->withCount('items')
-            ->with([
-                'items',
-                'coupon', // relasi lewat kolom coupon_code
-                'paymentConfirmations' => fn ($c) => $c->latest('id'),
-            ])
-            ->latest('id');
+        $q = CustomerOrder::query()->latest('id');
 
         if ($s = trim((string) $request->input('search'))) {
             $q->where(function ($w) use ($s) {
@@ -38,6 +36,20 @@ class ManageOrderController extends Controller
                   ->orWhere('last_name', 'like', "%{$s}%")
                   ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$s}%"]);
             });
+        }
+
+        // Filter tanggal pesanan (dipakai modal Export; batas hari mengikuti WIB)
+        $from = $this->parseDate($request->input('date_from'));
+        $to   = $this->parseDate($request->input('date_to'));
+        if ($from && $to && $from->toDateString() > $to->toDateString()) {
+            [$from, $to] = [$to, $from];
+        }
+        $tz = config('app.timezone');
+        if ($from) {
+            $q->where('created_at', '>=', $from->copy()->startOfDay()->setTimezone($tz));
+        }
+        if ($to) {
+            $q->where('created_at', '<=', $to->copy()->endOfDay()->setTimezone($tz));
         }
 
         if (in_array($request->input('status_filter'), self::STATUSES, true)) {
@@ -68,6 +80,20 @@ class ManageOrderController extends Controller
             $q->whereHas('items', fn ($i) => $i->where('product_id', $product));
         }
 
+        return $q;
+    }
+
+    /** Daftar pesanan + filter (semua dari database) */
+    public function index(Request $request)
+    {
+        $q = $this->filteredQuery($request)
+            ->withCount('items')
+            ->with([
+                'items',
+                'coupon', // relasi lewat kolom coupon_code
+                'paymentConfirmations' => fn ($c) => $c->latest('id'),
+            ]);
+
         return view('orders.index', [
             'orders'   => $q->paginate(15)->withQueryString(),
             'brands'   => DB::table('brands')->orderBy('name')->pluck('name', 'id'),
@@ -76,6 +102,56 @@ class ManageOrderController extends Controller
             // Dipakai dialog "Tambah Produk": varian & matriks harga tiap produk
             'productMeta' => $this->productMeta(),
         ]);
+    }
+
+    /** Tanggal Y-m-d (WIB) -> Carbon, atau null bila kosong/tidak valid */
+    private function parseDate($value): ?Carbon
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('Y-m-d', $value, 'Asia/Jakarta');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /** Export pesanan ke Excel sesuai setting di modal "Export Pesanan ke Excel" */
+    public function export(Request $request)
+    {
+        // Filter produk / brand juga membatasi item yang diekspor (bukan hanya pesanannya)
+        $productIds = null;
+        if ($p = $request->input('product_filter')) {
+            $productIds = [(int) $p];
+        }
+        if ($b = $request->input('brand_filter')) {
+            $brandProducts = DB::table('products')->where('brand_id', $b)->pluck('id')
+                ->map(fn ($id) => (int) $id)->all();
+
+            $productIds = $productIds === null
+                ? $brandProducts
+                : array_values(array_intersect($productIds, $brandProducts));
+        }
+
+        $query = $this->filteredQuery($request)->with([
+            'items',
+            'paymentConfirmations' => fn ($c) => $c->latest('id'),
+        ]);
+
+        $options = [
+            'columns'     => (array) $request->input('columns', []),
+            'mode'        => $request->input('mode') === 'all_variants' ? 'all_variants' : 'ordered_only',
+            'format'      => $request->input('format') === 'detailed' ? 'detailed' : 'consolidated',
+            'sorting'     => $request->input('sorting') === 'size_first' ? 'size_first' : 'model_first',
+            'product_ids' => $productIds,
+        ];
+
+        $filename = 'pesanan-' . ($options['format'] === 'detailed' ? 'detail' : 'ringkas')
+            . '-' . now('Asia/Jakarta')->format('Ymd-His') . '.xlsx';
+
+        return OrdersExport::download($query, $options, $filename);
     }
 
     /** Nama varian (kolom nama bisa berbeda di tiap tabel varian) */
