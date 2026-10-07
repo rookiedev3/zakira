@@ -43,19 +43,88 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    // semua user
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
 
+    // role admin
     Route::middleware('role:admin')->group(function () {
-        // Route::get('/dashboard', function () {
-        //     return view('admin.dashboard');
-        // })->name('dashboard');
-
+        // sellers
         Route::get('/sellers', [SellerController::class, 'index'])->name('seller.index');
-Route::post('/sellers', [SellerController::class, 'store'])->name('seller.store');
-Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('seller.update');
-Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('seller.destroy');
+        Route::post('/sellers', [SellerController::class, 'store'])->name('seller.store');
+        Route::put('/sellers/{seller}', [SellerController::class, 'update'])->name('seller.update');
+        Route::delete('/sellers/{seller}', [SellerController::class, 'destroy'])->name('seller.destroy');
 
+        // kelola user
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+        // bank
+        Route::get('/banks', [BankAccountController::class, 'index'])->name('banks.index');
+        Route::post('/banks', [BankAccountController::class, 'store'])->name('banks.store');
+        Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
+        Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
+        Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
+        
+        // cs
+        Route::get('/customer-services', [CustomerServiceController::class, 'index'])->name('customer-services.index');
+        Route::post('/customer-services', [CustomerServiceController::class, 'store'])->name('customer-services.store');
+        Route::put('/customer-services/{customerService}', [CustomerServiceController::class, 'update'])->name('customer-services.update');
+        Route::patch('/customer-services/{customerService}/status', [CustomerServiceController::class, 'updateStatus'])->name('customer-services.status');
+        Route::delete('/customer-services/{customerService}', [CustomerServiceController::class, 'destroy'])->name('customer-services.destroy');
+
+        // social media
+        Route::get('/social-media', [SocialMediaController::class, 'index'])->name('social-media.index');
+        Route::post('/social-media', [SocialMediaController::class, 'store'])->name('social-media.store');
+        Route::put('/social-media/{socialMedium}', [SocialMediaController::class, 'update'])->name('social-media.update');
+        Route::patch('/social-media/{socialMedium}/status', [SocialMediaController::class, 'updateStatus'])->name('social-media.status');
+        Route::delete('/social-media/{socialMedium}', [SocialMediaController::class, 'destroy'])->name('social-media.destroy');
+
+        // banners
+        Route::get('/banners', [BannerController::class, 'index'])->name('banners.index');
+        Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
+        Route::put('/banners/{banner}', [BannerController::class, 'update'])->name('banners.update');
+        Route::patch('/banners/{banner}/status', [BannerController::class, 'updateStatus'])->name('banners.status');
+        Route::delete('/banners/{banner}', [BannerController::class, 'destroy'])->name('banners.destroy');
+
+        // keuntungan 
+        Route::get('/advantages', [AdvantageController::class, 'index'])->name('advantages.index');
+        Route::post('/advantages', [AdvantageController::class, 'store'])->name('advantages.store');
+        Route::put('/advantages/{advantage}', [AdvantageController::class, 'update'])->name('advantages.update');
+        Route::patch('/advantages/{advantage}/status', [AdvantageController::class, 'updateStatus'])->name('advantages.status');
+        Route::delete('/advantages/{advantage}', [AdvantageController::class, 'destroy'])->name('advantages.destroy');
+
+        // Admin Handle 
+        Route::get('/admin-handles', [AdminHandleController::class, 'index'])->name('admin-handles.index');
+        Route::post('/admin-handles', [AdminHandleController::class, 'store'])->name('admin-handles.store');
+        Route::put('/admin-handles/{adminHandle}', [AdminHandleController::class, 'update'])->name('admin-handles.update');
+        Route::delete('/admin-handles/{adminHandle}', [AdminHandleController::class, 'destroy'])->name('admin-handles.destroy');
+
+        // setting profile admin
+        Route::get('/settings/profile', [SettingsController::class, 'profile'])->name('settings.profile');
+        Route::patch('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
+        Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount'])->name('settings.profile.destroy');
+        // setting profile admin & passwordnya
+        Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
+        Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
+
+        // masterd kupon
+        Route::get('/kupon', [CouponController::class, 'index'])->name('kupon.index');
+        Route::get('/kupon/create', [CouponController::class, 'create'])->name('kupon.create');
+        Route::post('/kupon', [CouponController::class, 'store'])->name('kupon.store');
+        Route::get('/kupon/{kupon}/edit', [CouponController::class, 'edit'])->name('kupon.edit');
+        Route::put('/kupon/{kupon}', [CouponController::class, 'update'])->name('kupon.update');
+        Route::delete('/kupon/{kupon}', [CouponController::class, 'destroy'])->name('kupon.destroy');
+        Route::post('/kupon/{kupon}/duplicate', [CouponController::class, 'duplicate'])->name('kupon.duplicate');
+        Route::patch('/kupon/{kupon}/toggle', [CouponController::class, 'toggleActive'])->name('kupon.toggle');
+
+        // laporan mitra
+        Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
+        Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
+        Route::get('/admin/laporan/export', [LaporanController::class, 'export'])->name('admin.laporan.export');
     });
 });
 
@@ -94,125 +163,15 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     Route::get('/order/{orderNumber}/edit', [ProfileController::class, 'editOrder'])->name('order.edit');
     Route::put('/order/{orderNumber}', [ProfileController::class, 'updateOrder'])->name('order.update');
     Route::post('/order/{orderNumber}/coupon', [ProfileController::class, 'checkCoupon'])->name('order.coupon');
-    // ================= AKHIR EDIT PESANAN =================
-
-    // [VERSI LAIN - dinonaktifkan karena URL & nama route sama dengan blok ProfileController di atas]
-    // ================= DUMMY: PEMBAYARAN DP & SISA (sementara, pindahkan ke controller) =================
-    // $dummyBanks = fn () => collect([
-    //     (object) ['bank_name' => 'BSI', 'account_number' => '824682748372', 'account_name' => 'ADN',   'is_active' => true],
-    //     (object) ['bank_name' => 'BSI', 'account_number' => '20920029020',  'account_name' => 'Zahwa', 'is_active' => true],
-    // ]);
-    //
-    // // Pesanan milik member yang login (logika kepemilikan sama dengan ProfileController@show)
-    // $ownOrder = fn (string $orderNumber) => \App\Models\CustomerOrder::where('order_number', $orderNumber)
-    //     ->ownedBy(auth()->user()->load('detail'))
-    //     ->firstOrFail();
-    //
-    // Route::get('/orders/{orderNumber}/pay-dp', function (string $orderNumber) use ($dummyBanks, $ownOrder) {
-    //     $order = $ownOrder($orderNumber);
-    //
-    //     if ($order->payment_method === 'full' || $order->dp_paid_at || $order->status === 'cancelled') {
-    //         return redirect()->route('member.profile')->with('error', 'Pesanan ini tidak memerlukan pembayaran DP.');
-    //     }
-    //
-    //     return view('member.orders.pay-dp', ['order' => $order, 'bankAccounts' => $dummyBanks()]);
-    // })->name('orders.pay-dp');
-    //
-    // Route::post('/orders/{orderNumber}/pay-dp', function (\Illuminate\Http\Request $request, string $orderNumber) use ($ownOrder) {
-    //     $ownOrder($orderNumber);
-    //     $request->validate(['payment_proof' => ['required', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048']]);
-    //     $request->file('payment_proof')->store('payment-proofs', 'public');
-    //     // TODO backend: simpan path & ubah status verifikasi
-    //     return redirect()->route('member.profile')->with('success', 'Bukti pembayaran DP berhasil diunggah.');
-    // })->name('orders.pay-dp.store');
-    //
-    // Route::get('/orders/{orderNumber}/pay-remaining', function (string $orderNumber) use ($dummyBanks, $ownOrder) {
-    //     $order = $ownOrder($orderNumber);
-    //
-    //     if ($order->payment_method === 'full' || ! $order->dp_paid_at || $order->remaining_paid_at || $order->status === 'cancelled') {
-    //         return redirect()->route('member.profile')->with('error', 'Pesanan ini tidak memerlukan pembayaran sisa.');
-    //     }
-    //
-    //     return view('member.orders.pay-remaining', ['order' => $order, 'bankAccounts' => $dummyBanks()]);
-    // })->name('orders.pay-remaining');
-    //
-    // Route::post('/orders/{orderNumber}/pay-remaining', function (\Illuminate\Http\Request $request, string $orderNumber) use ($ownOrder) {
-    //     $ownOrder($orderNumber);
-    //     $request->validate(['payment_proof' => ['required', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048']]);
-    //     $request->file('payment_proof')->store('payment-proofs', 'public');
-    //     // TODO backend: simpan path & tandai pelunasan menunggu verifikasi
-    //     return redirect()->route('member.profile')->with('success', 'Bukti pelunasan berhasil diunggah.');
-    // })->name('orders.pay-remaining.store');
-    // ================= AKHIR DUMMY =================
 });
 
 
 
-Route::get('/users', [UserController::class, 'index'])->name('users.index');
-Route::post('/users', [UserController::class, 'store'])->name('users.store');
-Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('users.status');
-Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-
-Route::get('/banks', [BankAccountController::class, 'index'])->name('banks.index');
-Route::post('/banks', [BankAccountController::class, 'store'])->name('banks.store');
-Route::put('/banks/{bank}', [BankAccountController::class, 'update'])->name('banks.update');
-Route::patch('/banks/{bank}/status', [BankAccountController::class, 'updateStatus'])->name('banks.status');
-Route::delete('/banks/{bank}', [BankAccountController::class, 'destroy'])->name('banks.destroy');
-
-
-Route::get('/customer-services', [CustomerServiceController::class, 'index'])->name('customer-services.index');
-Route::post('/customer-services', [CustomerServiceController::class, 'store'])->name('customer-services.store');
-Route::put('/customer-services/{customerService}', [CustomerServiceController::class, 'update'])->name('customer-services.update');
-Route::patch('/customer-services/{customerService}/status', [CustomerServiceController::class, 'updateStatus'])->name('customer-services.status');
-Route::delete('/customer-services/{customerService}', [CustomerServiceController::class, 'destroy'])->name('customer-services.destroy');
-
-
-Route::get('/social-media', [SocialMediaController::class, 'index'])->name('social-media.index');
-Route::post('/social-media', [SocialMediaController::class, 'store'])->name('social-media.store');
-Route::put('/social-media/{socialMedium}', [SocialMediaController::class, 'update'])->name('social-media.update');
-Route::patch('/social-media/{socialMedium}/status', [SocialMediaController::class, 'updateStatus'])->name('social-media.status');
-Route::delete('/social-media/{socialMedium}', [SocialMediaController::class, 'destroy'])->name('social-media.destroy');
-
-Route::get('/banners', [BannerController::class, 'index'])->name('banners.index');
-Route::post('/banners', [BannerController::class, 'store'])->name('banners.store');
-Route::put('/banners/{banner}', [BannerController::class, 'update'])->name('banners.update');
-Route::patch('/banners/{banner}/status', [BannerController::class, 'updateStatus'])->name('banners.status');
-Route::delete('/banners/{banner}', [BannerController::class, 'destroy'])->name('banners.destroy');
-
-Route::get('/advantages', [AdvantageController::class, 'index'])->name('advantages.index');
-Route::post('/advantages', [AdvantageController::class, 'store'])->name('advantages.store');
-Route::put('/advantages/{advantage}', [AdvantageController::class, 'update'])->name('advantages.update');
-Route::patch('/advantages/{advantage}/status', [AdvantageController::class, 'updateStatus'])->name('advantages.status');
-Route::delete('/advantages/{advantage}', [AdvantageController::class, 'destroy'])->name('advantages.destroy');
-
-Route::get('/admin-handles', [AdminHandleController::class, 'index'])->name('admin-handles.index');
-Route::post('/admin-handles', [AdminHandleController::class, 'store'])->name('admin-handles.store');
-Route::put('/admin-handles/{adminHandle}', [AdminHandleController::class, 'update'])->name('admin-handles.update');
-Route::delete('/admin-handles/{adminHandle}', [AdminHandleController::class, 'destroy'])->name('admin-handles.destroy');
-
-Route::get('/settings/profile', [SettingsController::class, 'profile'])->name('settings.profile');
-Route::patch('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
-Route::delete('/settings/profile', [SettingsController::class, 'destroyAccount'])->name('settings.profile.destroy');
-
-Route::get('/settings/password', [SettingsController::class, 'password'])->name('settings.password');
-Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
 
 
 
-// ==== Kupon ====
-Route::get('/kupon', [CouponController::class, 'index'])->name('kupon.index');
-Route::get('/kupon/create', [CouponController::class, 'create'])->name('kupon.create');
-Route::post('/kupon', [CouponController::class, 'store'])->name('kupon.store');
-Route::get('/kupon/{kupon}/edit', [CouponController::class, 'edit'])->name('kupon.edit');
-Route::put('/kupon/{kupon}', [CouponController::class, 'update'])->name('kupon.update');
-Route::delete('/kupon/{kupon}', [CouponController::class, 'destroy'])->name('kupon.destroy');
-Route::post('/kupon/{kupon}/duplicate', [CouponController::class, 'duplicate'])->name('kupon.duplicate');
-Route::patch('/kupon/{kupon}/toggle', [CouponController::class, 'toggleActive'])->name('kupon.toggle');
 
-Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
-Route::get('/admin/laporan', [LaporanController::class, 'index'])->name('admin.laporan');
-Route::get('/admin/laporan/export', [LaporanController::class, 'export'])->name('admin.laporan.export');
+
 
 //routes chyntia
 // Route untuk halaman Katalog / Ready Stock
@@ -333,16 +292,6 @@ Route::prefix('c/products')->name('products.')->group(function () {
     Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
 });
 Route::patch('/products/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
-
-
-// DUMMY ROUTE
-// ==== Manajemen Konten ====
-// Route::get('/banners', fn() => 'Halaman Banner (dummy)')->name('banners.index');
-// Route::get('/advantages', fn() => 'Halaman Keunggulan (dummy)')->name('advantages.index');
-// Route::get('/social-media', fn() => 'Halaman Media Sosial (dummy)')->name('social-media.index');
-// Route::get('/customer-service', fn() => 'Halaman Customer Service (dummy)')->name('customer-service.index');
-// Route::get('/admin-handles', fn() => 'Halaman Admin Handle (dummy)')->name('admin-handles.index');
-// Route::get('/banks', fn() => 'Halaman Informasi Bank (dummy)')->name('banks.index');
 
 // ==== Pesanan ====
 // Route::get('/orders', fn () => 'Halaman Kelola Pesanan (dummy)')->name('orders.index');
