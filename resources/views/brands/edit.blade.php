@@ -57,11 +57,14 @@
                 @enderror
             </div>
 
-            {{-- Persentase DP --}}
+            {{-- Persentase DP (wajib diisi) --}}
             <div>
-                <label for="dp_percentage" class="block text-sm font-medium text-zinc-800 mb-2">Persentase DP (%)</label>
+                <label for="dp_percentage" class="block text-sm font-medium text-zinc-800 mb-2">
+                    Persentase DP (%) <span class="text-red-500">*</span>
+                </label>
                 <input type="number" id="dp_percentage" name="dp_percentage"
-                       value="{{ old('dp_percentage', $brand->dp_percentage ?? 30) }}" min="0" max="100" step="0.01"
+                       value="{{ old('dp_percentage', $brand->dp_percentage ?? 30) }}"
+                       min="0" max="100" step="0.01" required
                        class="w-full h-10 border rounded-lg py-2 px-3 text-sm shadow-xs bg-white text-zinc-700
                               outline-none
                               {{ $errors->has('dp_percentage') ? 'border-red-500' : 'border-zinc-200 focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d]' }}">
