@@ -30,7 +30,7 @@
 <div class="px-4 py-12 w-full"
      x-data="{
         openEdit: {{ $errors->hasAny(['name','email','phone','address','city','province','postal_code','seller_id','shipping_expedition']) ? 'true' : 'false' }},
-        openPass: {{ $errors->hasAny(['current_password','password']) ? 'true' : 'false' }},
+        openPass: {{ $errors->hasAny(['current_password','password','password_confirmation']) ? 'true' : 'false' }},
         openDetail: null
      }">
 
@@ -418,8 +418,15 @@
                             </div>
                             <div>
                                 <label class="block font-semibold text-gray-700 mb-1">Provinsi</label>
-                                <input type="text" name="province" value="{{ old('province', $user->detail?->province) }}"
-                                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('province') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                                <select name="province"
+                                        class="w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-1 text-sm {{ $errors->has('province') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                                    <option value="">- Pilih -</option>
+                                    @foreach ($provinces as $prov)
+                                        <option value="{{ $prov }}" @selected(old('province', $user->detail?->province) === $prov)>
+                                            {{ $prov }}
+                                        </option>
+                                    @endforeach
+                                </select>
                                 @error('province') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
@@ -442,7 +449,7 @@
                             <select name="shipping_expedition"
                                     class="w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-1 text-sm {{ $errors->has('shipping_expedition') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
                                 <option value="">- Pilih -</option>
-                                @foreach (['JNE', 'J&T', 'SiCepat'] as $exp)
+                                @foreach ($shipping as $exp)
                                     <option value="{{ $exp }}" @selected(old('shipping_expedition', $user->detail?->shipping_expedition) === $exp)>
                                         {{ $exp }}
                                     </option>
@@ -504,7 +511,8 @@
                         <div>
                             <label class="block font-semibold text-gray-700 mb-1">Konfirmasi Password Baru</label>
                             <input type="password" name="password_confirmation"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-800 text-sm">
+                                   class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 text-sm {{ $errors->has('password_confirmation') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-amber-800' }}">
+                            @error('password_confirmation') <p class="text-red-600 text-[11px] mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
