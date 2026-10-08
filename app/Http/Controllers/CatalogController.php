@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
+    /** Nilai sort yang diizinkan (sama dengan opsi dropdown di view). */
+    private const SORTS = ['terbaru', 'termahal', 'termurah'];
+
     public function index(Request $request, string $defaultType = 'ready')
     {
         $canSeePo = $this->canSeePo($request);
@@ -22,7 +25,12 @@ class CatalogController extends Controller
         // Ready Stock dicek lewat show_public, PO dicek lewat show_member.
         $visibleColumn = $currentType === 'po' ? 'show_member' : 'show_public';
 
-        $products = Product::with(['brand', 'categories', 'colors', 'prices'])
+        // Urutan: nilai di luar daftar dianggap 'terbaru'
+        $sort = in_array($request->query('sort'), self::SORTS, true)
+            ? $request->query('sort')
+            : 'terbaru';
+
+        $query = Product::with(['brand', 'categories', 'colors', 'prices'])
             ->withMin('prices', 'price')
             ->withMax('prices', 'price')
             ->where('is_active', true)
@@ -38,10 +46,21 @@ class CatalogController extends Controller
                 $q->whereHas('categories', function ($c) use ($request) {
                     $c->where('categories.id', $request->query('category'));
                 });
-            })
-            ->latest()
-            ->paginate(12)
-            ->withQueryString();
+            });
+
+        // Produk tanpa harga selalu ditaruh paling bawah; id dipakai sebagai
+        // pembeda terakhir supaya urutan antar halaman tidak tertukar.
+        match ($sort) {
+            'termahal' => $query->orderByRaw('prices_max_price IS NULL')
+                                ->orderByDesc('prices_max_price')
+                                ->orderByDesc('id'),
+            'termurah' => $query->orderByRaw('prices_min_price IS NULL')
+                                ->orderBy('prices_min_price')
+                                ->orderByDesc('id'),
+            default    => $query->latest()->orderByDesc('id'),
+        };
+
+        $products = $query->paginate(12)->withQueryString();
 
         return view('catalog.index', [
             'products'        => $products,

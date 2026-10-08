@@ -283,16 +283,4 @@ Route::middleware(['auth'])->group(function () {
         return view('member.pre-order');
     })->name('member.pre-order');
 });
-// Route::middleware(['auth'])->group(function () {
-//     Route::get('/member/profile', function () {
-//         return view('member.profile');
-//     })->name('member.profile');
-// });
-
-Route::middleware(['auth'])->group(function () {
-    // Route Dashboard Admin
-    // Route::get('/admin/dashboard', function () {
-    //     return view('admin.dashboard');
-    // })->name('admin.dashboard');
-});
 

@@ -25,17 +25,22 @@ class BannerController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Hanya judul yang wajib diisi
         $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'type' => 'required|in:slider,promo',
+            'title'       => 'required|string|max:255',
+            'type'        => 'nullable|in:slider,promo',
             'description' => 'nullable|string',
-            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'url' => 'nullable|url|max:255',
-            'order' => 'required|integer|min:0',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'url'         => 'nullable|url|max:255',
+            'order'       => 'nullable|integer|min:0',
         ]);
 
-        $data['image_path'] = $request->file('image')->store('banners', 'public');
-        $data['status'] = $request->boolean('status') ? 'aktif' : 'nonaktif';
+        $data['type']       = $data['type'] ?? 'slider';
+        $data['order']      = $data['order'] ?? 0;
+        $data['image_path'] = $request->hasFile('image')
+            ? $request->file('image')->store('banners', 'public')
+            : null;
+        $data['status']     = $request->boolean('status') ? 'aktif' : 'nonaktif';
         unset($data['image']);
 
         Banner::create($data);
@@ -46,19 +51,23 @@ class BannerController extends Controller
     public function update(Request $request, Banner $banner): RedirectResponse
     {
         $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'type' => 'required|in:slider,promo',
+            'title'       => 'required|string|max:255',
+            'type'        => 'nullable|in:slider,promo',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'url' => 'nullable|url|max:255',
-            'order' => 'required|integer|min:0',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'url'         => 'nullable|url|max:255',
+            'order'       => 'nullable|integer|min:0',
         ]);
 
+        $data['type']   = $data['type'] ?? $banner->type;
+        $data['order']  = $data['order'] ?? 0;
         $data['status'] = $request->boolean('status') ? 'aktif' : 'nonaktif';
 
         if ($request->hasFile('image')) {
             // Hapus gambar lama biar tidak numpuk sampah di storage
-            Storage::disk('public')->delete($banner->image_path);
+            if ($banner->image_path) {
+                Storage::disk('public')->delete($banner->image_path);
+            }
             $data['image_path'] = $request->file('image')->store('banners', 'public');
         }
 
@@ -82,7 +91,11 @@ class BannerController extends Controller
 
     public function destroy(Banner $banner): RedirectResponse
     {
-        Storage::disk('public')->delete($banner->image_path);
+        // image_path bisa kosong karena gambar tidak wajib
+        if ($banner->image_path) {
+            Storage::disk('public')->delete($banner->image_path);
+        }
+
         $banner->delete();
 
         return redirect()->route('banners.index')->with('success', 'Banner berhasil dihapus.');

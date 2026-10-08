@@ -37,7 +37,7 @@
                 </div>
                 <div>
                     <label class="text-sm font-medium text-gray-700">Tipe</label>
-                    <select name="type" required class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-gray-900">
+                    <select name="type" class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-gray-900">
                         <option value="slider" @selected(old('type', 'slider') === 'slider')>Slider</option>
                         <option value="promo" @selected(old('type') === 'promo')>Promo</option>
                     </select>
@@ -50,8 +50,8 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="text-sm font-medium text-gray-700">Gambar Banner</label>
-                    <input type="file" name="image" accept="image/*" required
+                    <label class="text-sm font-medium text-gray-700">Gambar Banner (Opsional)</label>
+                    <input type="file" name="image" accept="image/*"
                            class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-sm text-gray-700">
                     <p class="text-xs text-gray-500 mt-1">
                         Gambar akan otomatis dipotong (cover) mengikuti rasio 21:7 (lebar/landscape) di halaman utama — gambar portrait tetap bisa diupload, tapi bagian tengahnya yang akan tampil. Untuk hasil terbaik, gunakan foto landscape (mendatar).
@@ -65,7 +65,7 @@
                 </div>
                 <div>
                     <label class="text-sm font-medium text-gray-700">Urutan</label>
-                    <input type="number" name="order" value="{{ old('order', 0) }}" min="0" required
+                    <input type="number" name="order" value="{{ old('order', 0) }}" min="0"
                            class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-gray-900">
                 </div>
                 <div class="flex items-center">
@@ -106,7 +106,7 @@
                 </div>
                 <div>
                     <label class="text-sm font-medium text-gray-700">Tipe</label>
-                    <select name="type" required class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-gray-900">
+                    <select name="type" class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-gray-900">
                         <option value="slider" @selected(old('type', $editingBanner->type) === 'slider')>Slider</option>
                         <option value="promo" @selected(old('type', $editingBanner->type) === 'promo')>Promo</option>
                     </select>
@@ -119,7 +119,7 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="text-sm font-medium text-gray-700">Gambar Banner</label>
+                    <label class="text-sm font-medium text-gray-700">Gambar Banner (Opsional)</label>
                     <input type="file" name="image" accept="image/*"
                            class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-sm text-gray-700">
                     <p class="text-xs text-gray-500 mt-1">
@@ -128,8 +128,14 @@
 
                     <div class="mt-3">
                         <p class="text-xs text-gray-500 mb-1">Gambar saat ini:</p>
-                        <img src="{{ $editingBanner->image_url }}" alt="{{ $editingBanner->title }}"
-                             class="w-full max-w-md aspect-[21/7] object-cover rounded-md border border-gray-200">
+                        @if ($editingBanner->image_path)
+                            <img src="{{ $editingBanner->image_url }}" alt="{{ $editingBanner->title }}"
+                                 class="w-full max-w-md aspect-[21/7] object-cover rounded-md border border-gray-200">
+                        @else
+                            <div class="w-full max-w-md aspect-[21/7] rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center text-xs text-gray-500">
+                                Belum ada gambar
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -140,7 +146,7 @@
                 </div>
                 <div>
                     <label class="text-sm font-medium text-gray-700">Urutan</label>
-                    <input type="number" name="order" value="{{ old('order', $editingBanner->order) }}" min="0" required
+                    <input type="number" name="order" value="{{ old('order', $editingBanner->order) }}" min="0"
                            class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-gray-900">
                 </div>
                 <div class="flex items-center">
@@ -180,8 +186,14 @@
                     @forelse ($banners as $banner)
                         <tr class="hover:bg-gray-50/60 transition-colors">
                             <td class="px-6 py-4">
-                                <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}"
-                                     class="w-20 aspect-[21/7] object-cover rounded-md">
+                                @if ($banner->image_path)
+                                    <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}"
+                                         class="w-20 aspect-[21/7] object-cover rounded-md">
+                                @else
+                                    <div class="w-20 aspect-[21/7] rounded-md bg-gray-100 flex items-center justify-center text-[10px] text-gray-500">
+                                        Tanpa gambar
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $banner->title }}</td>
                             <td class="px-6 py-4">
