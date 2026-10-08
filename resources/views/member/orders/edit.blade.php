@@ -3,7 +3,7 @@
 
 @section('title', 'Edit Pesanan ' . $order->order_number)
 
-{{-- Data dikirim OrderEditController@edit: $order, $items, $variants, $product --}}
+{{-- Data dikirim OrderEditController@edit: $order, $items, $variants, $product, $provinces --}}
 @php
     $remaining = $order->editSecondsLeft();
     $dpPercent = (float) ($order->dp_percent ?? 30);
@@ -84,21 +84,33 @@
                             </div>
                             <div>
                                 <label class="block text-gray-800 mb-2">WhatsApp</label>
-                                <input type="text" name="whatsapp" required
+                                <input type="tel" name="whatsapp" required inputmode="numeric" autocomplete="tel"
+                                       placeholder="08xxxxxxxxxx" maxlength="13"
+                                       pattern="08[1-9][0-9]{7,11}"
+                                       title="Gunakan format 08xxxxxxxxxx (10-13 digit, hanya angka)"
+                                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                        value="{{ old('whatsapp', $order->whatsapp_number) }}"
-                                       class="w-full rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C]">
+                                       class="w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C] {{ $errors->has('whatsapp') ? 'border-red-500' : 'border-gray-200' }}">
+                                @error('whatsapp') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-gray-800 mb-2">Email (Opsional)</label>
-                                <input type="email" name="email"
+                                <label class="block text-gray-800 mb-2">Email</label>
+                                <input type="email" name="email" required autocomplete="email"
+                                       placeholder="nama@email.com"
                                        value="{{ old('email', $order->email) }}"
-                                       class="w-full rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C]">
+                                       class="w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C] {{ $errors->has('email') ? 'border-red-500' : 'border-gray-200' }}">
+                                @error('email') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block text-gray-800 mb-2">Provinsi</label>
-                                <input type="text" name="province" required
-                                       value="{{ old('province', $order->province) }}"
-                                       class="w-full rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C]">
+                                <select name="province" required
+                                        class="w-full rounded-lg border bg-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]/40 focus:border-[#8B5E3C] {{ $errors->has('province') ? 'border-red-500' : 'border-gray-200' }}">
+                                    <option value="">- Pilih Provinsi -</option>
+                                    @foreach ($provinces as $prov)
+                                        <option value="{{ $prov }}" @selected(old('province', $order->province) === $prov)>{{ $prov }}</option>
+                                    @endforeach
+                                </select>
+                                @error('province') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block text-gray-800 mb-2">Kota/Kabupaten</label>

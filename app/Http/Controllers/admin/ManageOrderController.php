@@ -467,7 +467,7 @@ class ManageOrderController extends Controller
         abort_unless($order->payment_method === 'dp' && ! $order->dp_paid_at, 404);
 
         $order->forceFill(['dp_paid_at' => now()])->save();
-        $this->reviewLatestProof($order, 'verified');
+        $this->reviewLatestProof($order, 'verified', 'dp'); // hanya bukti DP, bukan bukti sisa
 
         return back()->with('success', "DP pesanan {$order->order_number} ditandai lunas.");
     }
@@ -478,9 +478,33 @@ class ManageOrderController extends Controller
         abort_unless($order->payment_method === 'dp' && $order->dp_paid_at && ! $order->remaining_paid_at, 404);
 
         $order->forceFill(['remaining_paid_at' => now(), 'payment_status' => 'paid'])->save();
-        $this->reviewLatestProof($order, 'verified');
+        $this->reviewLatestProof($order, 'verified', 'remaining'); // hanya bukti sisa, bukan bukti DP
 
         return back()->with('success', "Sisa pembayaran {$order->order_number} ditandai lunas.");
+    }
+
+    /**
+     * Tolak bukti DP / Sisa yang masih 'pending' (pesanan Down Payment).
+     * Status bukti jadi 'rejected' sehingga pembeli bisa mengunggah ulang.
+     *
+     * $type: 'dp' | 'remaining'
+     */
+    public function rejectProof(CustomerOrder $order, string $type)
+    {
+        abort_unless($order->payment_method === 'dp' && in_array($type, ['dp', 'remaining'], true), 404);
+
+        $hasPending = $order->paymentConfirmations()
+            ->where('type', $type)
+            ->where('status', 'pending')
+            ->exists();
+
+        abort_unless($hasPending, 404, 'Tidak ada bukti yang menunggu verifikasi.');
+
+        $this->reviewLatestProof($order, 'rejected', $type);
+
+        $label = $type === 'dp' ? 'DP' : 'pelunasan';
+
+        return back()->with('success', "Bukti {$label} pesanan {$order->order_number} ditolak. Pembeli dapat mengunggah ulang.");
     }
 
     /** Hapus pesanan beserta file bukti transfernya */
@@ -514,9 +538,19 @@ class ManageOrderController extends Controller
         return Storage::disk('public')->download($confirmation->proof_path, $name);
     }
 
-    private function reviewLatestProof(CustomerOrder $order, string $status): void
+    /**
+     * Ubah status bukti 'pending' terbaru.
+     * Bila $type diisi ('dp' / 'remaining'), hanya bukti dengan tipe itu yang disentuh,
+     * sehingga bukti DP dan bukti sisa tidak saling tertukar.
+     */
+    private function reviewLatestProof(CustomerOrder $order, string $status, ?string $type = null): void
     {
-        $proof = $order->paymentConfirmations()->where('status', 'pending')->latest('id')->first();
+        $proof = $order->paymentConfirmations()
+            ->where('status', 'pending')
+            ->when($type, fn ($q) => $q->where('type', $type))
+            ->latest('id')
+            ->first();
+
         $proof?->update(['status' => $status]);
     }
 }

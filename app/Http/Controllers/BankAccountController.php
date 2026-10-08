@@ -25,11 +25,7 @@ class BankAccountController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'bank_name' => 'required|string|max:255',
-            'account_number' => 'required|string|max:50',
-            'account_holder_name' => 'required|string|max:255',
-        ]);
+        $data = $this->validated($request);
 
         BankAccount::create($data);
 
@@ -38,11 +34,7 @@ class BankAccountController extends Controller
 
     public function update(Request $request, BankAccount $bank): RedirectResponse
     {
-        $data = $request->validate([
-            'bank_name' => 'required|string|max:255',
-            'account_number' => 'required|string|max:50',
-            'account_holder_name' => 'required|string|max:255',
-        ]);
+        $data = $this->validated($request);
 
         $bank->update($data);
 
@@ -65,5 +57,21 @@ class BankAccountController extends Controller
         $bank->delete();
 
         return redirect()->route('banks.index')->with('success', 'Bank berhasil dihapus.');
+    }
+
+    /**
+     * Validasi bersama untuk tambah & edit.
+     * Nomor rekening: hanya angka, 6-20 digit (tanpa spasi, tanda hubung, atau huruf).
+     */
+    private function validated(Request $request): array
+    {
+        return $request->validate([
+            'bank_name'           => 'required|string|max:255',
+            'account_number'      => ['required', 'regex:/^[0-9]{6,20}$/'],
+            'account_holder_name' => 'required|string|max:255',
+        ], [
+            'account_number.required' => 'Nomor rekening wajib diisi.',
+            'account_number.regex'    => 'Nomor rekening harus berupa angka saja (6-20 digit), tanpa spasi atau tanda hubung.',
+        ]);
     }
 }

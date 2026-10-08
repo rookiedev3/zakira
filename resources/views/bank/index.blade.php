@@ -13,6 +13,9 @@
     $ghostBtnClass = 'relative items-center font-normal justify-center h-8 text-sm rounded-md px-3 inline-flex bg-transparent text-gray-900 dark:text-white hover:bg-zinc-800/5 dark:hover:bg-white/15 transition-colors';
     $errorBoxClass = 'rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 mb-4 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300';
 
+    // Nomor rekening: hanya angka (6-20 digit). oninput membuang karakter selain angka.
+    $accountNumberAttrs = 'inputmode="numeric" maxlength="20" pattern="[0-9]{6,20}" title="Nomor rekening harus berupa angka saja (6-20 digit)" oninput="this.value = this.value.replace(/\D/g, \'\')"';
+
     // ---- MODE DEMO: aktif kalau controller tidak mengirim $bankAccounts ----
     $demo = ! isset($bankAccounts);
     $demoAlert = "alert('Mode demo: belum terhubung ke backend.'); return false;";
@@ -75,7 +78,8 @@
                 <div>
                     <label for="create_account_number" class="{{ $labelClass }}">Nomor Rekening</label>
                     <input type="text" id="create_account_number" name="account_number" value="{{ old('account_number') }}"
-                           placeholder="Masukkan nomor rekening" required class="{{ $inputClass }}">
+                           placeholder="Masukkan nomor rekening (angka saja)" required {!! $accountNumberAttrs !!}
+                           class="{{ $inputClass }}">
                 </div>
                 <div class="md:col-span-2">
                     <label for="create_account_holder_name" class="{{ $labelClass }}">Nama Pemilik Rekening</label>
@@ -112,7 +116,8 @@
                 <div>
                     <label for="edit_account_number" class="{{ $labelClass }}">Nomor Rekening</label>
                     <input type="text" id="edit_account_number" name="account_number" value="{{ old('account_number', $editingBankAccount->account_number) }}"
-                           required class="{{ $inputClass }}">
+                           required {!! $accountNumberAttrs !!}
+                           class="{{ $inputClass }}">
                 </div>
                 <div class="md:col-span-2">
                     <label for="edit_account_holder_name" class="{{ $labelClass }}">Nama Pemilik Rekening</label>

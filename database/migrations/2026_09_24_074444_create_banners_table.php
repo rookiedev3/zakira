@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('title');
             $table->enum('type', ['slider', 'promo'])->default('slider');
             $table->text('description')->nullable();
-            $table->string('image_path')->nullable();
+            $table->string('image_path');
             $table->string('url')->nullable();
             $table->unsignedInteger('order')->default(0);
             $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');

@@ -50,8 +50,8 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="text-sm font-medium text-gray-700">Gambar Banner (Opsional)</label>
-                    <input type="file" name="image" accept="image/*"
+                    <label class="text-sm font-medium text-gray-700">Gambar Banner</label>
+                    <input type="file" name="image" accept="image/*" required
                            class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-sm text-gray-700">
                     <p class="text-xs text-gray-500 mt-1">
                         Gambar akan otomatis dipotong (cover) mengikuti rasio 21:7 (lebar/landscape) di halaman utama — gambar portrait tetap bisa diupload, tapi bagian tengahnya yang akan tampil. Untuk hasil terbaik, gunakan foto landscape (mendatar).
@@ -119,7 +119,7 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="text-sm font-medium text-gray-700">Gambar Banner (Opsional)</label>
+                    <label class="text-sm font-medium text-gray-700">Gambar Banner</label>
                     <input type="file" name="image" accept="image/*"
                            class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 text-sm text-gray-700">
                     <p class="text-xs text-gray-500 mt-1">

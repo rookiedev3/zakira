@@ -83,9 +83,10 @@ class ProfileController extends Controller
         $user = Auth::user()->load('detail');
 
         // Riwayat pesanan milik user ini, dicocokkan lewat email atau no telp (10 per halaman)
+        // paymentConfirmations ikut dimuat agar view bisa menampilkan status bukti (menunggu / ditolak) tanpa N+1
         $orders = CustomerOrder::ownedBy($user)
             ->withCount('items')
-            ->with(['items', 'invoice'])
+            ->with(['items', 'invoice', 'paymentConfirmations'])
             ->latest()
             ->paginate(10, ['*'], 'pesanan')
             ->withQueryString();
@@ -186,20 +187,32 @@ class ProfileController extends Controller
         $order = $this->ownOrder($orderNumber);
 
         if (! $this->canPay($order, $type)) {
-            return redirect()->route('member.profile')->with('error', $this->payDeniedMessage($type));
+            return redirect()->route('member.profile')->with('error', $this->payDeniedMessage($order, $type));
         }
 
         return view('member.orders.pay', [
             'type'         => $type,
             'order'        => $order,
             'bankAccounts' => $this->bankAccounts(),
+            // Bukti yang sedang menunggu verifikasi (null = belum ada). Bila ada, upload baru akan MENGGANTI bukti ini.
+            'pendingProof' => $order->paymentConfirmations()
+                ->where('type', $type)
+                ->where('status', 'pending')
+                ->latest('id')
+                ->first(),
         ]);
     }
 
     /**
      * Upload bukti transfer DP / Sisa.
      * Disimpan sebagai PaymentConfirmation berstatus 'pending'; admin yang
-     * menandai lunas lewat ManageOrderController (markDpPaid / markRemainingPaid).
+     * menandai lunas lewat ManageOrderController (markDpPaid / markRemainingPaid)
+     * atau menolak bukti (rejectProof) sehingga pembeli bisa upload ulang.
+     *
+     * Selama bukti belum disetujui admin, pembeli boleh mengunggah ulang: bukti 'pending'
+     * yang ada DIGANTI (bukan ditambah), jadi tidak pernah ada dua bukti pending untuk satu jenis.
+     * Setelah disetujui (dp_paid_at / remaining_paid_at terisi) bukti tidak bisa diubah lagi.
+     * Bayar Sisa tetap baru terbuka setelah DP disetujui (lihat canPay()).
      *
      * Begitu bukti tersimpan, pesanan tidak bisa diedit lagi (CustomerOrder::editBlockReason()).
      */
@@ -210,42 +223,86 @@ class ProfileController extends Controller
         $order = $this->ownOrder($orderNumber);
 
         if (! $this->canPay($order, $type)) {
-            return redirect()->route('member.profile')->with('error', $this->payDeniedMessage($type));
+            return redirect()->route('member.profile')->with('error', $this->payDeniedMessage($order, $type));
         }
 
         $request->validate([
-            'payment_proof' => ['required', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048'],
+            // Sama dengan keterangan di checkout: PNG, JPG, PDF hingga 2MB.
+            // Aturan 'image' sengaja tidak dipakai karena akan menolak PDF.
+            'payment_proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ]);
 
         $path = $request->file('payment_proof')->store('payment-proofs', 'public');
 
-        // Kunci baris pesanan, lalu baca ulang datanya. Simpan edit pesanan juga mengunci baris yang sama,
-        // jadi nominal di bawah selalu memakai total terbaru dan edit tidak bisa menyelip setelah bukti masuk.
-        DB::transaction(function () use ($order, $type, $path) {
-            $fresh = CustomerOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
+        $replaced = false;
+        $oldPath  = null;
 
-            // Nominal yang seharusnya dibayar: DP = amount_due, Sisa = total - amount_due.
-            $amount = $type === 'dp'
-                ? (int) $fresh->amount_due
-                : max(0, (int) $fresh->total - (int) $fresh->amount_due);
+        try {
+            // Kunci baris pesanan, lalu baca ulang datanya. Simpan edit pesanan juga mengunci baris yang sama,
+            // jadi nominal di bawah selalu memakai total terbaru dan edit tidak bisa menyelip setelah bukti masuk.
+            DB::transaction(function () use ($order, $type, $path, &$replaced, &$oldPath) {
+                $fresh = CustomerOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
 
-            // Kolom `amount` wajib diisi (NOT NULL tanpa default di tabel payment_confirmations).
-            // Kolom `type` ('dp' / 'remaining') dipakai admin untuk memisahkan bukti DP dan pelunasan.
-            $fresh->paymentConfirmations()->forceCreate([
-                'type'          => $type,
-                'amount'        => $amount,
-                'account_name'  => trim($fresh->first_name . ' ' . $fresh->last_name),
-                'transfer_date' => now('Asia/Jakarta')->toDateString(),
-                'proof_path'    => $path,
-                'status'        => 'pending',
-            ]);
-        });
+                // Cek ulang di dalam kunci: admin mungkin baru saja menyetujui / pesanan dibatalkan
+                $stillOpen = $fresh->status !== 'cancelled' && ($type === 'dp'
+                    ? ! $fresh->dp_paid_at
+                    : ($fresh->dp_paid_at && ! $fresh->remaining_paid_at));
+
+                if (! $stillOpen) {
+                    throw ValidationException::withMessages([
+                        'payment_proof' => 'Bukti tidak dapat diubah lagi karena pembayaran sudah diverifikasi.',
+                    ]);
+                }
+
+                // Nominal yang seharusnya dibayar: DP = amount_due, Sisa = total - amount_due.
+                $amount = $type === 'dp'
+                    ? (int) $fresh->amount_due
+                    : max(0, (int) $fresh->total - (int) $fresh->amount_due);
+
+                $attrs = [
+                    'amount'        => $amount,
+                    'account_name'  => trim($fresh->first_name . ' ' . $fresh->last_name),
+                    'transfer_date' => now('Asia/Jakarta')->toDateString(),
+                    'proof_path'    => $path,
+                    'status'        => 'pending',
+                    'created_at'    => now(), // admin melihat waktu bukti TERBARU
+                ];
+
+                $pending = $fresh->paymentConfirmations()
+                    ->where('type', $type)
+                    ->where('status', 'pending')
+                    ->latest('id')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($pending) {
+                    // Ganti bukti lama (file lama dihapus setelah transaksi sukses)
+                    $oldPath = $pending->proof_path;
+                    $pending->forceFill($attrs)->save();
+                    $replaced = true;
+                } else {
+                    // Kolom `amount` wajib diisi (NOT NULL tanpa default di tabel payment_confirmations).
+                    // Kolom `type` ('dp' / 'remaining') dipakai admin untuk memisahkan bukti DP dan pelunasan.
+                    $fresh->paymentConfirmations()->forceCreate($attrs + ['type' => $type]);
+                }
+            });
+        } catch (\Throwable $e) {
+            // Transaksi gagal: jangan tinggalkan file bukti yatim di storage
+            Storage::disk('public')->delete($path);
+            throw $e;
+        }
+
+        if ($oldPath && $oldPath !== $path) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $label = $type === 'dp' ? 'pembayaran DP' : 'pelunasan';
 
         return redirect()->route('member.profile')->with(
             'success',
-            $type === 'dp'
-                ? 'Bukti pembayaran DP berhasil diunggah.'
-                : 'Bukti pelunasan berhasil diunggah.'
+            $replaced
+                ? "Bukti {$label} berhasil diganti. Mohon tunggu verifikasi admin."
+                : "Bukti {$label} berhasil diunggah. Mohon tunggu verifikasi admin."
         );
     }
 
@@ -297,17 +354,27 @@ class ProfileController extends Controller
             'image' => $productImage ?: $placeholder,
         ];
 
-        return view('member.orders.edit', compact('order', 'variants', 'product', 'items'));
+        // Daftar provinsi sama dengan dropdown di Edit Profil / checkout
+        $provinces = self::PROVINCES;
+
+        return view('member.orders.edit', compact('order', 'variants', 'product', 'items', 'provinces'));
     }
 
     /** Simpan perubahan pesanan */
     public function updateOrder(Request $request, string $orderNumber)
     {
+        // Rapikan nomor WhatsApp sebelum divalidasi: buang spasi / strip / kurung / titik,
+        // lalu awalan +62 atau 62 diubah jadi 0 (mis. +62 812-3456-7890 -> 081234567890)
+        $wa = preg_replace('/[\s\-\(\)\.]/', '', (string) $request->input('whatsapp'));
+        $wa = preg_replace('/^\+?62/', '0', $wa);
+        $request->merge(['whatsapp' => $wa]);
+
         $data = $request->validate([
             'customer_name'      => ['required', 'string', 'max:100'],
-            'whatsapp'           => ['required', 'string', 'max:20'],
-            'email'              => ['nullable', 'email', 'max:255'],
-            'province'           => ['required', 'string', 'max:100'],
+            // Nomor seluler Indonesia: 08xx, total 10-13 digit
+            'whatsapp'           => ['required', 'regex:/^08[1-9][0-9]{7,11}$/'],
+            'email'              => ['required', 'email', 'max:255'],
+            'province'           => ['required', Rule::in(self::PROVINCES)],
             'city'               => ['required', 'string', 'max:100'],
             'postal_code'        => ['required', 'string', 'max:10'],
             'address'            => ['required', 'string', 'max:1000'],
@@ -316,6 +383,13 @@ class ProfileController extends Controller
             'items'              => ['required', 'array', 'min:1'],
             'items.*.variant_id' => ['required', 'string', 'distinct', 'regex:/^(\d+-\d+-\d+|old-\d+)$/'],
             'items.*.quantity'   => ['required', 'integer', 'min:1', 'max:999'],
+        ], [
+            'whatsapp.required' => 'Nomor WhatsApp wajib diisi.',
+            'whatsapp.regex'    => 'Nomor WhatsApp tidak valid. Gunakan format 08xxxxxxxxxx (10-13 digit).',
+            'email.required'    => 'Email wajib diisi.',
+            'email.email'       => 'Format email tidak valid.',
+            'province.required' => 'Provinsi wajib dipilih.',
+            'province.in'       => 'Provinsi tidak valid, silakan pilih dari daftar.',
         ]);
 
         $user = Auth::user()->load('detail');
@@ -377,6 +451,7 @@ class ProfileController extends Controller
             $discount = $coupon ? $this->discountFor($coupon, $subtotal) : 0;
             $total    = max(0, $subtotal - $discount);
 
+            // dp_percent bisa desimal (mis. 27.5), jadi dibaca sebagai float, bukan int
             $amountDue = $order->payment_method === 'full'
                 ? $total
                 : (int) round($total * ((float) ($order->dp_percent ?? 30)) / 100);
@@ -456,7 +531,24 @@ class ProfileController extends Controller
             ->firstOrFail();
     }
 
-    /** Syarat boleh membayar. Dicek di halaman maupun saat upload. */
+    /**
+     * Sudah ada bukti jenis $type yang menunggu verifikasi admin?
+     * Query langsung ke database (bukan relasi yang sudah di-load) supaya selalu data terbaru.
+     */
+    private function hasPendingProof(CustomerOrder $order, string $type): bool
+    {
+        return $order->paymentConfirmations()
+            ->where('type', $type)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    /**
+     * Syarat boleh membayar / mengunggah / mengganti bukti. Dicek di halaman maupun saat upload.
+     * - DP: boleh selama DP belum disetujui admin (termasuk mengganti bukti yang masih pending / ditolak).
+     * - Sisa: hanya setelah DP disetujui, dan selama sisa belum disetujui.
+     * Jadi selama DP belum di-ACC, pembeli tidak bisa masuk ke Bayar Sisa.
+     */
     private function canPay(CustomerOrder $order, string $type): bool
     {
         if ($order->payment_method === 'full' || $order->status === 'cancelled') {
@@ -468,8 +560,16 @@ class ProfileController extends Controller
             : (bool) ($order->dp_paid_at && ! $order->remaining_paid_at);
     }
 
-    private function payDeniedMessage(string $type): string
+    private function payDeniedMessage(CustomerOrder $order, string $type): string
     {
+        if ($type === 'dp' && $order->dp_paid_at) {
+            return 'DP sudah diverifikasi admin, bukti tidak dapat diubah lagi.';
+        }
+
+        if ($type === 'remaining' && ! $order->dp_paid_at) {
+            return 'Pembayaran sisa baru dapat dilakukan setelah DP disetujui admin.';
+        }
+
         return $type === 'dp'
             ? 'Pesanan ini tidak memerlukan pembayaran DP.'
             : 'Pesanan ini tidak memerlukan pembayaran sisa.';

@@ -6,6 +6,8 @@
       $type         : 'dp' atau 'remaining'
       $order        : model CustomerOrder (order_number, created_at, status, total, amount_due, dp_paid_at)
       $bankAccounts : koleksi rekening aktif (bank_name, account_number, account_name, is_active)
+      $pendingProof : bukti jenis ini yang masih menunggu verifikasi admin (null bila belum ada);
+                      bila ada, upload baru MENGGANTI bukti tersebut
 --}}
 @extends('layouts.app')
 
@@ -194,9 +196,48 @@
 
             <!-- Upload Bukti Pembayaran -->
             <div class="bg-white p-7 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 class="text-[1.35rem] font-semibold text-gray-900 mb-6">Upload Bukti Pembayaran</h3>
+                <h3 class="text-[1.35rem] font-semibold text-gray-900 mb-6">{{ $pendingProof ? 'Ganti Bukti Pembayaran' : 'Upload Bukti Pembayaran' }}</h3>
 
-                <form action="{{ $formAction }}" method="POST" enctype="multipart/form-data" x-data="{ fileName: '' }">
+                {{-- Bukti yang sedang menunggu verifikasi admin: upload baru akan menggantikannya --}}
+                @if ($pendingProof)
+                    @php
+                        $pendingUrl = asset('storage/' . ltrim($pendingProof->proof_path, '/'));
+                        $pendingPdf = strtolower(pathinfo($pendingProof->proof_path, PATHINFO_EXTENSION)) === 'pdf';
+                    @endphp
+                    <div class="mb-6 bg-[#eff6ff] border border-[#bfdbfe] text-[#1447e6] rounded-xl p-4 text-base">
+                        <p class="font-medium">Bukti Anda sudah terkirim dan sedang diverifikasi admin.</p>
+                        <p class="text-sm mt-1">Bila ada kesalahan, upload file baru di bawah untuk menggantinya sebelum disetujui.</p>
+
+                        @if ($pendingPdf)
+                            <a href="{{ $pendingUrl }}" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-2 mt-3 text-sm font-medium underline">
+                                Lihat bukti saat ini (PDF) &middot; dikirim {{ $wib($pendingProof->created_at) }}
+                            </a>
+                        @else
+                            <a href="{{ $pendingUrl }}" target="_blank" rel="noopener" class="block mt-3">
+                                <img src="{{ $pendingUrl }}" alt="Bukti saat ini" class="max-h-48 rounded-lg border border-[#bfdbfe]">
+                            </a>
+                            <p class="text-sm mt-2">Dikirim {{ $wib($pendingProof->created_at) }}</p>
+                        @endif
+                    </div>
+                @endif
+
+                <form action="{{ $formAction }}" method="POST" enctype="multipart/form-data"
+                      x-data="{
+                          fileName: '',
+                          error: '',
+                          pick(e) {
+                              const f = e.target.files[0];
+                              this.error = '';
+                              if (f && f.size > 2 * 1024 * 1024) {
+                                  this.error = 'Ukuran file maksimal 2MB.';
+                                  e.target.value = '';
+                                  this.fileName = '';
+                                  return;
+                              }
+                              this.fileName = f ? f.name : '';
+                          }
+                      }">
                     @csrf
 
                     <label for="payment_proof" class="block text-base font-medium text-gray-900 mb-3">{{ $proofLabel }}</label>
@@ -207,9 +248,11 @@
                             Pilih File
                         </label>
                         <span class="text-gray-600 text-base truncate" x-text="fileName || 'Belum ada file dipilih'"></span>
-                        <input id="payment_proof" type="file" name="payment_proof" accept="image/jpeg,image/png,image/gif" class="sr-only"
-                               @change="fileName = $event.target.files[0]?.name ?? ''">
+                        <input id="payment_proof" type="file" name="payment_proof" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" class="sr-only"
+                               @change="pick($event)">
                     </div>
+
+                    <p x-show="error" x-cloak x-text="error" class="text-red-600 text-sm mt-2"></p>
 
                     @error('payment_proof')
                         <p class="text-red-600 text-sm mt-2">{{ $message }}</p>
@@ -217,12 +260,12 @@
 
                     <p class="text-gray-500 text-sm mt-4 flex items-center gap-2">
                         <svg class="w-4 h-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" /></svg>
-                        Format yang didukung: JPG, PNG, GIF. Maksimal 2MB.
+                        PNG, JPG, PDF hingga 2MB.
                     </p>
 
                     <button type="submit"
                             class="w-full mt-6 bg-[#8C6239] hover:bg-[#724e2c] text-white text-lg font-medium py-4 rounded-xl transition cursor-pointer">
-                        Upload Bukti Pembayaran
+                        {{ $pendingProof ? 'Ganti Bukti Pembayaran' : 'Upload Bukti Pembayaran' }}
                     </button>
                 </form>
             </div>

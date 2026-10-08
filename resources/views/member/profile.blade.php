@@ -180,7 +180,18 @@
                             $isExcel    = $invoice?->format === 'excel';
                             $cancelled  = $order->status === 'cancelled';
 
-                            // Tombol bayar
+                            // Status bukti transfer terakhir per jenis (relasi sudah di-load di controller)
+                            // pending = menunggu verifikasi admin, rejected = ditolak admin (boleh upload ulang)
+                            $proofs      = $order->paymentConfirmations;
+                            $dpProof     = $proofs->where('type', 'dp')->sortByDesc('id')->first();
+                            $remProof    = $proofs->where('type', 'remaining')->sortByDesc('id')->first();
+                            $dpWaiting   = $dpProof?->status === 'pending';
+                            $dpRejected  = $dpProof?->status === 'rejected';
+                            $remWaiting  = $remProof?->status === 'pending';
+                            $remRejected = $remProof?->status === 'rejected';
+
+                            // Tombol bayar / ganti bukti: tetap ada sampai admin menyetujui.
+                            // Bayar Sisa baru muncul setelah DP disetujui ($dpPaid).
                             $canPayDp        = ! $isFull && ! $dpPaid && ! $cancelled;
                             $canPayRemaining = ! $isFull && $dpPaid && ! $remPaid && ! $cancelled;
 
@@ -241,6 +252,7 @@
                                     @endif
                                 </div>
 
+                                <!-- DP Status: Belum Dibayar -> Menunggu Verifikasi -> DP Lunas (atau Bukti Ditolak) -->
                                 <div>
                                     <span class="text-gray-600 block">DP Status:</span>
                                     @if ($isFull)
@@ -249,13 +261,22 @@
                                         <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-1 rounded-full">
                                             <i class="fas fa-circle-check text-[#008236]"></i> DP Lunas
                                         </span>
+                                    @elseif ($dpWaiting)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dbeafe] text-[#193cb8] text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-hourglass-half"></i> Menunggu Verifikasi
+                                        </span>
+                                    @elseif ($dpRejected)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-circle-xmark"></i> Bukti Ditolak
+                                        </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#fef9c2] text-[#894b00] text-sm font-medium px-3 py-1 rounded-full">
-                                            <i class="fas fa-clock"></i> DP Pending
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-gray-100 text-gray-600 text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-clock"></i> Belum Dibayar
                                         </span>
                                     @endif
                                 </div>
 
+                                <!-- Sisa Bayar: Tunggu DP -> Belum Dibayar -> Menunggu Verifikasi -> Lunas (atau Bukti Ditolak) -->
                                 <div>
                                     <span class="text-gray-600 block">Sisa Bayar:</span>
                                     @if ($isFull)
@@ -264,9 +285,17 @@
                                         <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dcfce7] text-[#016630] text-sm font-medium px-3 py-1 rounded-full">
                                             <i class="fas fa-circle-check text-[#008236]"></i> Lunas
                                         </span>
+                                    @elseif ($dpPaid && $remWaiting)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-[#dbeafe] text-[#193cb8] text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-hourglass-half"></i> Menunggu Verifikasi
+                                        </span>
+                                    @elseif ($dpPaid && $remRejected)
+                                        <span class="inline-flex items-center gap-1.5 mt-1 bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
+                                            <i class="fas fa-circle-xmark"></i> Bukti Ditolak
+                                        </span>
                                     @elseif ($dpPaid)
                                         <span class="inline-flex items-center gap-1.5 mt-1 bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">
-                                            <i class="fas fa-hourglass-half"></i> Menunggu
+                                            <i class="fas fa-clock"></i> Belum Dibayar
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1.5 mt-1 bg-gray-100 text-gray-600 text-sm font-medium px-3 py-1 rounded-full">
@@ -290,6 +319,27 @@
                                 </div>
                             </div>
 
+                            <!-- Info khusus: bukti sedang diverifikasi / ditolak -->
+                            @if (! $cancelled && ! $isFull)
+                                @if ($dpWaiting || ($dpPaid && $remWaiting))
+                                    <div class="bg-blue-50 border border-blue-200 text-blue-800 text-sm p-3 rounded-lg">
+                                        Bukti {{ $dpWaiting ? 'pembayaran DP' : 'pelunasan' }} sudah kami terima dan sedang diverifikasi admin.
+                                        Bila ada kesalahan, Anda masih bisa mengganti bukti sebelum disetujui.
+                                        @if ($dpWaiting)
+                                            Pembayaran sisa baru dapat dilakukan setelah DP disetujui.
+                                        @endif
+                                    </div>
+                                @elseif ($dpRejected && ! $dpPaid)
+                                    <div class="bg-red-50 border border-red-200 text-red-800 text-sm p-3 rounded-lg">
+                                        Bukti pembayaran DP Anda ditolak admin. Silakan upload ulang bukti transfer yang benar.
+                                    </div>
+                                @elseif ($dpPaid && $remRejected && ! $remPaid)
+                                    <div class="bg-red-50 border border-red-200 text-red-800 text-sm p-3 rounded-lg">
+                                        Bukti pelunasan Anda ditolak admin. Silakan upload ulang bukti transfer yang benar.
+                                    </div>
+                                @endif
+                            @endif
+
                             <!-- Edit: sisa waktu jika masih bisa diedit, alasan jika tidak (mis. bukti DP sudah dikirim) -->
                             @if (! $cancelled)
                                 <div class="text-base">
@@ -312,12 +362,12 @@
                                     Lihat Detail
                                 </button>
 
-                                {{-- Bayar DP (biru): metode DP & DP belum lunas --}}
+                                {{-- Bayar DP (biru): metode DP, DP belum lunas, dan tidak ada bukti yang sedang menunggu verifikasi --}}
                                 @if ($canPayDp)
                                     <a href="{{ route('member.orders.pay-dp', $order->order_number) }}"
                                        class="bg-blue-600 hover:bg-blue-700 text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
                                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
-                                        Bayar DP
+                                        {{ $dpWaiting ? 'Ganti Bukti DP' : ($dpRejected ? 'Upload Ulang Bukti DP' : 'Bayar DP') }}
                                     </a>
                                 @endif
 
@@ -330,12 +380,12 @@
                                     </a>
                                 @endif
 
-                                {{-- Bayar Sisa: DP sudah disetujui & sisa belum lunas --}}
+                                {{-- Bayar Sisa: DP sudah disetujui, sisa belum lunas, dan tidak ada bukti sisa yang sedang menunggu verifikasi --}}
                                 @if ($canPayRemaining)
                                     <a href="{{ route('member.orders.pay-remaining', $order->order_number) }}"
                                        class="bg-green-600 hover:bg-green-700 text-white text-base font-medium px-6 py-2.5 rounded-md transition flex items-center gap-2 cursor-pointer">
                                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
-                                        Bayar Sisa
+                                        {{ $remWaiting ? 'Ganti Bukti Sisa' : ($remRejected ? 'Upload Ulang Bukti Sisa' : 'Bayar Sisa') }}
                                     </a>
                                 @endif
 
@@ -539,6 +589,13 @@
             $payKey    = $order->payment_status ?? 'pending';
             $remaining = max(0, (int) $order->total - (int) $order->amount_due);
             $discount  = (int) $order->discount;
+
+            // Label status DP / Sisa di modal (mengikuti status bukti transfer)
+            $mProofs     = $order->paymentConfirmations;
+            $mDpStatus   = $mProofs->where('type', 'dp')->sortByDesc('id')->first()?->status;
+            $mRemStatus  = $mProofs->where('type', 'remaining')->sortByDesc('id')->first()?->status;
+            $dpText      = $dpPaid ? '(Lunas)' : ($mDpStatus === 'pending' ? '(Menunggu Verifikasi)' : ($mDpStatus === 'rejected' ? '(Bukti Ditolak)' : '(Belum Dibayar)'));
+            $remText     = $remPaid ? '(Lunas)' : (! $dpPaid ? '(Tunggu DP)' : ($mRemStatus === 'pending' ? '(Menunggu Verifikasi)' : ($mRemStatus === 'rejected' ? '(Bukti Ditolak)' : '(Belum Dibayar)')));
         @endphp
 
         <div x-show="openDetail === {{ $order->id }}" class="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4" style="display: none;" x-transition.opacity>
@@ -577,8 +634,8 @@
                             @endif
                             <div class="flex justify-between border-t pt-2 mt-2"><span class="text-gray-500">Total:</span> <span class="font-bold text-emerald-700 text-sm">{{ $rp($order->total) }}</span></div>
                             @unless ($isFull)
-                                <div class="flex justify-between"><span class="text-gray-500">DP:</span> <span class="font-medium text-gray-800">{{ $rp($order->amount_due) }} {{ $dpPaid ? '(Lunas)' : '(Pending)' }}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-500">Sisa:</span> <span class="font-medium text-gray-800">{{ $rp($remaining) }} {{ $remPaid ? '(Lunas)' : '(Belum)' }}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">DP:</span> <span class="font-medium text-gray-800">{{ $rp($order->amount_due) }} {{ $dpText }}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">Sisa:</span> <span class="font-medium text-gray-800">{{ $rp($remaining) }} {{ $remText }}</span></div>
                             @endunless
                         </div>
 

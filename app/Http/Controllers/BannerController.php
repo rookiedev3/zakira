@@ -25,21 +25,19 @@ class BannerController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        // Hanya judul yang wajib diisi
+        // Judul dan gambar wajib diisi
         $data = $request->validate([
             'title'       => 'required|string|max:255',
             'type'        => 'nullable|in:slider,promo',
             'description' => 'nullable|string',
-            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'image'       => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
             'url'         => 'nullable|url|max:255',
             'order'       => 'nullable|integer|min:0',
         ]);
 
         $data['type']       = $data['type'] ?? 'slider';
         $data['order']      = $data['order'] ?? 0;
-        $data['image_path'] = $request->hasFile('image')
-            ? $request->file('image')->store('banners', 'public')
-            : null;
+        $data['image_path'] = $request->file('image')->store('banners', 'public');
         $data['status']     = $request->boolean('status') ? 'aktif' : 'nonaktif';
         unset($data['image']);
 
@@ -91,7 +89,7 @@ class BannerController extends Controller
 
     public function destroy(Banner $banner): RedirectResponse
     {
-        // image_path bisa kosong karena gambar tidak wajib
+        // Jaga-jaga bila ada data lama tanpa gambar
         if ($banner->image_path) {
             Storage::disk('public')->delete($banner->image_path);
         }
