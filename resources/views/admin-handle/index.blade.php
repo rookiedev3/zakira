@@ -4,13 +4,13 @@
 
 @section('content')
 @php
-    $inputClass = 'w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500';
+    $inputClass = 'w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500';
     $labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
-    $thClass = 'px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider';
-    $cardClass = 'bg-white dark:bg-zinc-900 shadow rounded-lg border border-zinc-200 dark:border-zinc-700';
-    $primaryBtn = 'inline-flex items-center justify-center h-10 px-5 text-sm font-medium rounded-lg bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 dark:border-0';
-    $secondaryBtn = 'inline-flex items-center justify-center h-10 px-5 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700 transition-colors';
-    $ghostBtnClass = 'relative items-center font-medium justify-center h-8 text-sm rounded-md px-3 inline-flex bg-transparent hover:bg-zinc-800/5 dark:hover:bg-white/15';
+    $thClass = 'px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide';
+    $cardClass = 'bg-white dark:bg-zinc-900 shadow-[0_1px_4px_rgba(0,0,0,0.08)] rounded-xl dark:border dark:border-zinc-700';
+    $primaryBtn = 'inline-flex items-center justify-center h-10 px-5 text-sm font-medium rounded-lg bg-[#8B5E3C] hover:bg-[#7a5134] text-white shadow-sm transition-colors';
+    $secondaryBtn = 'inline-flex items-center justify-center h-10 px-6 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-white dark:hover:bg-zinc-800 transition-colors';
+    $ghostBtnClass = 'relative items-center font-normal justify-center h-8 text-sm rounded-md px-3 inline-flex bg-transparent text-gray-900 dark:text-white hover:bg-zinc-800/5 dark:hover:bg-white/15 transition-colors';
     $adminHandles = $adminHandles ?? collect();
 
     // ---- MODE DEMO: aktif kalau controller tidak mengirim $adminHandles ----
@@ -41,7 +41,7 @@
 
     <!-- Header -->
     <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Admin Handle</h1>
+        <h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Admin Handle</h1>
         @if (! $showCreateForm && ! $editingAdminHandle)
             <a href="{{ $indexUrl . '?' . http_build_query(['form' => 'create']) }}" class="{{ $primaryBtn }}">
                 + Tambah Admin Handle
@@ -50,7 +50,7 @@
     </div>
 
     @if (session('success'))
-        <div class="rounded-lg bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
+        <div class="rounded-lg bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
             {{ session('success') }}
         </div>
     @endif
@@ -61,7 +61,7 @@
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Buat Admin Handle</h2>
 
             @if ($errors->any())
-                <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 mb-4 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+                <div class="rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 mb-4 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
                     {{ $errors->first() }}
                 </div>
             @endif
@@ -89,7 +89,7 @@
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Admin Handle</h2>
 
             @if ($errors->any())
-                <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 mb-4 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+                <div class="rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 mb-4 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
                     {{ $errors->first() }}
                 </div>
             @endif
@@ -116,7 +116,7 @@
     <div class="{{ $cardClass }} overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                <thead class="bg-gray-50 dark:bg-zinc-800">
+                <thead class="bg-slate-50 dark:bg-zinc-800">
                     <tr>
                         <th class="{{ $thClass }}">Nama</th>
                         <th class="{{ $thClass }}">Tanggal Dibuat</th>
@@ -126,24 +126,24 @@
 
                 <tbody class="bg-white dark:bg-zinc-900 divide-y divide-gray-200 dark:divide-zinc-700">
                     @forelse ($adminHandles as $handle)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
+                        <tr class="hover:bg-gray-50/60 dark:hover:bg-zinc-800/50 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ $handle->name }}</td>
 
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $handle->created_at?->format('d M Y H:i') ?? '-' }}
                             </td>
 
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                                 <div class="flex items-center justify-end space-x-2">
                                     {{-- Edit: server-driven lewat query ?edit={id} --}}
                                     <a href="{{ $indexUrl . '?' . http_build_query(['edit' => $handle->id]) }}"
-                                    class="{{ $ghostBtnClass }} text-blue-600 hover:text-blue-800">Edit</a>
+                                    class="{{ $ghostBtnClass }}">Edit</a>
 
                                     <form method="POST" action="{{ $route('admin-handles.destroy', $handle->id) }}"
                                         onsubmit="{{ $demo ? $demoAlert : "return confirm('Apakah Anda yakin ingin menghapus admin handle ini?')" }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="{{ $ghostBtnClass }} text-red-600 hover:text-red-800">Hapus</button>
+                                        <button type="submit" class="{{ $ghostBtnClass }}">Hapus</button>
                                     </form>
                                 </div>
                             </td>

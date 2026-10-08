@@ -22,6 +22,58 @@ class ProfileController extends Controller
     /** Jenis pembayaran yang didukung: 'dp' dan 'remaining' (sisa). */
     private const PAY_TYPES = ['dp', 'remaining'];
 
+    /** Daftar ekspedisi (sama dengan halaman checkout). */
+    public const SHIPPING = [
+        'JNE',
+        'J&T Express',
+        'SiCepat',
+        'AnterAja',
+        'POS Indonesia',
+        'Pickup / Ambil di Toko',
+    ];
+
+    /** Daftar provinsi (sama dengan halaman checkout). */
+    public const PROVINCES = [
+        'Aceh',
+        'Sumatera Utara',
+        'Sumatera Barat',
+        'Riau',
+        'Kepulauan Riau',
+        'Jambi',
+        'Sumatera Selatan',
+        'Bangka Belitung',
+        'Bengkulu',
+        'Lampung',
+        'DKI Jakarta',
+        'Jawa Barat',
+        'Jawa Tengah',
+        'DI Yogyakarta',
+        'Jawa Timur',
+        'Banten',
+        'Bali',
+        'Nusa Tenggara Barat',
+        'Nusa Tenggara Timur',
+        'Kalimantan Barat',
+        'Kalimantan Tengah',
+        'Kalimantan Selatan',
+        'Kalimantan Timur',
+        'Kalimantan Utara',
+        'Sulawesi Utara',
+        'Sulawesi Tengah',
+        'Sulawesi Selatan',
+        'Sulawesi Tenggara',
+        'Gorontalo',
+        'Sulawesi Barat',
+        'Maluku',
+        'Maluku Utara',
+        'Papua',
+        'Papua Barat',
+        'Papua Tengah',
+        'Papua Pegunungan',
+        'Papua Selatan',
+        'Papua Barat Daya',
+    ];
+
     // ==================================================================
     // PROFIL & RIWAYAT PESANAN
     // ==================================================================
@@ -30,7 +82,7 @@ class ProfileController extends Controller
     {
         $user = Auth::user()->load('detail');
 
-        // Riwayat pesanan milik user ini, dicocokkan lewat email atau no telp (5 per halaman)
+        // Riwayat pesanan milik user ini, dicocokkan lewat email atau no telp (10 per halaman)
         $orders = CustomerOrder::ownedBy($user)
             ->withCount('items')
             ->with(['items', 'invoice'])
@@ -47,7 +99,14 @@ class ProfileController extends Controller
             'spent'  => (clone $base)->where('status', '!=', 'cancelled')->sum('total'),
         ];
 
-        return view('member.profile', compact('user', 'orders', 'stats'));
+        // Daftar ekspedisi & provinsi untuk dropdown di modal Edit Profil
+        return view('member.profile', [
+            'user'      => $user,
+            'orders'    => $orders,
+            'stats'     => $stats,
+            'shipping'  => self::SHIPPING,
+            'provinces' => self::PROVINCES,
+        ]);
     }
 
     public function update(Request $request)
@@ -60,10 +119,10 @@ class ProfileController extends Controller
             'phone'               => ['nullable', 'string', 'max:20'],
             'address'             => ['nullable', 'string', 'max:500'],
             'city'                => ['nullable', 'string', 'max:100'],
-            'province'            => ['nullable', 'string', 'max:100'],
+            'province'            => ['nullable', Rule::in(self::PROVINCES)],
             'postal_code'         => ['nullable', 'string', 'max:10'],
             'seller_id'           => ['nullable', 'string', 'max:100'],
-            'shipping_expedition' => ['nullable', 'string', 'max:50'],
+            'shipping_expedition' => ['nullable', Rule::in(self::SHIPPING)],
         ]);
 
         $user->update([
@@ -82,8 +141,12 @@ class ProfileController extends Controller
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', Password::min(8)],
+            'current_password'      => ['required', 'current_password'],
+            'password'              => ['required', 'confirmed', Password::min(8)],
+            'password_confirmation' => ['required'],
+        ], [
+            'password_confirmation.required' => 'Konfirmasi password baru wajib diisi.',
+            'password.confirmed'             => 'Konfirmasi password tidak cocok.',
         ]);
 
         Auth::user()->update([
