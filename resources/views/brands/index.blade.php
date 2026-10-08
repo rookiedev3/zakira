@@ -29,11 +29,7 @@
         </div>
     @endif
 
-    {{-- Info carousel --}}
-    <div class="rounded-xl border border-[#eadfd5] bg-[#fbf8f4] p-4 text-sm text-[#6f4d3b]">
-        <strong>Carousel Homepage:</strong> aktifkan "Tampil di Home", atur urutan,
-        lalu upload/ganti logo. Perubahan langsung terbaca di halaman depan tanpa edit kode lagi.
-    </div>
+   
 
     {{-- Tabel --}}
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
