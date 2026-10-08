@@ -201,11 +201,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('orders/{order}', [ManageOrderController::class, 'destroy'])->name('admin.orders.destroy');
 
         Route::get('orders/export', [ManageOrderController::class, 'export'])->name('admin.orders.export');
+
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     });
 });
 
 
-/////// ROUTES ZAHWAAA
 
 /// INi nanti masukin di auth member
 Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
@@ -295,37 +296,3 @@ Route::middleware(['auth'])->group(function () {
     // })->name('admin.dashboard');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-
-// ==== Laporan ====
-// Route::get('/reports/mitra-sales', fn () => 'Halaman Laporan Penjualan Mitra (dummy)')->name('reports.mitra-sales');
-// Route Laporan Penjualan Mitra (File: admin/reports/mitra.blade.php)
-// Route::get('/admin/laporan', function () {
-//     return view('admin.laporan');
-// })->name('admin.laporan');
-
-// ==== Pengguna ====
-// Route::get('/users', fn () => 'Halaman Kelola Pengguna (dummy)')->name('users.index');
-// Route::get('seller/index', function () {
-//     return view('seller.index');
-// })->name('seller.index');
-// Route::get('seller/create', function () {
-//     return view('seller.create');
-// })->name('seller.create');
-// Route::get('seller/edit', function () {
-//     return view('seller.edit');
-// })->name('seller.edit');
-
-// ==== Pemasaran ====
-// (Route kupon dummy dihapus, sudah diganti CouponController di atas)
-
-// ==== Akun ====
-// Dummy ini dimatikan karena menimpa route SettingsController di atas
-// Route::get('/settings/profile', fn() => 'Halaman Pengaturan Profil (dummy)')->name('settings.profile');
-
-// logout harus POST karena dipanggil lewat <form method="POST"> di sidebar
-// Route::post('/logout', function () {
-//     // nanti ganti dengan Auth::logout() beneran
-//     return redirect()->route('dashboard');
-// })->name('logout');

@@ -153,73 +153,76 @@
     @endif
 
     {{-- ==== TABEL ==== --}}
-    <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-gray-500 border-b">
-                    <th class="px-4 py-3">Gambar</th>
-                    <th class="px-4 py-3">Judul</th>
-                    <th class="px-4 py-3">Urutan</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y">
-                @forelse ($advantages as $advantage)
-                    <tr>
-                        <td class="px-4 py-3">
-                            @if ($advantage->image_url)
-                                <img src="{{ $advantage->image_url }}" alt="{{ $advantage->title }}"
-                                     class="w-16 h-16 object-cover rounded-lg border">
-                            @else
-                                <div class="w-16 h-16 flex items-center justify-center rounded-lg border bg-gray-50 text-[10px] text-gray-400 text-center px-1 leading-tight">
-                                    Tanpa gambar
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b">
+                        <th class="px-4 py-3">Gambar</th>
+                        <th class="px-4 py-3">Judul</th>
+                        <th class="px-4 py-3">Urutan</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    @forelse ($advantages as $advantage)
+                        <tr>
+                            <td class="px-4 py-3">
+                                @if ($advantage->image_url)
+                                    <img src="{{ $advantage->image_url }}" alt="{{ $advantage->title }}"
+                                         class="w-16 h-16 object-cover rounded-lg border">
+                                @else
+                                    <div class="w-16 h-16 flex items-center justify-center rounded-lg border bg-gray-50 text-[10px] text-gray-400 text-center px-1 leading-tight">
+                                        Tanpa gambar
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3">
+                                <p class="font-medium">{{ $advantage->title }}</p>
+                                <p class="text-xs text-gray-400">{{ Str::limit($advantage->description, 40) }}</p>
+                            </td>
+                            <td class="px-4 py-3">{{ $advantage->order }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $advantage->status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                    {{ ucfirst($advantage->status) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <a href="{{ route('advantages.index', ['edit' => $advantage->id]) }}"
+                                       class="text-[var(--color-accent-content)] font-semibold text-xs">Edit</a>
+
+                                    <form method="POST" action="{{ route('advantages.status', $advantage) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="text-amber-600 font-semibold text-xs">
+                                            {{ $advantage->status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('advantages.destroy', $advantage) }}"
+                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus keunggulan ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="text-red-500 font-semibold text-xs">Hapus</button>
+                                    </form>
                                 </div>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3">
-                            <p class="font-medium">{{ $advantage->title }}</p>
-                            <p class="text-xs text-gray-400">{{ Str::limit($advantage->description, 40) }}</p>
-                        </td>
-                        <td class="px-4 py-3">{{ $advantage->order }}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $advantage->status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
-                                {{ ucfirst($advantage->status) }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-3">
-                                <a href="{{ route('advantages.index', ['edit' => $advantage->id]) }}"
-                                   class="text-[var(--color-accent-content)] font-semibold text-xs">Edit</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">Tidak ada keunggulan yang ditemukan.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
-                                <form method="POST" action="{{ route('advantages.status', $advantage) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="text-amber-600 font-semibold text-xs">
-                                        {{ $advantage->status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
-                                    </button>
-                                </form>
-
-                                <form method="POST" action="{{ route('advantages.destroy', $advantage) }}"
-                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus keunggulan ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-red-500 font-semibold text-xs">Hapus</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-gray-400">Tidak ada keunggulan yang ditemukan.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="mt-6">
-        {{ $advantages->links() }}
+        {{-- Pagination gaya "Showing 1 to 10 of 23 results" --}}
+        <div class="px-4 py-4 border-t">
+            {{ $advantages->links('vendor.pagination.zakira') }}
+        </div>
     </div>
 </div>
 

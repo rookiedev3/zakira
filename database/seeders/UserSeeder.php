@@ -45,14 +45,15 @@ class UserSeeder extends Seeder
                 'email_verified_at' => null,
             ]
         );
+
         User::firstOrCreate(
-            ['email' => 'zahwaayurmdhni@gmail.com'],
+            ['email' => 'distributor@gmail.com'],
             [
-                'name' => 'Admin Zahwa',
-                'password' => Hash::make('zahwa123'),
-                'role' => 'admin',
+                'name' => 'Distributor',
+                'password' => Hash::make('distributor1122'),
+                'role' => 'customer',
                 'status' => 'aktif',
-                'customer_type' => 'umum',
+                'customer_type' => 'distributor',
                 'email_verified_at' => null,
             ]
         );

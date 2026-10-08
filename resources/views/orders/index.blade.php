@@ -57,6 +57,9 @@
     // Varian & harga tiap produk untuk dialog "Tambah Produk" (dikirim dari controller)
     $productMeta = $productMeta ?? [];
 
+    // Daftar Admin Handle untuk dropdown modal Edit (dikirim dari controller)
+    $adminHandles = $adminHandles ?? collect();
+
     // Pilihan jumlah data per halaman (dikirim dari controller)
     $perPageOptions = $perPageOptions ?? [15, 30, 50, 100];
 
@@ -195,14 +198,14 @@
                                 default        => ['bg-gray-100 text-gray-600',     'fa-minus'],
                             };
                             $payKey    = $order->payment_status ?? 'pending';
-                            $proof     = $order->paymentConfirmations->first();
+                            $proof     = $order->paymentConfirmations->sortByDesc('id')->first();
                             $invoice   = $order->invoice;
                             $remaining = max(0, (int) $order->total - (int) $order->amount_due);
                             $param     = ['order' => $order->order_number];
-                            // Bukti pelunasan (sisa): bertipe 'remaining'; bila tabel tanpa kolom type, bukti terbaru setelah DP lunas dianggap bukti sisa
-                            $allProofs = $order->paymentConfirmations;
-                            $remProof  = $allProofs->first(fn ($p) => ($p->type ?? null) === 'remaining')
-                                ?? ($dpPaid && ! $isFull && $allProofs->count() > 1 && $allProofs->whereNotNull('type')->isEmpty() ? $allProofs->first() : null);
+                            // Bukti sisa terakhir (kolom `type` = 'remaining'); bila ada lebih dari satu, ambil id terbesar
+                            $remProof  = $order->paymentConfirmations
+                                ->sortByDesc('id')
+                                ->first(fn ($p) => $p->type === 'remaining');
                         @endphp
                         <tr class="hover:bg-gray-50">
                             <!-- Order ID -->
@@ -463,13 +466,19 @@
             default        => ['bg-gray-100 text-gray-600',     'fa-minus'],
         };
 
+        // Urutkan terbaru dulu; tiap jenis bukti hanya diambil SATU (yang paling terakhir)
+        $sortedProofs = $proofs->sortByDesc('id')->values();
+        $latestOfType = fn (string $type) => $sortedProofs
+            ->filter(fn ($p) => ($p->type ?? 'dp') === $type)
+            ->take(1)
+            ->values();
+
         // Bagian bukti bayar: [judul, label status, koleksi, tampil walau kosong?, label tombol]
         $proofSections = $isFull
-            ? [['Bukti Pembayaran', 'Bukti Terupload', $proofs, true, 'Lihat Bukti']]
+            ? [['Bukti Pembayaran', 'Bukti Terupload', $sortedProofs->take(1), true, 'Lihat Bukti']]
             : [
-                // Tabel payment_confirmations tidak punya kolom `type`: bukti tanpa type dianggap bukti DP
-                ['Bukti Pembayaran DP', 'Bukti DP Terupload', $proofs->filter(fn ($p) => ($p->type ?? 'dp') === 'dp'), true, 'Lihat Bukti DP'],
-                ['Bukti Pelunasan', 'Bukti Pelunasan Terupload', $proofs->filter(fn ($p) => ($p->type ?? null) === 'remaining'), false, 'Lihat Bukti Pelunasan'],
+                ['Bukti Pembayaran DP',   'Bukti DP Terupload',   $latestOfType('dp'),        true,    'Lihat Bukti DP'],
+                ['Bukti Sisa Pembayaran', 'Bukti Sisa Terupload', $latestOfType('remaining'), $dpPaid, 'Lihat Bukti Sisa'],
             ];
 
         $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors cursor-pointer';
@@ -587,12 +596,10 @@
                                 <span class="text-gray-600">ID Seller:</span>
                                 <span class="font-medium">{{ $order->seller_id ?: '-' }}</span>
                             </div>
-                            @if (! empty($order->admin_handle))
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Admin Handle:</span>
-                                    <span class="font-medium">{{ $order->admin_handle }}</span>
-                                </div>
-                            @endif
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Admin Handle:</span>
+                                <span class="font-medium">{{ $order->adminHandle?->name ?: '-' }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -737,7 +744,7 @@
                     </div>
                 @endunless
 
-                <!-- Bukti Pembayaran -->
+                <!-- Bukti Pembayaran (DP / Sisa): tiap jenis hanya menampilkan bukti terakhir -->
                 @foreach ($proofSections as [$proofTitle, $proofStatus, $proofList, $showEmpty, $proofBtn])
                     @if ($proofList->isNotEmpty() || $showEmpty)
                         <div class="mt-6">
@@ -763,7 +770,7 @@
                                             <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path fill-rule="evenodd" d="M1.38 8.28a.87.87 0 0 1 0-.566 7.003 7.003 0 0 1 13.238.006.87.87 0 0 1 0 .566A7.003 7.003 0 0 1 1.379 8.28ZM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" clip-rule="evenodd"/></svg>
                                             <span>{{ $proofBtn }}</span>
                                         </a>
-                                        <a href="{{ $proofUrl }}" download="bukti-{{ $order->order_number }}.{{ pathinfo($p->proof_path, PATHINFO_EXTENSION) }}" class="{{ $btnGhost }}">
+                                        <a href="{{ $proofUrl }}" download="bukti-{{ $p->type ?? 'dp' }}-{{ $order->order_number }}.{{ pathinfo($p->proof_path, PATHINFO_EXTENSION) }}" class="{{ $btnGhost }}">
                                             <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z"/><path d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"/></svg>
                                             <span>Download</span>
                                         </a>
@@ -848,7 +855,8 @@
         $editCoupon   = $isOld ? old('coupon_code') : ($order->coupon_code ?? '');
         $editDiscount = $isOld ? old('discount') : (int) ($order->discount ?? 0);
         $ov           = fn (string $key, $default) => $isOld ? old($key, $default) : $default;
-        $custErr      = $isOld && $errors->hasAny(['full_name', 'seller_id', 'email', 'whatsapp_number']);
+        $custErr      = $isOld && $errors->hasAny(['full_name', 'seller_id', 'admin_handle_id', 'email', 'whatsapp_number']);
+        $editHandle   = (string) $ov('admin_handle_id', $order->admin_handle_id);
         $addrErr      = $isOld && $errors->hasAny(['address', 'city', 'province', 'postal_code']);
 
         $btnPrimary = 'inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md bg-[#935b33] hover:bg-[#845230] text-white border border-black/10 shadow-[inset_0px_1px_--theme(--color-white/.2)] transition-colors cursor-pointer';
@@ -1030,6 +1038,16 @@
                             <label class="{{ $labelClass }}">Email</label>
                             <input type="email" name="email" value="{{ $ov('email', $order->email) }}" class="{{ $inputClass }}">
                             @if ($isOld) @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">Admin Handle</label>
+                            <select name="admin_handle_id" class="{{ $inputClass }}">
+                                <option value="">Tidak ada</option>
+                                @foreach ($adminHandles as $handleId => $handleName)
+                                    <option value="{{ $handleId }}" @selected($editHandle === (string) $handleId)>{{ $handleName }}</option>
+                                @endforeach
+                            </select>
+                            @if ($isOld) @error('admin_handle_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror @endif
                         </div>
                         <div>
                             <label class="{{ $labelClass }}">WhatsApp</label>

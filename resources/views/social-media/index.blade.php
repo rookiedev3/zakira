@@ -220,76 +220,79 @@
     @endif
 
     {{-- ==== TABEL ==== --}}
-    <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-gray-500 border-b">
-                    <th class="px-4 py-3">Platform</th>
-                    <th class="px-4 py-3">URL</th>
-                    <th class="px-4 py-3">Urutan</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y">
-                @forelse ($socialMedia as $sm)
-                    <tr>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
-                                     style="background-color: {{ $sm->color ?? '#999' }}">
-                                    <i class="{{ $sm->icon_class }}"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium">{{ $sm->platform }}</p>
-                                    <p class="text-xs text-gray-400">{{ $sm->icon_class }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <a href="{{ $sm->url }}" target="_blank" rel="noopener" class="text-[var(--color-accent-content)] hover:underline break-all">
-                                {{ $sm->url }}
-                            </a>
-                        </td>
-                        <td class="px-4 py-3">{{ $sm->order }}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $sm->status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
-                                {{ ucfirst($sm->status) }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-3">
-                                <a href="{{ route('social-media.index', ['edit' => $sm->id]) }}"
-                                   class="text-[var(--color-accent-content)] font-semibold text-xs">Edit</a>
-
-                                <form method="POST" action="{{ route('social-media.status', $sm) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="text-amber-600 font-semibold text-xs">
-                                        {{ $sm->status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
-                                    </button>
-                                </form>
-
-                                <form method="POST" action="{{ route('social-media.destroy', $sm) }}"
-                                      onsubmit="return confirm('Yakin hapus {{ $sm->platform }}?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-red-500 font-semibold text-xs">Hapus</button>
-                                </form>
-                            </div>
-                        </td>
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b">
+                        <th class="px-4 py-3">Platform</th>
+                        <th class="px-4 py-3">URL</th>
+                        <th class="px-4 py-3">Urutan</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Aksi</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-gray-400">Belum ada data media sosial.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody class="divide-y">
+                    @forelse ($socialMedia as $sm)
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
+                                         style="background-color: {{ $sm->color ?? '#999' }}">
+                                        <i class="{{ $sm->icon_class }}"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">{{ $sm->platform }}</p>
+                                        <p class="text-xs text-gray-400">{{ $sm->icon_class }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <a href="{{ $sm->url }}" target="_blank" rel="noopener" class="text-[var(--color-accent-content)] hover:underline break-all">
+                                    {{ $sm->url }}
+                                </a>
+                            </td>
+                            <td class="px-4 py-3">{{ $sm->order }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $sm->status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                    {{ ucfirst($sm->status) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <a href="{{ route('social-media.index', ['edit' => $sm->id]) }}"
+                                       class="text-[var(--color-accent-content)] font-semibold text-xs">Edit</a>
 
-    <div class="mt-6">
-        {{ $socialMedia->links() }}
+                                    <form method="POST" action="{{ route('social-media.status', $sm) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="text-amber-600 font-semibold text-xs">
+                                            {{ $sm->status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('social-media.destroy', $sm) }}"
+                                          onsubmit="return confirm('Yakin hapus {{ $sm->platform }}?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="text-red-500 font-semibold text-xs">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">Belum ada data media sosial.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Pagination gaya "Showing 1 to 10 of 23 results" --}}
+        <div class="px-4 py-4 border-t">
+            {{ $socialMedia->links('vendor.pagination.zakira') }}
+        </div>
     </div>
 </div>
 

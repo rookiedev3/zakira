@@ -188,9 +188,10 @@
             </table>
         </div>
  
-        @if (method_exists($bankAccounts, 'hasPages') && $bankAccounts->hasPages())
+        {{-- Pagination gaya "Showing 1 to 10 of 23 results" (dilewati di mode demo karena datanya bukan paginator) --}}
+        @if (method_exists($bankAccounts, 'total'))
             <div class="px-6 py-4 border-t border-gray-200 dark:border-zinc-700">
-                {{ $bankAccounts->links() }}
+                {{ $bankAccounts->links('vendor.pagination.zakira') }}
             </div>
         @endif
     </div>

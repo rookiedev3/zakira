@@ -163,70 +163,73 @@
     @endif
 
     {{-- ==== TABEL ==== --}}
-    <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-gray-500 border-b">
-                    <th class="px-4 py-3">Gambar</th>
-                    <th class="px-4 py-3">Judul</th>
-                    <th class="px-4 py-3">Tipe</th>
-                    <th class="px-4 py-3">Urutan</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y">
-                @forelse ($banners as $banner)
-                    <tr>
-                        <td class="px-4 py-3">
-                            <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}"
-                                 class="w-24 aspect-[21/7] object-cover rounded-lg border">
-                        </td>
-                        <td class="px-4 py-3 font-medium">{{ $banner->title }}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $banner->type === 'slider' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700' }}">
-                                {{ ucfirst($banner->type) }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">{{ $banner->order }}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $banner->status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
-                                {{ ucfirst($banner->status) }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-3">
-                                <a href="{{ route('banners.index', ['edit' => $banner->id]) }}"
-                                   class="text-[var(--color-accent-content)] font-semibold text-xs">Edit</a>
-
-                                <form method="POST" action="{{ route('banners.status', $banner) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="text-amber-600 font-semibold text-xs">
-                                        {{ $banner->status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
-                                    </button>
-                                </form>
-
-                                <form method="POST" action="{{ route('banners.destroy', $banner) }}"
-                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus banner ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-red-500 font-semibold text-xs">Hapus</button>
-                                </form>
-                            </div>
-                        </td>
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b">
+                        <th class="px-4 py-3">Gambar</th>
+                        <th class="px-4 py-3">Judul</th>
+                        <th class="px-4 py-3">Tipe</th>
+                        <th class="px-4 py-3">Urutan</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Aksi</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-400">Belum ada data banner.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody class="divide-y">
+                    @forelse ($banners as $banner)
+                        <tr>
+                            <td class="px-4 py-3">
+                                <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}"
+                                     class="w-24 aspect-[21/7] object-cover rounded-lg border">
+                            </td>
+                            <td class="px-4 py-3 font-medium">{{ $banner->title }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $banner->type === 'slider' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700' }}">
+                                    {{ ucfirst($banner->type) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">{{ $banner->order }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $banner->status === 'aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                    {{ ucfirst($banner->status) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <a href="{{ route('banners.index', ['edit' => $banner->id]) }}"
+                                       class="text-[var(--color-accent-content)] font-semibold text-xs">Edit</a>
 
-    <div class="mt-6">
-        {{ $banners->links() }}
+                                    <form method="POST" action="{{ route('banners.status', $banner) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="text-amber-600 font-semibold text-xs">
+                                            {{ $banner->status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('banners.destroy', $banner) }}"
+                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus banner ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="text-red-500 font-semibold text-xs">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-400">Belum ada data banner.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Pagination gaya "Showing 1 to 10 of 23 results" --}}
+        <div class="px-4 py-4 border-t">
+            {{ $banners->links('vendor.pagination.zakira') }}
+        </div>
     </div>
 </div>
 @endsection
