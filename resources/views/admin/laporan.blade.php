@@ -93,10 +93,11 @@
                 </select>
             </div>
 
-            <!-- Filter ID Seller -->
+            <!-- Filter ID Seller (live search: hasil muncul saat mengetik, tanpa Enter) -->
             <div>
                 <label class="block text-xs font-semibold text-zinc-600 mb-1.5">ID Seller</label>
-                <input type="text" name="seller_id" value="{{ $sellerId }}" placeholder="Cari berdasarkan ID seller"
+                <input type="text" name="seller_id" id="seller-search" value="{{ $sellerId }}"
+                       placeholder="Cari berdasarkan ID seller" autocomplete="off"
                        class="w-full text-xs bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-zinc-400">
             </div>
 
@@ -136,12 +137,12 @@
             </div>
         </div>
 
-        <!-- Submit tersembunyi supaya tekan Enter di kolom ID Seller langsung mencari -->
+        <!-- Submit tersembunyi supaya tekan Enter di kolom ID Seller tetap bekerja -->
         <button type="submit" class="hidden">Cari</button>
     </form>
 
-    <!-- Tabel Detail Closing -->
-    <div class="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+    <!-- Tabel Detail Closing (diganti otomatis oleh live search) -->
+    <div id="hasil-laporan" class="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden transition-opacity">
 
         <!-- Header Tabel & Tombol Export -->
         <div class="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-100">
@@ -215,4 +216,54 @@
     </div>
 
 </div>
+
+<script>
+(function () {
+    const form   = document.getElementById('filter-form');
+    const input  = document.getElementById('seller-search');
+    const target = () => document.getElementById('hasil-laporan');
+    let timer, controller;
+
+    const search = async () => {
+        const params = new URLSearchParams(new FormData(form));
+        params.delete('page'); // hasil baru selalu mulai dari halaman 1
+        const url = form.action + '?' + params.toString();
+
+        controller?.abort(); // batalkan request lama bila masih jalan
+        controller = new AbortController();
+        target().classList.add('opacity-50');
+
+        try {
+            const res  = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: controller.signal,
+            });
+            const doc   = new DOMParser().parseFromString(await res.text(), 'text/html');
+            const fresh = doc.getElementById('hasil-laporan');
+            if (fresh) {
+                target().replaceWith(fresh);
+                history.replaceState(null, '', url);
+            }
+        } catch (e) {
+            if (e.name !== 'AbortError') form.submit(); // gagal -> cadangan: submit biasa
+        } finally {
+            target()?.classList.remove('opacity-50');
+        }
+    };
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(search, 350);
+    });
+
+    // Enter di kolom ID Seller juga memakai jalur yang sama (tanpa reload)
+    form.addEventListener('submit', (e) => {
+        if (document.activeElement === input) {
+            e.preventDefault();
+            clearTimeout(timer);
+            search();
+        }
+    });
+})();
+</script>
 @endsection
