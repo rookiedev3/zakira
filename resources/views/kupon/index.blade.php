@@ -5,12 +5,12 @@
 @section('content')
 <div class="space-y-6">
 
-    <div class="font-medium text-zinc-800 dark:text-white text-2xl mb-2">
+    <div class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white mb-2">
         Manajemen Kupon
     </div>
 
     @if (session('success'))
-        <div class="bg-green-50 text-green-700 text-sm rounded-lg px-4 py-3">{{ session('success') }}</div>
+        <div class="bg-green-50 text-green-700 text-sm rounded-lg px-4 py-3 border border-green-200">{{ session('success') }}</div>
     @endif
 
     <div class="mt-6 space-y-6">
@@ -18,17 +18,17 @@
 
             <div class="flex-1 max-w-md">
                 <div class="w-full relative block group/input">
-                    <div class="pointer-events-none absolute top-0 bottom-0 border-s border-transparent flex items-center justify-center text-xs text-zinc-400/75 dark:text-white/60 ps-3 start-0">
+                    <div class="pointer-events-none absolute top-0 bottom-0 border-s border-transparent flex items-center justify-center text-xs text-gray-400 dark:text-white/60 ps-3 start-0">
                         <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <input type="text" id="kupon-search" placeholder="Cari kupon..." class="w-full border rounded-lg appearance-none text-base sm:text-sm py-2 h-10 leading-[1.375rem] ps-10 pe-3 bg-white dark:bg-white/10 text-zinc-700 placeholder-zinc-400 dark:text-zinc-300 dark:placeholder-zinc-400 shadow-xs border-zinc-200 border-b-zinc-300/80 dark:border-white/10 focus:outline-none">
+                    <input type="text" id="kupon-search" placeholder="Cari kupon..." class="w-full border border-gray-300 rounded-lg appearance-none text-sm py-2 h-10 leading-[1.375rem] ps-10 pe-4 bg-white dark:bg-white/10 text-gray-900 placeholder-gray-400 dark:text-zinc-300 dark:placeholder-zinc-400 dark:border-white/10 focus:outline-none focus:border-[#8B5E3C] focus:ring-1 focus:ring-[#8B5E3C]">
                 </div>
             </div>
 
             <div class="flex items-center gap-3 flex-wrap">
-                <select id="kupon-status-filter" class="appearance-none ps-3 pe-10 block h-10 py-2 text-base sm:text-sm leading-[1.375rem] rounded-lg shadow-xs border bg-white dark:bg-white/10 text-zinc-700 dark:text-zinc-300 border-zinc-200 border-b-zinc-300/80 dark:border-white/10 focus:outline-none">
+                <select id="kupon-status-filter" class="block h-10 py-2 px-4 text-sm leading-[1.375rem] rounded-lg border border-gray-300 bg-white dark:bg-white/10 text-gray-900 dark:text-zinc-300 dark:border-white/10 focus:outline-none focus:border-[#8B5E3C] focus:ring-1 focus:ring-[#8B5E3C]">
                     <option value="">Semua Status</option>
                     <option value="active">Aktif</option>
                     <option value="upcoming">Belum Aktif</option>
@@ -37,20 +37,20 @@
                     <option value="used_up">Limit Tercapai</option>
                 </select>
 
-                <select id="kupon-type-filter" class="appearance-none ps-3 pe-10 block h-10 py-2 text-base sm:text-sm leading-[1.375rem] rounded-lg shadow-xs border bg-white dark:bg-white/10 text-zinc-700 dark:text-zinc-300 border-zinc-200 border-b-zinc-300/80 dark:border-white/10 focus:outline-none">
+                <select id="kupon-type-filter" class="block h-10 py-2 px-4 text-sm leading-[1.375rem] rounded-lg border border-gray-300 bg-white dark:bg-white/10 text-gray-900 dark:text-zinc-300 dark:border-white/10 focus:outline-none focus:border-[#8B5E3C] focus:ring-1 focus:ring-[#8B5E3C]">
                     <option value="">Semua Tipe</option>
                     <option value="percentage">Persentase</option>
                     <option value="fixed">Nominal</option>
                 </select>
 
-                <select id="kupon-audience-filter" class="appearance-none ps-3 pe-10 block h-10 py-2 text-base sm:text-sm leading-[1.375rem] rounded-lg shadow-xs border bg-white dark:bg-white/10 text-zinc-700 dark:text-zinc-300 border-zinc-200 border-b-zinc-300/80 dark:border-white/10 focus:outline-none">
+                <select id="kupon-audience-filter" class="block h-10 py-2 px-4 text-sm leading-[1.375rem] rounded-lg border border-gray-300 bg-white dark:bg-white/10 text-gray-900 dark:text-zinc-300 dark:border-white/10 focus:outline-none focus:border-[#8B5E3C] focus:ring-1 focus:ring-[#8B5E3C]">
                     <option value="">Semua Target</option>
                     <option value="member">Khusus Member</option>
                     <option value="non_member">Non Member</option>
                     <option value="all">Semua Pembeli</option>
                 </select>
 
-                <a href="{{ route('kupon.create') }}" class="relative items-center font-medium justify-center gap-2 whitespace-nowrap h-10 text-sm rounded-lg ps-3 pe-4 inline-flex bg-[var(--color-accent)] hover:bg-[color-mix(in_oklab,_var(--color-accent),_transparent_10%)] text-[var(--color-accent-foreground)] border border-black/10 dark:border-0 shadow-xs transition">
+                <a href="{{ route('kupon.create') }}" class="relative items-center font-medium justify-center gap-2 whitespace-nowrap h-10 text-sm rounded-lg ps-4 pe-5 inline-flex bg-[#8B5E3C] hover:bg-[#7a5134] text-white shadow-sm transition-colors">
                     <svg class="shrink-0 w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
                         <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z"/>
                     </svg>
@@ -59,22 +59,22 @@
             </div>
         </div>
 
-        <div class="bg-white shadow overflow-hidden sm:rounded-md border border-zinc-200">
+        <div class="bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)] overflow-hidden rounded-xl">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 text-left text-xs">
-                    <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider font-bold text-[10px]">
+                <table class="min-w-full divide-y divide-gray-200 text-left text-sm">
+                    <thead class="bg-slate-50 text-gray-500 uppercase tracking-wide font-medium text-xs">
                         <tr>
-                            <th class="px-6 py-3">Nama Kupon</th>
-                            <th class="px-6 py-3">Kode</th>
-                            <th class="px-6 py-3">Diskon</th>
-                            <th class="px-6 py-3">Target</th>
-                            <th class="px-6 py-3">Periode</th>
-                            <th class="px-6 py-3">Penggunaan</th>
-                            <th class="px-6 py-3">Status</th>
-                            <th class="px-6 py-3 text-right">Aksi</th>
+                            <th class="px-6 py-3 font-medium">Nama Kupon</th>
+                            <th class="px-6 py-3 font-medium">Kode</th>
+                            <th class="px-6 py-3 font-medium">Diskon</th>
+                            <th class="px-6 py-3 font-medium">Target</th>
+                            <th class="px-6 py-3 font-medium">Periode</th>
+                            <th class="px-6 py-3 font-medium">Penggunaan</th>
+                            <th class="px-6 py-3 font-medium">Status</th>
+                            <th class="px-6 py-3 font-medium text-right">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200 text-zinc-700">
+                    <tbody class="bg-white divide-y divide-gray-200 text-gray-900">
                         @forelse ($coupons as $coupon)
                             @php
                                 $statusColor = match ($coupon->status) {
@@ -89,78 +89,81 @@
                                     ? min(100, round(($coupon->used_count / $coupon->usage_limit) * 100))
                                     : 0;
                             @endphp
-                            <tr class="hover:bg-gray-50"
+                            <tr class="hover:bg-gray-50/60 transition-colors"
                                 data-status="{{ $coupon->status }}"
                                 data-type="{{ $coupon->type }}"
                                 data-audience="{{ $coupon->customer_scope }}"
                                 data-search="{{ strtolower($coupon->name . ' ' . $coupon->code) }}">
                                 <td class="px-6 py-4">
                                     <div class="max-w-[200px]">
-                                        <div class="font-medium text-gray-900 truncate" title="{{ $coupon->name }}">{{ $coupon->name }}</div>
+                                        <div class="text-sm font-medium text-gray-900 truncate" title="{{ $coupon->name }}">{{ $coupon->name }}</div>
                                         @if ($coupon->description)
-                                            <div class="text-gray-400 text-[11px] mt-0.5 truncate" title="{{ $coupon->description }}">{{ $coupon->description }}</div>
+                                            <div class="text-gray-500 text-xs mt-0.5 truncate" title="{{ $coupon->description }}">{{ $coupon->description }}</div>
                                         @endif
                                     </div>
                                 </td>
+                                {{-- Kolom Kode: tampilan asli --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded font-semibold text-zinc-800">{{ $coupon->code }}</span>
                                 </td>
-<td class="px-6 py-4 whitespace-nowrap">
-    <div class="font-medium text-gray-900">
-        @if ($coupon->type === 'percentage')
-            {{ number_format($coupon->value, 2, '.', '') }}%
-            @if ($coupon->max_discount_amount)
-                (max Rp {{ number_format($coupon->max_discount_amount, 0, ',', '.') }})
-            @endif
-        @else
-            Rp {{ number_format($coupon->value, 0, ',', '.') }}
-        @endif
-    </div>
-    @if ($coupon->minimum_amount)
-        <div class="text-gray-500 text-[11px]">Min: Rp {{ number_format($coupon->minimum_amount, 0, ',', '.') }}</div>
-    @endif
-</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        @if ($coupon->type === 'percentage')
+                                            {{ number_format($coupon->value, 2, '.', '') }}%
+                                            @if ($coupon->max_discount_amount)
+                                                (max Rp {{ number_format($coupon->max_discount_amount, 0, ',', '.') }})
+                                            @endif
+                                        @else
+                                            Rp {{ number_format($coupon->value, 0, ',', '.') }}
+                                        @endif
+                                    </div>
+                                    @if ($coupon->minimum_amount)
+                                        <div class="text-gray-500 text-xs">Min: Rp {{ number_format($coupon->minimum_amount, 0, ',', '.') }}</div>
+                                    @endif
+                                </td>
+                                {{-- Kolom Target: tampilan asli --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">{{ $coupon->audience_label }}</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-gray-600">
-                                    <div class="text-[11px]">
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                                    <div class="text-xs">
                                         Mulai:
                                         {{ $coupon->starts_at ? $coupon->starts_at->format('d/m/Y H:i') : 'Langsung' }}
                                     </div>
-                                    <div class="text-[11px]">
+                                    <div class="text-xs">
                                         Berakhir:
                                         {{ $coupon->expires_at ? $coupon->expires_at->format('d/m/Y H:i') : 'Tidak ada' }}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm">
-                                        <div class="font-medium text-zinc-800">{{ $coupon->used_count }} / {{ $coupon->usage_limit ?? '∞' }}</div>
+                                        <div class="font-medium text-gray-900">{{ $coupon->used_count }} / {{ $coupon->usage_limit ?? '∞' }}</div>
                                         @if ($coupon->usage_limit)
                                             <div class="w-24 bg-gray-200 rounded-full h-1.5 mt-1 overflow-hidden">
-                                                <div class="bg-blue-600 h-1.5 rounded-full" style="width: {{ $usagePercent }}%"></div>
+                                                <div class="bg-[#8B5E3C] h-1.5 rounded-full" style="width: {{ $usagePercent }}%"></div>
                                             </div>
                                         @endif
                                     </div>
                                 </td>
+                                {{-- Kolom Status: tampilan asli --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full {{ $statusColor }}">
                                         {{ $coupon->status_label }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div class="flex items-center justify-end space-x-2 text-xs">
-                                        <a href="{{ route('kupon.edit', $coupon) }}" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-zinc-800 transition">Edit</a>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                    <div class="flex items-center justify-end space-x-2 text-sm">
+                                        <a href="{{ route('kupon.edit', $coupon) }}" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-gray-900 transition-colors">Edit</a>
 
                                         <form method="POST" action="{{ route('kupon.duplicate', $coupon) }}">
                                             @csrf
-                                            <button type="submit" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-green-600 hover:text-green-800 transition">Duplikasi</button>
+                                            <button type="submit" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-gray-900 transition-colors">Duplikasi</button>
                                         </form>
 
                                         <form method="POST" action="{{ route('kupon.toggle', $coupon) }}">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-amber-600 hover:text-amber-700 transition">
+                                            <button type="submit" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-gray-900 transition-colors">
                                                 {{ $coupon->active ? 'Nonaktifkan' : 'Aktifkan' }}
                                             </button>
                                         </form>
@@ -168,14 +171,14 @@
                                         <form method="POST" action="{{ route('kupon.destroy', $coupon) }}" onsubmit="return confirm('Yakin hapus kupon {{ $coupon->name }}?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-red-600 hover:text-red-800 transition">Hapus</button>
+                                            <button type="submit" class="h-8 px-3 inline-flex items-center rounded-md hover:bg-zinc-800/5 text-gray-900 transition-colors">Hapus</button>
                                         </form>
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-8 text-center text-gray-400">Tidak ada kupon ditemukan.</td>
+                                <td colspan="8" class="px-6 py-8 text-center text-sm text-gray-500">Tidak ada kupon ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
