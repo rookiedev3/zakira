@@ -12,8 +12,7 @@
 
         <a href="{{ route('categories.index') }}"
            class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium
-                  bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg
-                  border border-gray-400/20 shadow-sm transition-colors">
+                  text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
             Kembali
         </a>
     </div>
@@ -86,12 +85,12 @@
             {{-- Tombol aksi --}}
             <div class="flex space-x-2">
                 <button type="submit"
-                        class="h-10 px-4 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        class="h-10 px-4 inline-flex items-center justify-center bg-[#9C5B34] hover:bg-[#834A27] text-white rounded-lg transition-colors">
                     Simpan Kategori
                 </button>
 
                 <a href="{{ route('categories.index') }}"
-                   class="h-10 px-4 inline-flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg">
+                   class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     Batal
                 </a>
             </div>

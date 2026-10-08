@@ -17,8 +17,7 @@
 
         <a href="{{ route('brands.index') }}"
            class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium
-                  bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg
-                  border border-gray-400/20 shadow-sm transition-colors">
+                  text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
             Kembali
         </a>
     </div>
@@ -102,8 +101,8 @@
                 @enderror
             </div>
 
-            {{-- Tampil di Homepage --}}
-            <div>
+            {{-- Tampil di Homepage (kolom kanan, posisi bekas Brand Aktif) --}}
+            <div class="lg:col-start-2">
                 <input type="hidden" name="show_on_home" value="0">
                 <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-4">
                     <input type="checkbox" name="show_on_home" value="1"
@@ -119,34 +118,20 @@
                 @enderror
             </div>
 
-            {{-- Status aktif --}}
-            <div>
-                <input type="hidden" name="is_active" value="0">
-                <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-4">
-                    <input type="checkbox" name="is_active" value="1"
-                           {{ old('is_active', true) ? 'checked' : '' }}
-                           class="h-5 w-5 rounded border-gray-300 text-[#6f4d3b] focus:ring-[#b98e6d]">
-                    <div>
-                        <div class="font-medium text-gray-900">Brand Aktif</div>
-                        <div class="text-xs text-gray-500">Brand nonaktif tidak akan tampil di halaman depan.</div>
-                    </div>
-                </label>
-                @error('is_active')
-                    <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
-                @enderror
-            </div>
+            {{-- Status aktif: selalu true, tidak ditampilkan --}}
+            <input type="hidden" name="is_active" value="1">
 
             {{-- Tombol --}}
             <div class="flex gap-2 lg:col-span-2">
                 <button type="submit"
                         class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium
-                               bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                               bg-[#9C5B34] hover:bg-[#834A27] text-white rounded-lg transition-colors">
                     Simpan Brand
                 </button>
 
                 <a href="{{ route('brands.index') }}"
-                   class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium rounded-lg
-                          bg-transparent hover:bg-zinc-800/5 text-zinc-800 border border-zinc-200 transition-colors">
+                   class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium
+                          text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     Batal
                 </a>
             </div>

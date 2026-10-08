@@ -16,8 +16,8 @@
 
         <a href="{{ route('brands.create') }}"
            class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium
-                  bg-blue-600 hover:bg-blue-700 text-white rounded-lg
-                  border border-blue-500/20 shadow-sm transition-colors">
+                  bg-[#9C5B34] hover:bg-[#834A27] text-white rounded-lg
+                  border border-[#9C5B34]/20 shadow-sm transition-colors">
             Tambah Brand
         </a>
     </div>

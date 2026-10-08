@@ -19,8 +19,8 @@
 
         <a href="{{ route('categories.create') }}"
            class="h-10 px-4 inline-flex items-center justify-center text-sm font-medium
-                  bg-blue-600 hover:bg-blue-700 text-white rounded-lg
-                  border border-blue-500/20 shadow-sm transition-colors">
+                  bg-[#9C5B34] hover:bg-[#834A27] text-white rounded-lg
+                  border border-[#9C5B34]/20 shadow-sm transition-colors">
             Tambah Kategori
         </a>
     </div>
@@ -39,7 +39,7 @@
          -------------------------------------------------- --}}
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
-            <!-- w-full + table-auto = lebar 100 % tanpa memaksa kolom melebar -->
+            <!-- w-full + table-auto = lebar 100 % tanpa memaksa kolom melebar -->
             <table class="w-full table-auto border-collapse">
                 <thead class="bg-gray-50">
                     <tr>
