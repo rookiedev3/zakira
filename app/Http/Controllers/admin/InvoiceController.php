@@ -11,12 +11,15 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class InvoiceController extends Controller
 {
-    private const BRAND = 'Zakira';
+    private const BRAND = 'HS Order Group';
+    private const TITLE = 'HS Order Group PO';
+    private const COLOR = 'FF935B33'; // coklat
 
     /** Dipanggil dari form modal "Buat Faktur" (tombol PDF / Excel). */
     public function store(Request $request, CustomerOrder $order)
@@ -80,24 +83,26 @@ class InvoiceController extends Controller
         $o  = $invoice->order;
         $rp = fn ($n) => 'Rp ' . number_format((int) $n, 0, ',', '.');
 
-        $discount = (int) ($o->discount_amount ?? 0);
+        // Kolom diskon di tabel pesanan bernama `discount` (fallback ke discount_amount)
+        $discount = (int) ($o->discount ?? $o->discount_amount ?? 0);
         $subtotal = (int) ($o->subtotal ?? $o->items->sum(fn ($i) => (int) $i->price * (int) $i->quantity));
         $totalQty = (int) $o->items->sum(fn ($i) => (int) $i->quantity);
 
         $book = new Spreadsheet();
         $ws   = $book->getActiveSheet()->setTitle('Faktur');
 
-        foreach (['A' => 8, 'B' => 40, 'C' => 10, 'D' => 20, 'E' => 20] as $col => $w) {
+        foreach (['A' => 16, 'B' => 40, 'C' => 10, 'D' => 20, 'E' => 20] as $col => $w) {
             $ws->getColumnDimension($col)->setWidth($w);
         }
 
         // Judul
-        foreach ([1 => [self::BRAND, 16], 2 => ['FAKTUR', 14], 3 => [$invoice->invoice_number, 11]] as $row => [$text, $size]) {
+        foreach ([1 => [self::TITLE, 16], 2 => ['FAKTUR', 14], 3 => [$invoice->invoice_number, 11]] as $row => [$text, $size]) {
             $ws->mergeCells("A{$row}:E{$row}");
             $ws->setCellValue("A{$row}", $text);
             $ws->getStyle("A{$row}")->getFont()->setBold(true)->setSize($size);
             $ws->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
+        $ws->getStyle('A1')->getFont()->getColor()->setARGB(self::COLOR);
 
         // Info pesanan
         $info = [
@@ -115,12 +120,13 @@ class InvoiceController extends Controller
             $r++;
         }
 
-        // Header tabel (baris 12)
-        $r = 12;
+        // Header tabel (baris 12): teks coklat tebal, tanpa warna latar
+        $headerRow = 12;
+        $r = $headerRow;
         foreach (['No', 'Produk', 'Qty', 'Harga Satuan', 'Total'] as $i => $head) {
             $ws->setCellValue(chr(65 + $i) . $r, $head);
         }
-        $this->headerStyle($ws, "A{$r}:E{$r}");
+        $ws->getStyle("A{$r}:E{$r}")->getFont()->setBold(true)->getColor()->setARGB(self::COLOR);
 
         // Item
         $r++;
@@ -137,17 +143,20 @@ class InvoiceController extends Controller
             $ws->setCellValue("C{$r}", (int) $item->quantity);
             $ws->setCellValue("D{$r}", $rp($item->price));
             $ws->setCellValue("E{$r}", $rp((int) $item->price * (int) $item->quantity));
-            $ws->getStyle("A{$r}:E{$r}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
             $r++;
         }
 
-        // Total kuantitas
+        // Total kuantitas (langsung di bawah item, tanpa warna latar)
         $ws->setCellValue("B{$r}", 'Total Kuantitas:');
         $ws->setCellValue("C{$r}", $totalQty);
-        $this->headerStyle($ws, "B{$r}:C{$r}");
+        $ws->getStyle("B{$r}:C{$r}")->getFont()->setBold(true);
+
+        // Border tabel: header sampai baris Total Kuantitas
+        $ws->getStyle("A{$headerRow}:E{$r}")->getBorders()->getAllBorders()
+            ->setBorderStyle(Border::BORDER_THIN);
         $r += 2;
 
-        // Subtotal / diskon / total
+        // Subtotal / diskon / total: garis tebal di bawah baris
         $ws->setCellValue("D{$r}", 'Subtotal:');
         $ws->setCellValue("E{$r}", $rp($subtotal));
         if ($discount > 0) {
@@ -155,11 +164,15 @@ class InvoiceController extends Controller
             $ws->setCellValue("D{$r}", 'Diskon Kupon:');
             $ws->setCellValue("E{$r}", '-' . $rp($discount));
         }
+        $ws->getStyle("D{$r}:E{$r}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM);
+
         $r++;
         $ws->setCellValue("B{$r}", 'Terima kasih atas kepercayaan Anda berbelanja di ' . self::BRAND);
+        $ws->getStyle("B{$r}")->getAlignment()->setWrapText(true);
         $ws->setCellValue("D{$r}", 'Total:');
         $ws->setCellValue("E{$r}", $rp($o->total));
-        $ws->getStyle("D{$r}:E{$r}")->getFont()->setBold(true)->setSize(12);
+        $ws->getStyle("D{$r}:E{$r}")->getFont()->setBold(true)->setSize(12)->getColor()->setARGB(self::COLOR);
+        $ws->getStyle("D{$r}:E{$r}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM);
 
         if (filled($invoice->notes)) {
             $r += 2;
