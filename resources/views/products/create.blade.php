@@ -14,7 +14,7 @@
     $labelCls = 'inline-flex items-center text-sm font-medium text-zinc-800 dark:text-white mb-3';
     $fileCls = 'pf-file block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold';
     $addBtnCls = 'pf-btn-gray relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-8 px-4 text-sm font-medium rounded-lg focus:outline-none disabled:opacity-75 disabled:cursor-default disabled:pointer-events-none';
-    $delBtnCls = 'relative inline-flex items-center justify-center whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500/30';
+    $delBtnCls = 'relative inline-flex items-center justify-center whitespace-nowrap h-8 px-3 text-sm font-medium rounded-md border border-zinc-300 bg-white text-black hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400/30';
     $ghostBtnCls = 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 ps-4 pe-4 text-sm font-medium rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:bg-transparent dark:border-white/10 dark:text-white dark:hover:bg-white/15';
     $backBtnCls = 'pf-btn-brown relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 ps-4 pe-4 text-sm font-medium rounded-lg shadow-sm focus:outline-none';
     $primaryBtnCls = 'pf-btn-brown relative inline-flex items-center justify-center gap-2 whitespace-nowrap h-10 ps-4 pe-4 text-sm font-medium rounded-lg shadow-sm focus:outline-none disabled:opacity-75 disabled:cursor-default disabled:pointer-events-none';
@@ -41,6 +41,13 @@
     .pf-field:disabled { background-color: #fafafa; }
     .pf-field.border-red-400 { border-color: #f87171; }
     .dark .pf-field { border-color: rgba(255, 255, 255, .2); }
+
+    /* Tulisan di dalam form: solid, tidak transparan */
+    .pf-field { color: #18181b; opacity: 1; }
+    .pf-field::placeholder { color: #52525b; opacity: 1; }
+    .pf-field:disabled { color: #3f3f46; opacity: 1; -webkit-text-fill-color: #3f3f46; }
+    .dark .pf-field { color: #ffffff; }
+    .dark .pf-field::placeholder { color: #d4d4d8; opacity: 1; }
 
     /* Daftar dropdown (meniru tampilan bawaan browser, sorotan biru) */
     .pf-dd { position: fixed; z-index: 9999; box-sizing: border-box; max-height: 15rem; overflow-y: auto; background: #fff; border: 1px solid #c4c4c4; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }

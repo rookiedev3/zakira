@@ -400,7 +400,7 @@ class CartController extends Controller
     {
         $cart = session('cart', []);
 
-        $products = Product::with(['categories', 'models', 'colors', 'sizes', 'prices'])
+        $products = Product::with(['categories', 'models', 'colors', 'sizes', 'prices', 'brand'])
             ->whereIn('id', collect($cart)->pluck('product_id')->unique())
             ->get()
             ->keyBy('id');
@@ -453,13 +453,18 @@ class CartController extends Controller
                 'quantity'           => $row['quantity'],
             ];
 
+            $brandDp = $product->brand?->dp_percentage !== null
+                ? (float) $product->brand->dp_percentage
+                : (float) config('cart.dp_percent', 30);
+
             // Data mentah per baris, dipakai untuk validasi & hitung kupon
             $lines[] = [
-                'product_id'   => (int) $product->id,
-                'category_ids' => $product->categories->pluck('id')->all(),
-                'brand_id'     => $product->brand_id,
-                'quantity'     => (int) $row['quantity'],
-                'total'        => (int) $lineTotal,
+                'product_id'    => (int) $product->id,
+                'category_ids'  => $product->categories->pluck('id')->all(),
+                'brand_id'      => $product->brand_id,
+                'dp_percentage' => $brandDp,
+                'quantity'      => (int) $row['quantity'],
+                'total'         => (int) $lineTotal,
             ];
 
             $count    += $row['quantity'];
@@ -510,8 +515,19 @@ class CartController extends Controller
 
         $total = max(0, $subtotal - $discount);
 
-        // Pembayaran: DP (persentase) atau penuh
-        $dpPercent = (int) config('cart.dp_percent', 30);
+        // Pembayaran: DP (persentase berdasarkan brand produk) atau penuh
+        $defaultDp = (float) config('cart.dp_percent', 30);
+        if ($subtotal > 0 && ! empty($summary['lines'])) {
+            $rawDpTotal = 0;
+            foreach ($summary['lines'] as $line) {
+                $rawDpTotal += $line['total'] * (($line['dp_percentage'] ?? $defaultDp) / 100);
+            }
+            $calculatedPercent = round(($rawDpTotal / $subtotal) * 100, 2);
+            $dpPercent = ((int) $calculatedPercent == $calculatedPercent) ? (int) $calculatedPercent : $calculatedPercent;
+        } else {
+            $dpPercent = ((int) $defaultDp == $defaultDp) ? (int) $defaultDp : $defaultDp;
+        }
+
         $dpAmount  = (int) round($total * $dpPercent / 100);
 
         return [

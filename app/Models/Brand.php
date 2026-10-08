@@ -14,6 +14,7 @@ class Brand extends Model
 
     protected $fillable = [
         'name',
+        'dp_percentage',
         'description',
         'logo',
         'show_on_home',
@@ -22,9 +23,10 @@ class Brand extends Model
     ];
 
     protected $casts = [
-        'show_on_home' => 'boolean',
-        'is_active'    => 'boolean',
-        'home_order'   => 'integer',
+        'dp_percentage' => 'float',
+        'show_on_home'  => 'boolean',
+        'is_active'     => 'boolean',
+        'home_order'    => 'integer',
     ];
 
     /* ---------------- Relasi ---------------- */

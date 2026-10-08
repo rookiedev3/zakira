@@ -380,8 +380,9 @@ class ManageOrderController extends Controller
                 if ($order->dp_paid_at) {
                     $amountDue = min($amountDue, $total);
                 } else {
-                    $percent   = $order->dp_percent
-                        ?: ($oldTotal > 0 ? round($amountDue / $oldTotal * 100) : 50);
+                    $percent   = $order->dp_percent !== null
+                        ? (float) $order->dp_percent
+                        : ($oldTotal > 0 ? round($amountDue / $oldTotal * 100, 2) : 50);
                     $amountDue = (int) round($total * $percent / 100);
                 }
             } else {

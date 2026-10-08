@@ -35,22 +35,42 @@
         </div>
     @endif
 
+    {{-- Info carousel --}}
+    <div class="rounded-xl border border-[#eadfd5] bg-[#fbf8f4] p-4 text-sm text-[#6f4d3b]">
+        <strong>Carousel Homepage:</strong> aktifkan “Tampilkan di Homepage”, atur urutan, lalu upload/ganti logo.
+        Perubahan langsung terbaca di halaman depan tanpa edit kode lagi.
+    </div>
+
     {{-- Form --}}
     <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-        <h2 class="mb-5 text-lg font-semibold text-gray-900">Buat Brand Baru</h2>
+        <h2 class="mb-5 text-lg font-semibold text-gray-900">Tambah Brand</h2>
 
         <form action="{{ route('brands.store') }}" method="POST" enctype="multipart/form-data"
               class="grid gap-5 lg:grid-cols-2">
             @csrf
 
             {{-- Nama --}}
-            <div class="lg:col-span-2">
+            <div>
                 <label for="name" class="block text-sm font-medium text-zinc-800 mb-2">Nama Brand</label>
                 <input type="text" id="name" name="name" value="{{ old('name') }}"
                        placeholder="Contoh: Zakira"
-                       class="w-full border rounded-lg py-2 px-3 text-sm shadow-xs border-zinc-200
-                              focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d] outline-none">
+                       class="w-full h-10 border rounded-lg py-2 px-3 text-sm shadow-xs bg-white text-zinc-700
+                              placeholder-zinc-400 outline-none
+                              {{ $errors->has('name') ? 'border-red-500' : 'border-zinc-200 focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d]' }}">
                 @error('name')
+                    <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
+                @enderror
+            </div>
+
+            {{-- Persentase DP --}}
+            <div>
+                <label for="dp_percentage" class="block text-sm font-medium text-zinc-800 mb-2">Persentase DP (%)</label>
+                <input type="number" id="dp_percentage" name="dp_percentage"
+                       value="{{ old('dp_percentage', 30) }}" min="0" max="100" step="0.01"
+                       class="w-full h-10 border rounded-lg py-2 px-3 text-sm shadow-xs bg-white text-zinc-700
+                              outline-none
+                              {{ $errors->has('dp_percentage') ? 'border-red-500' : 'border-zinc-200 focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d]' }}">
+                @error('dp_percentage')
                     <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
                 @enderror
             </div>
@@ -59,8 +79,9 @@
             <div class="lg:col-span-2">
                 <label for="description" class="block text-sm font-medium text-zinc-800 mb-2">Deskripsi</label>
                 <textarea id="description" name="description" rows="3" placeholder="Deskripsi singkat brand"
-                          class="w-full border rounded-lg p-3 text-sm shadow-xs border-zinc-200
-                                 focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d] outline-none resize-y">{{ old('description') }}</textarea>
+                          class="w-full border rounded-lg p-3 text-sm shadow-xs border-zinc-200 text-zinc-700
+                                 placeholder-zinc-400 focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d]
+                                 outline-none resize-y">{{ old('description') }}</textarea>
                 @error('description')
                     <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
                 @enderror
@@ -86,36 +107,37 @@
                 @enderror
             </div>
 
-            {{-- Urutan homepage --}}
-            <div>
-                <label for="home_order" class="block text-sm font-medium text-zinc-800 mb-2">Urutan di Homepage</label>
-                <input type="number" id="home_order" name="home_order" min="1" step="1"
-                       value="{{ old('home_order', $nextOrder ?? 1) }}"
-                       class="w-full border rounded-lg py-2 px-3 text-sm shadow-xs border-zinc-200
-                              focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d] outline-none">
-                <p class="mt-1 text-xs text-gray-500">
-                    Mulai dari 1. Jika urutan sudah dipakai, brand lain otomatis bergeser ke bawah.
-                </p>
-                @error('home_order')
-                    <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
-                @enderror
-            </div>
+            {{-- Kolom kanan: urutan + tampil di homepage --}}
+            <div class="space-y-4">
+                <div>
+                    <label for="home_order" class="block text-sm font-medium text-zinc-800 mb-2">Urutan di Homepage</label>
+                    <input type="number" id="home_order" name="home_order" min="1" step="1"
+                           value="{{ old('home_order', $nextOrder ?? 1) }}"
+                           class="w-full h-10 border rounded-lg py-2 px-3 text-sm shadow-xs border-zinc-200 bg-white text-zinc-700
+                                  focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d] outline-none">
+                    <p class="mt-1 text-xs text-gray-500">
+                        Mulai dari 1. Jika urutan sudah dipakai, brand lain otomatis bergeser ke bawah.
+                    </p>
+                    @error('home_order')
+                        <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
+                    @enderror
+                </div>
 
-            {{-- Tampil di Homepage (kolom kanan, posisi bekas Brand Aktif) --}}
-            <div class="lg:col-start-2">
-                <input type="hidden" name="show_on_home" value="0">
-                <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-4">
-                    <input type="checkbox" name="show_on_home" value="1"
-                           {{ old('show_on_home', true) ? 'checked' : '' }}
-                           class="h-5 w-5 rounded border-gray-300 text-[#6f4d3b] focus:ring-[#b98e6d]">
-                    <div>
-                        <div class="font-medium text-gray-900">Tampilkan di Homepage</div>
-                        <div class="text-xs text-gray-500">Brand masuk carousel selama status brand juga Aktif.</div>
-                    </div>
-                </label>
-                @error('show_on_home')
-                    <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
-                @enderror
+                <div>
+                    <input type="hidden" name="show_on_home" value="0">
+                    <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 p-4">
+                        <input type="checkbox" name="show_on_home" value="1"
+                               {{ old('show_on_home', true) ? 'checked' : '' }}
+                               class="h-5 w-5 rounded border-gray-300 text-[#6f4d3b] focus:ring-[#b98e6d]">
+                        <div>
+                            <div class="font-medium text-gray-900">Tampilkan di Homepage</div>
+                            <div class="text-xs text-gray-500">Brand masuk carousel selama status brand juga Aktif.</div>
+                        </div>
+                    </label>
+                    @error('show_on_home')
+                        <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
 
             {{-- Status aktif: selalu true, tidak ditampilkan --}}

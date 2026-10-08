@@ -47,20 +47,22 @@ class BrandController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'         => 'required|string|max:255|unique:brands,name',
-            'description'  => 'nullable|string|max:1000',
-            'logo'         => 'nullable|image|max:2048',
-            'home_order'   => 'nullable|integer|min:1|max:2147483647',
-            'show_on_home' => 'nullable|boolean',
-            'is_active'    => 'nullable|boolean',
+            'name'          => 'required|string|max:255|unique:brands,name',
+            'dp_percentage' => 'nullable|numeric|min:0|max:100',
+            'description'   => 'nullable|string|max:1000',
+            'logo'          => 'nullable|image|max:2048',
+            'home_order'    => 'nullable|integer|min:1|max:2147483647',
+            'show_on_home'  => 'nullable|boolean',
+            'is_active'     => 'nullable|boolean',
         ]);
 
         $data = [
-            'name'         => $validated['name'],
-            'description'  => $validated['description'] ?? null,
-            'home_order'   => 1, // sementara, ditentukan ulang oleh placeAt()
-            'show_on_home' => $request->boolean('show_on_home'),
-            'is_active'    => $request->boolean('is_active', true),
+            'name'          => $validated['name'],
+            'dp_percentage' => isset($validated['dp_percentage']) && $validated['dp_percentage'] !== '' ? (float) $validated['dp_percentage'] : 30.00,
+            'description'   => $validated['description'] ?? null,
+            'home_order'    => 1, // sementara, ditentukan ulang oleh placeAt()
+            'show_on_home'  => $request->boolean('show_on_home'),
+            'is_active'     => $request->boolean('is_active', true),
         ];
 
         if ($request->hasFile('logo')) {
@@ -94,19 +96,21 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:255|unique:brands,name,' . $brand->id,
-            'description'  => 'nullable|string|max:1000',
-            'logo'         => 'nullable|image|max:2048',
-            'home_order'   => 'nullable|integer|min:1|max:2147483647',
-            'show_on_home' => 'nullable|boolean',
-            'is_active'    => 'nullable|boolean',
+            'name'          => 'required|string|max:255|unique:brands,name,' . $brand->id,
+            'dp_percentage' => 'nullable|numeric|min:0|max:100',
+            'description'   => 'nullable|string|max:1000',
+            'logo'          => 'nullable|image|max:2048',
+            'home_order'    => 'nullable|integer|min:1|max:2147483647',
+            'show_on_home'  => 'nullable|boolean',
+            'is_active'     => 'nullable|boolean',
         ]);
 
         $data = [
-            'name'         => $validated['name'],
-            'description'  => $validated['description'] ?? null,
-            'show_on_home' => $request->boolean('show_on_home'),
-            'is_active'    => $request->boolean('is_active'),
+            'name'          => $validated['name'],
+            'dp_percentage' => isset($validated['dp_percentage']) && $validated['dp_percentage'] !== '' ? (float) $validated['dp_percentage'] : 30.00,
+            'description'   => $validated['description'] ?? null,
+            'show_on_home'  => $request->boolean('show_on_home'),
+            'is_active'     => $request->boolean('is_active'),
         ];
 
         // Ganti logo: hapus file lama setelah yang baru berhasil disimpan

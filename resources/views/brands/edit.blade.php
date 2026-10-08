@@ -45,13 +45,27 @@
             @method('PUT')
 
             {{-- Nama --}}
-            <div class="lg:col-span-2">
+            <div>
                 <label for="name" class="block text-sm font-medium text-zinc-800 mb-2">Nama Brand</label>
                 <input type="text" id="name" name="name" value="{{ old('name', $brand->name) }}"
                        placeholder="Contoh: Zakira" required
-                       class="w-full border rounded-lg py-2 px-3 text-sm shadow-xs border-zinc-200
-                              focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d] outline-none">
+                       class="w-full h-10 border rounded-lg py-2 px-3 text-sm shadow-xs border-zinc-200 bg-white text-zinc-700
+                              focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d] outline-none
+                              {{ $errors->has('name') ? 'border-red-500' : '' }}">
                 @error('name')
+                    <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
+                @enderror
+            </div>
+
+            {{-- Persentase DP --}}
+            <div>
+                <label for="dp_percentage" class="block text-sm font-medium text-zinc-800 mb-2">Persentase DP (%)</label>
+                <input type="number" id="dp_percentage" name="dp_percentage"
+                       value="{{ old('dp_percentage', $brand->dp_percentage ?? 30) }}" min="0" max="100" step="0.01"
+                       class="w-full h-10 border rounded-lg py-2 px-3 text-sm shadow-xs bg-white text-zinc-700
+                              outline-none
+                              {{ $errors->has('dp_percentage') ? 'border-red-500' : 'border-zinc-200 focus:border-[#b98e6d] focus:ring-1 focus:ring-[#b98e6d]' }}">
+                @error('dp_percentage')
                     <div class="mt-2 text-sm font-medium text-red-500">{{ $message }}</div>
                 @enderror
             </div>

@@ -379,7 +379,7 @@ class ProfileController extends Controller
 
             $amountDue = $order->payment_method === 'full'
                 ? $total
-                : (int) round($total * ((int) ($order->dp_percent ?? 30)) / 100);
+                : (int) round($total * ((float) ($order->dp_percent ?? 30)) / 100);
 
             $name = Str::of($data['customer_name'])->squish();
 

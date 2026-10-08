@@ -6,7 +6,7 @@
 {{-- Data dikirim OrderEditController@edit: $order, $items, $variants, $product --}}
 @php
     $remaining = $order->editSecondsLeft();
-    $dpPercent = $order->dp_percent ?? 30;
+    $dpPercent = (float) ($order->dp_percent ?? 30);
     $isFull    = $order->payment_method === 'full';
 
     // Tombol Batal -> kembali ke halaman sebelumnya (fallback ke beranda)
