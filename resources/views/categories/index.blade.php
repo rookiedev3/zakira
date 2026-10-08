@@ -7,6 +7,17 @@
 @section('title', 'Categories')
 
 @section('content')
+@php
+    // Warna badge kolom "Tipe" (key = nilai type dalam huruf kecil)
+    $typeColors = [
+        'pria'   => 'bg-blue-100 text-blue-800',
+        'wanita' => 'bg-pink-100 text-pink-800',
+        'anak'   => 'bg-yellow-100 text-yellow-800',
+    ];
+    // Fallback untuk tipe lain: warna brand
+    $defaultTypeClass = 'bg-[#9C5B34]/10 text-[#834A27]';
+@endphp
+
 <div class="w-full space-y-6">
 
     {{-- --------------------------------------------------
@@ -75,9 +86,14 @@
 
                             {{-- Tipe (badge) --}}
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                    {{ $category->type ?? '-' }}
-                                </span>
+                                @if ($category->type)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                                 {{ $typeColors[strtolower($category->type)] ?? $defaultTypeClass }}">
+                                        {{ $category->type }}
+                                    </span>
+                                @else
+                                    -
+                                @endif
                             </td>
 
                             {{-- Deskripsi – wrap bila panjang sehingga tabel tidak memanjang --}}

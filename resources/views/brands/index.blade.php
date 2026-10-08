@@ -134,8 +134,7 @@
                                     <form action="{{ route('brands.toggleStatus', $brand->id) }}" method="POST" class="inline">
                                         @csrf @method('PATCH')
                                         <button type="submit"
-                                                class="h-8 inline-flex items-center px-3 text-sm hover:bg-gray-100 rounded-md transition-colors
-                                                       {{ $brand->is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700' }}">
+                                                class="h-8 inline-flex items-center px-3 text-sm text-black hover:bg-gray-100 rounded-md transition-colors">
                                             {{ $brand->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                                         </button>
                                     </form>
@@ -144,7 +143,7 @@
                                           onsubmit="return confirm('Hapus brand {{ $brand->name }}?');">
                                         @csrf @method('DELETE')
                                         <button type="submit"
-                                                class="h-8 inline-flex items-center px-3 text-sm text-red-600 hover:text-red-700 hover:bg-gray-100 rounded-md transition-colors">
+                                                class="h-8 inline-flex items-center px-3 text-sm text-black hover:bg-gray-100 rounded-md transition-colors">
                                             Hapus
                                         </button>
                                     </form>

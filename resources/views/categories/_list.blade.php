@@ -1,6 +1,17 @@
 {{-- ------------------------------------------------------------
      Partial: tabel daftar kategori (sama persis dengan index)
 ------------------------------------------------------------ --}}
+@php
+    // Warna badge kolom "Tipe" (key = nilai type dalam huruf kecil)
+    $typeColors = [
+        'pria'   => 'bg-blue-100 text-blue-800',
+        'wanita' => 'bg-pink-100 text-pink-800',
+        'anak'   => 'bg-yellow-100 text-yellow-800',
+    ];
+    // Fallback untuk tipe lain: warna brand
+    $defaultTypeClass = 'bg-[#9C5B34]/10 text-[#834A27]';
+@endphp
+
 <div class="bg-white shadow rounded-lg overflow-hidden mt-8">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -23,7 +34,8 @@
 
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         @if($category->type)
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                         {{ $typeColors[strtolower($category->type)] ?? $defaultTypeClass }}">
                                 {{ ucfirst($category->type) }}
                             </span>
                         @endif

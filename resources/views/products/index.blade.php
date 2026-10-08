@@ -26,6 +26,8 @@
     .link-brown { color: #6f4d3b; }
     .product-table { width: 100%; }
     .product-table th, .product-table td { border-color: #e5e7eb; }
+    /* Tombol "Hapus": teks hitam */
+    .btn-hapus { color: #000000; }
 </style>
 <div class="w-full space-y-6">
 
@@ -244,8 +246,8 @@
                                           onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini?');">
                                         @csrf @method('DELETE')
                                         <button type="submit"
-                                                class="h-8 px-3 inline-flex items-center justify-center text-sm rounded-md
-                                                       bg-transparent hover:bg-zinc-800/5 text-red-600">
+                                                class="btn-hapus h-8 px-3 inline-flex items-center justify-center text-sm rounded-md
+                                                       bg-transparent hover:bg-zinc-800/5">
                                             Hapus
                                         </button>
                                     </form>

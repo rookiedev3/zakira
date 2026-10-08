@@ -8,8 +8,10 @@ $waUrl = $cs
 ? $cs->whatsapp_url . '?text=' . urlencode('Halo, saya tertarik dengan produk ' . $product->name)
 : '#';
 
+// Wishlist: user login -> cek database, guest -> cek session
 $inWishlist = auth()->check()
-&& auth()->user()->wishlistProducts()->where('products.id', $product->id)->exists();
+    ? auth()->user()->wishlistProducts()->where('products.id', $product->id)->exists()
+    : in_array($product->id, session('guest_wishlist', []));
 
 // Harga awal sesuai pilihan default (item pertama tiap varian)
 $firstKey = ($product->models->first()->id ?? 0) . '|'
@@ -204,7 +206,7 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
                 </a>
             </div>
 
-            {{-- Wishlist --}}
+            {{-- Wishlist (guest: disimpan di session, user login: database) --}}
             <form id="wishlistForm" method="POST" action="{{ route('wishlist.toggle', $product->id) }}">
                 @csrf
                 <button type="submit" id="wishlistBtn" data-liked="{{ $inWishlist ? '1' : '0' }}"
@@ -372,7 +374,7 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
         });
     });
 
-    // ---------- Wishlist (tanpa reload, scroll tetap) ----------
+    // ---------- Wishlist (tanpa reload, scroll tetap; guest & user login) ----------
     const wForm = document.getElementById('wishlistForm');
     const wBtn = document.getElementById('wishlistBtn');
     const wSpinner = document.getElementById('wishlistSpinner');
@@ -407,15 +409,16 @@ $fallbackPrice = $product->price_range ?? 'Hubungi penjual';
                 },
             });
 
-            if (res.status === 401) {
-                window.location = @json(route('login'));
-                return;
-            }
             if (!res.ok) throw new Error();
 
             const data = await res.json();
             renderWishlist(data.liked);
 
+            notify(
+                'Berhasil!',
+                data.liked ? 'Ditambahkan ke wishlist.' : 'Dihapus dari wishlist.',
+                'success'
+            );
         } catch (err) {
             notify('Gagal', 'Terjadi kesalahan, coba lagi.', 'error');
         } finally {
