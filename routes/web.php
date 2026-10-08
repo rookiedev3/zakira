@@ -217,13 +217,6 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     // BARU: download faktur milik member sendiri (nama route: member.orders.invoice)
     Route::get('/orders/{orderNumber}/invoice', [MemberInvoiceController::class, 'download'])->name('orders.invoice');
 
-    // [VERSI LAIN - dinonaktifkan karena nama route & URL sama dengan di atas]
-    // Download faktur milik member sendiri (cek kepemilikan ada di ProfileController@invoice)
-    // Route::get('/orders/{orderNumber}/invoice', [ProfileController::class, 'invoice'])->name('orders.invoice');
-
-    // ================= PEMBAYARAN DP & SISA (sudah pakai ProfileController, bukan dummy lagi) =================
-    // Halaman + upload bukti. Parameter {type} diisi lewat defaults(): 'dp' atau 'remaining'.
-    // View yang dipakai: member.orders.pay (satu view untuk DP & Sisa).
     Route::get('/orders/{orderNumber}/pay-dp', [ProfileController::class, 'payment'])
         ->defaults('type', 'dp')->name('orders.pay-dp');
     Route::post('/orders/{orderNumber}/pay-dp', [ProfileController::class, 'storePayment'])
