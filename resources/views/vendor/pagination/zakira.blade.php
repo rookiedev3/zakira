@@ -1,5 +1,3 @@
-// views/vendor/pagination
-
 @if ($paginator->total() > 0)
 <nav role="navigation" aria-label="Pagination Navigation"
      class="flex flex-col sm:flex-row items-center justify-between gap-4">

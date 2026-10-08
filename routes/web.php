@@ -241,14 +241,6 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
     Route::post('/order/{orderNumber}/coupon', [ProfileController::class, 'checkCoupon'])->name('order.coupon');
 });
 
-
-
-
-
-
-
-
-
 //routes chyntia
 // Route untuk halaman Katalog / Ready Stock
 Route::get('/katalog', [CatalogController::class, 'index'])->name('catalog.index');
